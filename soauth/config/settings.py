@@ -1,0 +1,85 @@
+"""
+Main settings object.
+"""
+
+"""
+Configuration options for the lightcurvedb when running in a fixed
+environment.
+"""
+
+from datetime import timedelta
+from typing import Literal
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from sqlalchemy import URL
+
+from .managers import AsyncSessionManager, SyncSessionManager
+
+
+class Settings(BaseSettings):
+    database_type: Literal["sqlite", "postgres"] = "sqlite"
+    database_user: str | None = None
+    database_password: str | None = None
+    database_port: int | None = None
+    database_host: str | None = None
+    database_db: str = "soauth.db"
+
+    database_echo: bool = False
+
+    key_pair_type: str = "Ed25519"
+    key_password: str = "CHANGEME"
+
+    refresh_key_expiry: timedelta = timedelta(weeks=26)
+    access_key_expiry: timedelta = timedelta(hours=8)
+
+    model_config = SettingsConfigDict(env_prefix="SOAUTH_")
+
+    @property
+    def sync_driver(self) -> str:
+        match self.database_type:
+            case "sqlite":
+                return "sqlite"
+            case "postgres":
+                return "postgresql+psycopg"
+            case _:
+                raise ValueError
+
+    @property
+    def async_driver(self) -> str:
+        match self.database_type:
+            case "sqlite":
+                return "aiosqlite"
+            case "postgres":
+                return "postgresql+asyncpg"
+            case _:
+                raise ValueError
+
+    @property
+    def sync_uri(self) -> URL:
+        return URL.create(
+            drivername=self.sync_driver,
+            username=self.database_user,
+            password=self.database_password,
+            host=self.database_host,
+            port=self.database_port,
+            database=self.database_db,
+        )
+
+    def sync_manager(self) -> SyncSessionManager:
+        return SyncSessionManager(connection_url=self.sync_rui, echo=self.database_echo)
+
+    @property
+    def async_uri(self) -> URL:
+        return URL.create(
+            drivername=self.async_driver,
+            username=self.database_user,
+            password=self.database_password,
+            host=self.database_host,
+            port=self.database_port,
+            database=self.database_db,
+        )
+
+    def async_manager(self) -> SyncSessionManager:
+        return AsyncSessionManager(
+            connection_url=self.async_uri, echo=self.database_echo
+        )

@@ -121,7 +121,7 @@ def build_payload_with_claims(
     issuer: str | None | list[str],
     audience: str | None | list[str],
 ) -> dict[str, Any]:
-    for a in ("exp", "nbf", "iss", "aud", "iat"):
+    for a in ("exp", "nbf", "iss", "aud", "iat", "uuid"):
         if a in base_payload:
             raise ValueError(f"Base payload cannot contain key {a}")
 
@@ -131,6 +131,7 @@ def build_payload_with_claims(
         "exp": expiration_time,
         "nbf": valid_from if valid_from is not None else current_time,
         "iat": current_time,
+        "uuid": str(uuid.uuid4()),
         **base_payload,
     }
 
@@ -152,7 +153,6 @@ def build_refresh_key_payload(
     base_payload = {
         "user_id": user_id,
         "app_id": app_id,
-        "uuid": str(uuid.uuid4()),
     }
 
     current_time = datetime.now()

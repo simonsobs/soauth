@@ -1,3 +1,55 @@
 """
 Creation/deletion for authentication keys.
 """
+
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from soauth.config.settings import Settings
+from soauth.core.tokens import build_payload_with_claims, sign_payload
+from soauth.database.app import App
+from soauth.database.auth import RefreshKey
+from soauth.database.user import User
+
+
+async def create_auth_key(
+    refresh_key: RefreshKey, settings: Settings, conn: AsyncSession
+) -> str:
+    """
+    This function **assumes it is being passed a valid refresh key** and
+    creates an authentication key for the user associated with it.
+
+    Returned is the packaged and encrypted data.
+    """
+
+    user = await conn.get(User, refresh_key.user_id)
+    app = await conn.get(App, refresh_key.app_id)
+
+    user_data = user.to_core()
+    base_payload = user_data.model_dump()
+
+    payload = build_payload_with_claims(
+        base_payload=base_payload,
+        expiration_time=settings.access_key_expiry,
+        valid_from=None,
+        issuer=None,
+        audience=None,
+    )
+
+    signed_payload = sign_payload(
+        app_id=app.uid,
+        key_password=settings.key_password,
+        private_key=app.private_key,
+        key_pair_type=app.key_pair_type,
+        payload=payload,
+    )
+
+    refresh_key.used += 1
+
+    user.last_access_token = payload["uuid"]
+    user.last_access_time = payload["iat"]
+    user.number_of_access_tokens += 1
+
+    conn.add_all([refresh_key, user])
+    await conn.commit()
+
+    return signed_payload

@@ -22,6 +22,11 @@ class User(SQLModel):
     gh_refresh_token: str | None = None
     gh_last_logged_in: datetime | None = None
 
+    # Access token usage
+    last_access_token: str | None = None
+    last_access_time: datetime | None = None
+    number_of_access_tokens: int = 0
+
     # Need to link to group membership AND MAKE SURE CASCADING DELETE WORKS
     groups = []
 

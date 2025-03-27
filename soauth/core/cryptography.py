@@ -2,6 +2,7 @@
 Cryptography primitives
 """
 
+from cryptography.exceptions import UnsupportedAlgorithm
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from cryptography.hazmat.primitives.serialization import (
     BestAvailableEncryption,
@@ -14,6 +15,10 @@ from cryptography.hazmat.primitives.serialization import (
 
 
 class UnsupportedEncryptionMethod(Exception):
+    pass
+
+
+class EncryptionSerializationError(Exception):
     pass
 
 
@@ -56,10 +61,18 @@ def generate_key_pair(key_pair_type: str, key_password: str) -> tuple[bytes]:
 
 
 def deserialize_private_key(private_key: bytes, key_password: str) -> str:
-    return load_pem_private_key(data=private_key, password=key_password.encode("utf-8"))
+    try:
+        return load_pem_private_key(
+            data=private_key, password=key_password.encode("utf-8")
+        )
+    except (ValueError, UnsupportedAlgorithm):
+        raise EncryptionSerializationError("Unable to reconstruct private key")
 
 
 def deserialize_public_key(public_key: bytes) -> str:
-    return load_pem_public_key(
-        data=public_key,
-    )
+    try:
+        return load_pem_public_key(
+            data=public_key,
+        )
+    except (ValueError, UnsupportedAlgorithm):
+        raise EncryptionSerializationError("Unable to reconstruct public key")

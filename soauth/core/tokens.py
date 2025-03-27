@@ -9,10 +9,15 @@ from typing import Any
 import jwt
 
 from .cryptography import (
+    EncryptionSerializationError,
     UnsupportedEncryptionMethod,
     deserialize_private_key,
     deserialize_public_key,
 )
+
+
+class KeyDecodeError(Exception):
+    pass
 
 
 def match_key_pair_type_to_pyjwt_algorithm(key_pair_type: str) -> str:
@@ -26,13 +31,20 @@ def match_key_pair_type_to_pyjwt_algorithm(key_pair_type: str) -> str:
 
 
 def sign_payload(
-    key_password: str, private_key: bytes, key_pair_type: str, payload: dict[str, Any]
+    app_id: int,
+    key_password: str,
+    private_key: bytes,
+    key_pair_type: str,
+    payload: dict[str, Any],
 ) -> str:
     """
     Sign a JWT payload; requires decrypting the private key and using it.
 
     Parameters
     ----------
+    app_id
+        The application ID to store in the header. Required so that we know
+        what key to decode this with on the server side for refresh tokens.
     key_password
         The main password for the keys.
     private_key
@@ -47,12 +59,30 @@ def sign_payload(
     algorithm = match_key_pair_type_to_pyjwt_algorithm(key_pair_type=key_pair_type)
 
     encrypted = jwt.encode(
-        payload=payload,
-        key=key,
-        algorithm=algorithm,
+        payload=payload, key=key, algorithm=algorithm, headers={"aid": app_id}
     )
 
     return encrypted
+
+
+def app_id_from_signed_payload(webtoken: str | bytes) -> int:
+    """
+    Retrieve the App ID from the web token without deserializing it completely.
+
+    Note: there is **no verification that this token was emitted from a truthful
+    source during this process**, that takes place later when reconstructing the
+    full payload. But you may need to use this in cases where you have multiple
+    keys to choose from.
+    """
+
+    header = jwt.get_unverified_header(webtoken)
+
+    try:
+        code = int(header["aid"])
+    except Exception:
+        raise KeyDecodeError("Error reconstructing unverified header")
+
+    return code
 
 
 def reconstruct_payload(
@@ -69,14 +99,17 @@ def reconstruct_payload(
         The type of key (e.g. Ed25519).
     """
 
-    key = deserialize_public_key(public_key=public_key)
-    algorithm = match_key_pair_type_to_pyjwt_algorithm(key_pair_type=key_pair_type)
+    try:
+        key = deserialize_public_key(public_key=public_key)
+        algorithm = match_key_pair_type_to_pyjwt_algorithm(key_pair_type=key_pair_type)
 
-    payload = jwt.decode(
-        jwt=webtoken,
-        key=key,
-        algorithms=[algorithm],
-    )
+        payload = jwt.decode(
+            jwt=webtoken,
+            key=key,
+            algorithms=[algorithm],
+        )
+    except (jwt.DecodeError, EncryptionSerializationError):
+        raise KeyDecodeError("Unable to deserialize content")
 
     return payload
 
@@ -87,7 +120,7 @@ def build_payload_with_claims(
     valid_from: datetime | None,
     issuer: str | None | list[str],
     audience: str | None | list[str],
-):
+) -> dict[str, Any]:
     for a in ("exp", "nbf", "iss", "aud", "iat"):
         if a in base_payload:
             raise ValueError(f"Base payload cannot contain key {a}")
@@ -109,7 +142,9 @@ def build_payload_with_claims(
     return payload
 
 
-def build_refresh_key_payload(user_id: int, app_id: int, validity: timedelta) -> str:
+def build_refresh_key_payload(
+    user_id: int, app_id: int, validity: timedelta
+) -> dict[str, Any]:
     """
     Builds the payload for a refresh key.
     """
@@ -132,3 +167,22 @@ def build_refresh_key_payload(user_id: int, app_id: int, validity: timedelta) ->
         issuer=None,
         audience=None,
     )
+
+
+def refresh_refresh_key_payload(payload: dict[str, Any]) -> dict[str, Any]:
+    """
+    Updates the refresh key payload by:
+
+    - Adding a new uuid
+    - Updating valid from and not before.
+    """
+
+    new_payload = {**payload}
+
+    current_time = datetime.now()
+
+    new_payload["iat"] = current_time
+    new_payload["nbf"] = current_time
+    new_payload["uuid"] = str(uuid.uuid4())
+
+    return new_payload

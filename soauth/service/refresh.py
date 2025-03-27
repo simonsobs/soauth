@@ -1,0 +1,207 @@
+"""
+Core functions for the auth flow, including connections to the GitHub APIs.
+"""
+
+from datetime import datetime
+from typing import Any
+
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from soauth.config.settings import Settings
+from soauth.core.hashing import checksum
+from soauth.core.tokens import (
+    KeyDecodeError,
+    app_id_from_signed_payload,
+    build_refresh_key_payload,
+    reconstruct_payload,
+    refresh_refresh_key_payload,
+    sign_payload,
+)
+from soauth.database.app import App
+from soauth.database.auth import RefreshKey
+from soauth.database.user import User
+
+
+class AuthorizationError(Exception):
+    pass
+
+
+async def expire_refresh_keys(user: User, app: App, conn: AsyncSession):
+    """
+    Expires all refresh keys for a given user/app combination.
+    """
+    query = select(RefreshKey).filter_by(
+        RefreshKey.created_by == user.uid,
+        RefreshKey.app_id == app.uid,
+        RefreshKey.revoked is False,
+    )
+
+    all_unexpired = (await conn.execute(query)).scalars().all()
+
+    for key in all_unexpired:
+        key.last_used = datetime.now()
+        key.revoked = True
+
+        conn.add(key)
+
+    await conn.commit()
+
+    return
+
+
+async def create_refresh_key(
+    user: User, app: App, settings: Settings, conn: AsyncSession
+) -> tuple[str, RefreshKey]:
+    """
+    Creates a 'fresh' refresh token for a user, stores it in the database,
+    and returns the encrypted payload.
+    """
+
+    # We must make sure we have a singleton key - there can be only one!
+    # This helps with race conditions, too.
+    await expire_refresh_keys(user=user, app=app, conn=conn)
+
+    payload = build_refresh_key_payload(
+        user_id=user.uid, app_id=app.uid, validity=settings.refresh_key_expiry
+    )
+
+    create_time = payload["iat"]
+    expiry_time = payload["exp"]
+    uuid = payload["uuid"]
+
+    content = sign_payload(
+        key_password=settings.key_password,
+        private_key=app.private_key,
+        key_pair_type=app.key_pair_type,
+        payload=payload,
+    )
+
+    hashed_content = checksum(content=content, hash_algorithm=settings.hash_algorithm)
+
+    refresh_key = RefreshKey(
+        uuid=uuid,
+        user_id=user.uid,
+        app_id=app.uid,
+        hash_algorithm=settings.hash_algorithm,
+        hashed_content=hashed_content,
+        last_used=create_time,
+        used=0,
+        revoked=False,
+        previous=None,
+        created_by=user,
+        created_at=create_time,
+        expires_at=expiry_time,
+    )
+
+    conn.add(refresh_key)
+    await conn.commit()
+    await conn.refresh(refresh_key)
+
+    return content, refresh_key
+
+
+async def decode_refresh_key(
+    encoded_payload: str | bytes, conn: AsyncSession
+) -> dict[str, Any]:
+    """
+    Decodes a refresh key's payload, but _does not_ verify that it is
+    a valid key (i.e. it is not checked against the database; see
+    `refresh_refresh_key` which should be used when generating access
+    tokens).
+
+    If the token passes this, we can be sure that we emitted it as it
+    has been successfully verified through the key pair stored in the
+    application.
+    """
+
+    try:
+        app_id = app_id_from_signed_payload(encoded_payload)
+    except KeyDecodeError:
+        raise AuthorizationError(
+            "Unable to reconstruct the application ID from the key"
+        )
+
+    app = await conn.get(App, app_id)
+
+    if app is None:
+        raise AuthorizationError(f"No app with ID {app_id}")
+
+    try:
+        reconstructed_payload = reconstruct_payload(
+            webtoken=encoded_payload,
+            public_key=app.public_key,
+            key_pair_type=app.key_pair_type,
+        )
+    except KeyDecodeError:
+        raise AuthorizationError("Error decoding content of web token")
+
+    return reconstructed_payload
+
+
+async def refresh_refresh_key(
+    payload: dict[str, Any], settings: Settings, conn: AsyncSession
+) -> tuple[str, RefreshKey]:
+    """
+    Perform the key refresh flow. This:
+
+    1. Checks that the payload corresponds to an active key.
+    2. Revokes that key.
+    3. Refreshes the content of the key payload, re-signs it, and returns for use
+    """
+
+    uuid = payload["uuid"]
+
+    query = select(RefreshKey).filter(RefreshKey.uuid == uuid)
+
+    res = (await conn.execute(query)).scalar_one_or_none()
+
+    if res is None:
+        raise AuthorizationError("Prior key not found")
+
+    if res.revoked:
+        raise AuthorizationError("Key used for refresh has been revoked")
+
+    # We have an active key.
+    new_payload = refresh_refresh_key_payload(payload)
+    app = res.app
+
+    create_time = new_payload["iat"]
+    expiry_time = new_payload["exp"]
+    uuid = new_payload["uuid"]
+
+    content = sign_payload(
+        key_password=settings.key_password,
+        private_key=app.private_key,
+        key_pair_type=app.key_pair_type,
+        payload=new_payload,
+    )
+
+    hashed_content = checksum(content=content, hash_algorithm=settings.hash_algorithm)
+
+    refresh_key = RefreshKey(
+        uuid=uuid,
+        user_id=res.user_id,
+        app_id=res.app_id,
+        hash_algorithm=settings.hash_algorithm,
+        hashed_content=hashed_content,
+        last_used=create_time,
+        used=0,
+        revoked=False,
+        previous=res.uid,
+        created_by=res.user_id,
+        created_at=create_time,
+        expires_at=expiry_time,
+    )
+
+    res.revoked = True
+    res.used += 1
+    res.last_used = create_time
+
+    conn.add(refresh_key)
+    conn.add(res)
+
+    await conn.commit()
+    await conn.refresh(refresh_key)
+
+    return content, refresh_key

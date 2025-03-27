@@ -9,12 +9,13 @@ from sqlmodel import Field, SQLModel
 
 class RefreshKey(SQLModel):
     uid: int = Field(primary_key=True)
+    uuid: str
 
     user_id: int = Field()  # Foreign key into users table
     app_id: int = Field()  # Foreign key into app table
 
-    # Hashed
-    content: str
+    hash_algorithm: str
+    hashed_content: str
 
     last_used: datetime
     used: int

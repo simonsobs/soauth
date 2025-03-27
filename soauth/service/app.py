@@ -27,7 +27,7 @@ async def create(
         created_by=user.uid,
         created_at=datetime.now(),
         domain=domain,
-        method=settings.signing_method,
+        key_pair_type=settings.signing_method,
         public_key=public_key,
         private_key=private_key,
     )
@@ -56,7 +56,7 @@ async def refresh_keys(uid: int, settings: Settings, conn: AsyncSession) -> App:
         key_password=settings.key_password,
     )
 
-    app.method = settings.key_pair_type
+    app.key_pair_type = settings.key_pair_type
     app.public_key = public_key
     app.private_key = private_key
 

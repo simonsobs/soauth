@@ -15,7 +15,7 @@ class App(SQLModel):
 
     domain: str
 
-    method: str
+    key_pair_type: str
     # Note that the 'public key' is not really public - it should
     # only be shared with the application, as it can be used to decode
     # the signed JWTs.

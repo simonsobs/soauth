@@ -28,6 +28,7 @@ class Settings(BaseSettings):
 
     key_pair_type: str = "Ed25519"
     key_password: str = "CHANGEME"
+    hash_algorithm: str = "xxh3"
 
     refresh_key_expiry: timedelta = timedelta(weeks=26)
     access_key_expiry: timedelta = timedelta(hours=8)

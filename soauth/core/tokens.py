@@ -2,12 +2,11 @@
 Tools for encoding, building, and decoding JWTs.
 """
 
+import uuid
 from datetime import datetime, timedelta
 from typing import Any
 
 import jwt
-import uuid
-
 
 from .cryptography import (
     UnsupportedEncryptionMethod,
@@ -133,5 +132,3 @@ def build_refresh_key_payload(user_id: int, app_id: int, validity: timedelta) ->
         issuer=None,
         audience=None,
     )
-
-

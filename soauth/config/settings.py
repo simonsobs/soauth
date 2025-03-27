@@ -2,11 +2,6 @@
 Main settings object.
 """
 
-"""
-Configuration options for the lightcurvedb when running in a fixed
-environment.
-"""
-
 from datetime import timedelta
 from typing import Literal
 

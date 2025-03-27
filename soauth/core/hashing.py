@@ -2,21 +2,22 @@
 Utilities for hashing and comparing hashes.
 """
 
-import xxhash
 from hashlib import _Hash
+
+import xxhash
+
 
 class UnsupportedHashAlgorithm(Exception):
     pass
+
 
 def match_name_to_algorithm(name: str) -> _Hash:
     match name:
         case "xxh3":
             return xxhash.xxh3_64
         case _:
-            raise UnsupportedHashAlgorithm(
-                f"Algorithm {name} not supported"
-            )
-        
+            raise UnsupportedHashAlgorithm(f"Algorithm {name} not supported")
+
 
 def checksum(content: str | bytes, hash_algorithm: str) -> str:
     """
@@ -37,5 +38,3 @@ def compare(content: str | bytes, compare_to: str, hash_algorithm: str) -> bool:
     new_hash = hash(content=content, hash_algorithm=hash_algorithm)
 
     return compare_to == new_hash
-
-

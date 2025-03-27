@@ -14,18 +14,12 @@ from sqlmodel import SQLModel, create_engine
 
 class SyncSessionManager:
     """
-    A manager for asynchronous sessions. Expected usage of this class to interact
-    with the LightcurveDB API is as follows:
+    A manager for asynchronous sessions. Expected usage of this class to interact:
 
     manager = SyncSessionManager(conn_url)
 
     with manager.session() as conn:
         source_1 = conn.get(SourceTable, 1)
-
-    Why do it this way, instead of having a global `engine` and `get_session` function?
-    As lightcurvedb is primarily a library of the models stored in the lightcurve
-    database, used by a number of pieces of software, having global variables
-    that require database connections is highly undesirable.
     """
 
     connection_url: str
@@ -57,18 +51,12 @@ class SyncSessionManager:
 
 class AsyncSessionManager:
     """
-    A manager for asynchronous sessions. Expected usage of this class to interact
-    with the LightcurveDB API is as follows:
+    A manager for asynchronous sessions. Expected usage of this class to interact:
 
     manager = SessionManager(conn_url)
 
     async with manager.session() as conn:
         res = await lightcurve_read_band(id=993, band_name="f220", conn=conn)
-
-    Why do it this way, instead of having a global `engine` and `get_session` function?
-    As lightcurvedb is primarily a library of the models stored in the lightcurve
-    database, used by a number of pieces of software, having global variables
-    that require database connections is highly undesirable.
     """
 
     connection_url: str

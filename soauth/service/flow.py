@@ -7,14 +7,12 @@ from datetime import datetime
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-
-from soauth.core.hashing import checksum
-
 from soauth.config.settings import Settings
+from soauth.core.hashing import checksum
+from soauth.core.tokens import build_refresh_key_payload, sign_payload
 from soauth.database.app import App
 from soauth.database.auth import RefreshKey
 from soauth.database.user import User
-from soauth.core.tokens import build_refresh_key_payload, sign_payload
 
 
 async def expire_refresh_keys(user: User, app: App, conn: AsyncSession):
@@ -52,9 +50,7 @@ async def create_refresh_key(
     await expire_refresh_keys(user=user, app=app, conn=conn)
 
     payload = build_refresh_key_payload(
-        user_id=user.uid,
-        app_id=app.uid,
-        validity=settings.refresh_key_expiry
+        user_id=user.uid, app_id=app.uid, validity=settings.refresh_key_expiry
     )
 
     create_time = payload["iat"]

@@ -20,22 +20,22 @@ Authentication Flow
 
 The authentication flow in Simons Observatory applications works as follows:
 
-a) The creator of the application registers an 'App' with the service. Each
+-  The creator of the application registers an 'App' with the service. Each
    'App' has a unique set of authentication keys that provide access to the
    entire cookie scope. For instance, all services hosted under a single
    domain would have a single scope (e.g. if you have services running under
    a reverse proxy, they would share the same 'App'), and hence should share
    keys.
-b) A not logged in user is redirected to auth.simonsobs.org (where a copy
+-  A not logged in user is redirected to webauth.simonsobs.org (where a copy
    of this service is running).
-c) The user is presented with a GitHub login interface, where they are asked
+-  The user is presented with a GitHub login interface, where they are asked
    to authenticate with their GitHub account. This provides us access to their
    information (username, email, organization membership). This login flow
    takes place on GitHub servers.
-d) The user is redirected back to auth.simonsobs.org, where their refresh
+-  The user is redirected back to webauth.simonsobs.org, where their refresh
    and access tokens are generated to provide access to the protected resources
    under the original 'App'.
-e) The user is then redirected back to the original application, where the
+-  The user is then redirected back to the original application, where the
    access and refresh token may be set as cookies or otherwise used.
 
 Access tokens are extremely pirivalged items. They alone provide access to

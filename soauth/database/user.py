@@ -12,6 +12,7 @@ from soauth.core.user import UserData
 class User(SQLModel):
     uid: int = Field(primary_key=True)
 
+    name: str = Field()
     username: str = Field(unique=True)
     email: str
 
@@ -19,7 +20,7 @@ class User(SQLModel):
     grants: str = Field()
 
     gh_access_token: str | None = None
-    gh_refresh_token: str | None = None
+    # gh_refresh_token: str | None = None
     gh_last_logged_in: datetime | None = None
 
     # Access token usage

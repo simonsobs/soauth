@@ -28,6 +28,11 @@ class Settings(BaseSettings):
     refresh_key_expiry: timedelta = timedelta(weeks=26)
     access_key_expiry: timedelta = timedelta(hours=8)
 
+    github_client_id: str
+    github_client_secret: str
+    github_redirect_uri: str
+    github_organization_checks: list[str]
+
     model_config = SettingsConfigDict(env_prefix="SOAUTH_")
 
     @property

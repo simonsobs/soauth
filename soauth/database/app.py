@@ -2,10 +2,10 @@
 Applications/TLDs accessible from the auth server.
 """
 
+import uuid
 from datetime import datetime
 
 from sqlmodel import Field, SQLModel
-import uuid
 
 
 class App(SQLModel):

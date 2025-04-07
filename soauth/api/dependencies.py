@@ -2,11 +2,12 @@
 Dependencies used by the API.
 """
 
-from fastapi import Depends
 from typing import Annotated
 
-from soauth.config.settings import Settings
+from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from soauth.config.settings import Settings
 
 SETTINGS = Settings()
 DATABASE_MANAGER = SETTINGS.async_manager()

@@ -2,12 +2,12 @@
 ORM for user information.
 """
 
+import uuid
 from datetime import datetime
 
 from sqlmodel import Field, SQLModel
 
 from soauth.core.user import UserData
-import uuid
 
 
 class User(SQLModel):

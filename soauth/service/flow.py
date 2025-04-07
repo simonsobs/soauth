@@ -4,13 +4,19 @@ Secondary authentication flow - exchange a refresh token for a new one and
 a new access token.
 """
 
-from soauth.database.user import User
-from soauth.database.app import App
-from soauth.config.settings import Settings
-from .auth import create_auth_key
-from .refresh import create_refresh_key, refresh_refresh_key, decode_refresh_key
-
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from soauth.config.settings import Settings
+from soauth.database.app import App
+from soauth.database.user import User
+
+from .auth import create_auth_key
+from .refresh import (
+    create_refresh_key,
+    decode_refresh_key,
+    expire_refresh_key,
+    refresh_refresh_key,
+)
 
 
 async def primary(
@@ -90,3 +96,17 @@ async def secondary(
     )
 
     return encoded_auth_key, encoded_refresh_key
+
+
+async def logout(encoded_refresh_key: str, settings: Settings, conn: AsyncSession):
+    """
+    Expire a refresh key in the database and log out.
+    """
+
+    decoded_payload = await decode_refresh_key(
+        encoded_payload=encoded_refresh_key, conn=conn
+    )
+
+    await expire_refresh_key(payload=decoded_payload, settings=settings, conn=conn)
+
+    return

@@ -205,3 +205,28 @@ async def refresh_refresh_key(
     await conn.refresh(refresh_key)
 
     return content, refresh_key
+
+
+async def expire_refresh_key(
+    payload: dict[str, Any], settings: Settings, conn: AsyncSession
+):
+    """
+    Expire a refresh key based upon its payload.
+    """
+
+    uuid = payload["uuid"]
+
+    query = select(RefreshKey).filter(RefreshKey.refresh_key_id == uuid)
+
+    res = (await conn.execute(query)).scalar_one_or_none()
+
+    if res is None:
+        return
+
+    res.last_used = datetime.now()
+    res.revoked = True
+
+    conn.add(res)
+    await conn.commit()
+
+    return

@@ -6,15 +6,14 @@ is minted and _all others_ are expired. We may have to revisit
 that point later.
 """
 
+import urllib
 from datetime import datetime
 from typing import Any
 
 import httpx
-import urllib
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from soauth.config.settings import Settings
-from soauth.database.app import App
 from soauth.database.login import LoginRequest
 from soauth.database.user import User
 from soauth.service.user import UserNotFound, read_by_name
@@ -173,9 +172,7 @@ async def github_login(code: str, settings: Settings, conn: AsyncSession) -> Use
     return user
 
 
-async def github_login_redirect(
-    login_request: LoginRequest, settings: Settings
-) -> str:
+async def github_login_redirect(login_request: LoginRequest, settings: Settings) -> str:
     """
     Create a redirect to the GitHub App to authenticate a user.
     """
@@ -189,7 +186,7 @@ async def github_login_redirect(
     }
 
     url = urllib.parse.urlunparse(
-        (method, host, endpoint, '', urllib.parse.urlencode(query))
+        (method, host, endpoint, "", urllib.parse.urlencode(query))
     )
 
     return url

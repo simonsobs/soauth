@@ -2,10 +2,10 @@
 Group ORM
 """
 
+import uuid
 from datetime import datetime
 
 from sqlmodel import Field, SQLModel
-import uuid
 
 
 class Group(SQLModel):

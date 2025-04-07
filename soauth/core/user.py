@@ -2,8 +2,9 @@
 A shared user object that is serialized.
 """
 
-import pydantic
 import uuid
+
+import pydantic
 
 
 class UserData(pydantic.BaseModel):

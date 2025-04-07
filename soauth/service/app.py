@@ -24,7 +24,7 @@ async def create(
     )
 
     app = App(
-        created_by=user.uid,
+        created_by=user.user_id,
         created_at=datetime.now(),
         domain=domain,
         key_pair_type=settings.signing_method,

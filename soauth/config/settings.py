@@ -28,6 +28,9 @@ class Settings(BaseSettings):
     refresh_key_expiry: timedelta = timedelta(weeks=26)
     access_key_expiry: timedelta = timedelta(hours=8)
 
+    stale_login_expiry: timedelta = timedelta(minutes=30)
+    login_record_length: timedelta = timedelta(weeks=2)
+
     github_client_id: str
     github_client_secret: str
     github_redirect_uri: str

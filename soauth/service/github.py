@@ -10,9 +10,12 @@ from datetime import datetime
 from typing import Any
 
 import httpx
+import urllib
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from soauth.config.settings import Settings
+from soauth.database.app import App
+from soauth.database.login import LoginRequest
 from soauth.database.user import User
 from soauth.service.user import UserNotFound, read_by_name
 
@@ -168,3 +171,25 @@ async def github_login(code: str, settings: Settings, conn: AsyncSession) -> Use
     await conn.refresh(user)
 
     return user
+
+
+async def github_login_redirect(
+    login_request: LoginRequest, settings: Settings
+) -> str:
+    """
+    Create a redirect to the GitHub App to authenticate a user.
+    """
+
+    method = "https"
+    host = "github.com"
+    endpoint = "login/oauth/autorhize"
+    query = {
+        "client_id": settings.github_client_id,
+        "state": str(login_request.login_request_id),
+    }
+
+    url = urllib.parse.urlunparse(
+        (method, host, endpoint, '', urllib.parse.urlencode(query))
+    )
+
+    return url

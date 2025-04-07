@@ -7,10 +7,11 @@ from datetime import datetime
 from sqlmodel import Field, SQLModel
 
 from soauth.core.user import UserData
+import uuid
 
 
 class User(SQLModel):
-    uid: int = Field(primary_key=True)
+    user_id: uuid.uuid7 = Field(primary_key=True, default_factory=uuid.uuid7)
 
     name: str = Field()
     username: str = Field(unique=True)
@@ -65,7 +66,7 @@ class User(SQLModel):
 
     def to_core(self) -> UserData:
         return UserData(
-            uid=self.uid,
+            user_id=self.user_id,
             username=self.username,
             email=self.email,
             grants=set(self.grants.split(" ")),

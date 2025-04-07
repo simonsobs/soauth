@@ -5,11 +5,11 @@ ORM for authentication data
 from datetime import datetime
 
 from sqlmodel import Field, SQLModel
+import uuid
 
 
 class RefreshKey(SQLModel):
-    uid: int = Field(primary_key=True)
-    uuid: str
+    refresh_key_id: uuid.uuid7 = Field(primary_key=True, default_factory=uuid.uuid7)
 
     user_id: int = Field()  # Foreign key into users table
     app_id: int = Field()  # Foreign key into app table

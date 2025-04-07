@@ -18,6 +18,7 @@ dependencies = [
     "bcrypt",
     "httpx",
     "xxhash",
+    "fastapi",
 ]
 
 [project.optional-dependencies]

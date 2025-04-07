@@ -36,7 +36,7 @@ async def create_auth_key(
     )
 
     signed_payload = sign_payload(
-        app_id=app.uid,
+        app_id=app.app_id,
         key_password=settings.key_password,
         private_key=app.private_key,
         key_pair_type=app.key_pair_type,

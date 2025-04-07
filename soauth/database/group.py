@@ -5,10 +5,11 @@ Group ORM
 from datetime import datetime
 
 from sqlmodel import Field, SQLModel
+import uuid
 
 
 class Group(SQLModel):
-    uid: int = Field(primary_key=True)
+    group_id: uuid.uuid7 = Field(primary_key=True, default_factory=uuid.uuid7)
 
     name: str = Field(unique=True)
     created_by: int  # Foreign key into users table

@@ -5,10 +5,11 @@ Applications/TLDs accessible from the auth server.
 from datetime import datetime
 
 from sqlmodel import Field, SQLModel
+import uuid
 
 
 class App(SQLModel):
-    uid: int = Field(primary_key=True)
+    app_id: uuid.uuid7 = Field(primary_key=True, default_factory=uuid.uuid7)
 
     created_by: int = Field()  # Foreign key into users
     created_at: datetime

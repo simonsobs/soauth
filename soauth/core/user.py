@@ -2,9 +2,9 @@
 A shared user object that is serialized.
 """
 
-from soauth.core.uuid import uuid7, UUID
-
 import pydantic
+
+from soauth.core.uuid import UUID
 
 
 class UserData(pydantic.BaseModel):

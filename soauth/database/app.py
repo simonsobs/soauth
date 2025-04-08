@@ -2,10 +2,11 @@
 Applications/TLDs accessible from the auth server.
 """
 
-from soauth.core.uuid import uuid7, UUID
 from datetime import datetime
 
 from sqlmodel import Field, SQLModel
+
+from soauth.core.uuid import UUID, uuid7
 
 
 class App(SQLModel, table=True):

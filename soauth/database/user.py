@@ -2,12 +2,16 @@
 ORM for user information.
 """
 
-from soauth.core.uuid import uuid7, UUID
 from datetime import datetime
+from typing import TYPE_CHECKING
 
-from sqlmodel import Field, SQLModel, Relationship
+from sqlmodel import Field, Relationship, SQLModel
 
 from soauth.core.user import UserData
+from soauth.core.uuid import UUID, uuid7
+
+if TYPE_CHECKING:
+    from .group import GroupMembership
 
 
 class User(SQLModel, table=True):
@@ -30,7 +34,9 @@ class User(SQLModel, table=True):
     number_of_access_tokens: int = 0
 
     # Need to link to group membership AND MAKE SURE CASCADING DELETE WORKS
-    groups: list['GroupMembership'] = Relationship(back_populates="user", cascade_delete=True)
+    groups: list["GroupMembership"] = Relationship(
+        back_populates="user", cascade_delete=True
+    )
 
     def has_grant(self, grant: str) -> bool:
         """

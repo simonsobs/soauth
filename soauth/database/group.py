@@ -2,10 +2,15 @@
 Group ORM
 """
 
-from soauth.core.uuid import uuid7, UUID
 from datetime import datetime
+from typing import TYPE_CHECKING
 
-from sqlmodel import Field, SQLModel, Relationship
+from sqlmodel import Field, Relationship, SQLModel
+
+from soauth.core.uuid import UUID, uuid7
+
+if TYPE_CHECKING:
+    from .user import User
 
 
 class Group(SQLModel, table=True):
@@ -16,7 +21,9 @@ class Group(SQLModel, table=True):
     created_by: "User" = Relationship()
     created_at: datetime
 
-    members: list["GroupMembership"] = Relationship(back_populates="group", cascade_delete=True)
+    members: list["GroupMembership"] = Relationship(
+        back_populates="group", cascade_delete=True
+    )
 
 
 class GroupMembership(SQLModel, table=True):
@@ -25,8 +32,12 @@ class GroupMembership(SQLModel, table=True):
     """
 
     # A composite primary key of these two is pretty much it.
-    user_id: UUID = Field(primary_key=True, foreign_key="user.user_id")  # Foreign key into Users table
-    group_id: UUID = Field(primary_key=True, foreign_key="group.group_id")  # Foreign key into Group table
+    user_id: UUID = Field(
+        primary_key=True, foreign_key="user.user_id"
+    )  # Foreign key into Users table
+    group_id: UUID = Field(
+        primary_key=True, foreign_key="group.group_id"
+    )  # Foreign key into Group table
 
     user: "User" = Relationship(back_populates="groups")
     group: "Group" = Relationship(back_populates="members")

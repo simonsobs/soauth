@@ -2,7 +2,6 @@
 Login request handling.
 """
 
-from soauth.core.uuid import uuid7, UUID
 from datetime import datetime
 from urllib.parse import urlparse
 
@@ -10,6 +9,7 @@ from sqlalchemy import delete, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from soauth.config.settings import Settings
+from soauth.core.uuid import UUID
 from soauth.database.app import App
 from soauth.database.login import LoginRequest
 from soauth.database.user import User

@@ -4,7 +4,9 @@ Core configuration
 
 import pytest_asyncio
 from testcontainers.postgres import PostgresContainer
+
 from soauth.config.settings import Settings
+
 
 @pytest_asyncio.fixture(scope="session")
 def database_container():
@@ -16,7 +18,7 @@ def database_container():
             "database_port": container.get_exposed_port(container.port),
             "database_host": "localhost",
             "database_db": container.dbname,
-            "database_echo": True
+            "database_echo": True,
         }
 
 
@@ -27,15 +29,10 @@ def server_settings(database_container):
         github_client_id="NONE",
         github_client_secret="NONE",
         github_redirect_uri="NONE",
-        github_organization_checks=["NONE"]
+        github_organization_checks=["NONE"],
     )
-
 
 
 @pytest_asyncio.fixture(scope="session")
 def database(server_settings: Settings):
-    from soauth.database.meta import ALL_TABLES
     server_settings.sync_manager().create_all()
-
-    
-

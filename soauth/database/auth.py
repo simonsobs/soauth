@@ -2,10 +2,11 @@
 ORM for authentication data
 """
 
-from soauth.core.uuid import uuid7, UUID
 from datetime import datetime
 
 from sqlmodel import Field, SQLModel
+
+from soauth.core.uuid import UUID, uuid7
 
 
 class RefreshKey(SQLModel, table=True):

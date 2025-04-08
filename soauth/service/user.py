@@ -4,15 +4,13 @@ Service layer for users
 
 from datetime import datetime
 
-from sqlalchemy import select, delete as db_delete
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from soauth.config.managers import AsyncSessionManager
+from structlog import BoundLogger
 
+from soauth.core.uuid import UUID
 from soauth.database.group import Group, GroupMembership
 from soauth.database.user import User
-
-from structlog import BoundLogger
-from soauth.core.uuid import uuid7, UUID
 
 
 class UserNotFound(Exception):
@@ -20,7 +18,12 @@ class UserNotFound(Exception):
 
 
 async def create(
-    user_name: str, email: str, full_name: str, grants: str, conn: AsyncSession, log: BoundLogger
+    user_name: str,
+    email: str,
+    full_name: str,
+    grants: str,
+    conn: AsyncSession,
+    log: BoundLogger,
 ) -> User:
     """
     Creates a user, if they do not exist.
@@ -40,9 +43,7 @@ async def create(
     )
 
     member = GroupMembership(
-        user_id=user.user_id,
-        group_id=group.group_id,
-        created_at=current_time
+        user_id=user.user_id, group_id=group.group_id, created_at=current_time
     )
 
     conn.add_all([user, group, member])
@@ -72,7 +73,9 @@ async def read_by_name(user_name: str, conn: AsyncSession) -> User:
     return res
 
 
-async def add_grant(user_name: str, grant: str, conn: AsyncSession, log: BoundLogger) -> User:
+async def add_grant(
+    user_name: str, grant: str, conn: AsyncSession, log: BoundLogger
+) -> User:
     log = log.bind(username=user_name, grant=grant)
     user = await read_by_name(user_name=user_name, conn=conn)
     log = log.bind(user_id=user.user_id)
@@ -85,7 +88,9 @@ async def add_grant(user_name: str, grant: str, conn: AsyncSession, log: BoundLo
     return user
 
 
-async def remove_grant(user_name: str, grant: str, conn: AsyncSession, log: BoundLogger) -> User:
+async def remove_grant(
+    user_name: str, grant: str, conn: AsyncSession, log: BoundLogger
+) -> User:
     log = log.bind(username=user_name, grant=grant)
     user = await read_by_name(user_name=user_name, conn=conn)
     log = log.bind(user_id=user.user_id)

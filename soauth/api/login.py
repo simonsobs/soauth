@@ -5,8 +5,7 @@ Main login flow - redirection to GitHub and handling of responses.
 from fastapi import APIRouter, HTTPException, Request, status
 from fastapi.responses import RedirectResponse
 
-from soauth.core.uuid import uuid7, UUID
-
+from soauth.core.uuid import UUID
 from soauth.service import app as app_service
 from soauth.service import flow as flow_service
 from soauth.service import github as github_service

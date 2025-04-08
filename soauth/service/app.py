@@ -9,9 +9,9 @@ from structlog import BoundLogger
 
 from soauth.config.settings import Settings
 from soauth.core.cryptography import generate_key_pair
+from soauth.core.uuid import UUID
 from soauth.database.app import App
 from soauth.database.user import User
-from soauth.core.uuid import uuid7, UUID
 
 
 class AppNotFound(Exception):
@@ -22,7 +22,7 @@ async def create(
     domain: str, user: User, settings: Settings, conn: AsyncSession, log: BoundLogger
 ) -> App:
     log.bind(user=user.user_id, domain=domain, key_pair_type=settings.key_pair_type)
-    
+
     public_key, private_key = generate_key_pair(
         key_pair_type=settings.key_pair_type, key_password=settings.key_password
     )
@@ -55,7 +55,9 @@ async def read_by_id(app_id: UUID, conn: AsyncSession) -> App:
     return res
 
 
-async def refresh_keys(app_id: UUID, settings: Settings, conn: AsyncSession, log: BoundLogger) -> App:
+async def refresh_keys(
+    app_id: UUID, settings: Settings, conn: AsyncSession, log: BoundLogger
+) -> App:
     log.bind(app_id=app_id, key_paid_type=settings.key_pair_type)
     app = await read_by_id(app_id=app_id, conn=conn)
 
@@ -70,7 +72,7 @@ async def refresh_keys(app_id: UUID, settings: Settings, conn: AsyncSession, log
     conn.add(app)
     await conn.commit()
     await conn.refresh(app)
-    
+
     await log.ainfo("app.key_refreshed")
 
     return app

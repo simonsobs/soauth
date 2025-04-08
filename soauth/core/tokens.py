@@ -2,11 +2,12 @@
 Tools for encoding, building, and decoding JWTs.
 """
 
-from soauth.core.uuid import uuid7, UUID
 from datetime import datetime, timedelta
 from typing import Any
 
 import jwt
+
+from soauth.core.uuid import uuid7
 
 from .cryptography import (
     EncryptionSerializationError,
@@ -131,7 +132,7 @@ def build_payload_with_claims(
         "exp": expiration_time,
         "nbf": valid_from if valid_from is not None else current_time,
         "iat": current_time,
-        "uuid": str(uuid.uuid4()),
+        "uuid": str(uuid7()),
         **base_payload,
     }
 
@@ -183,6 +184,6 @@ def refresh_refresh_key_payload(payload: dict[str, Any]) -> dict[str, Any]:
 
     new_payload["iat"] = current_time
     new_payload["nbf"] = current_time
-    new_payload["uuid"] = str(uuid.uuid4())
+    new_payload["uuid"] = str(uuid7())
 
     return new_payload

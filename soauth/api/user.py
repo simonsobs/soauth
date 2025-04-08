@@ -37,12 +37,10 @@ async def home(
         )
     except KeyDecodeError:
         return HTMLResponse("Access token invalid/expired")
-    
+
     if "simonsobs" in payload["grants"]:
         proprietary = "<p>Congratulations, you have access to proprietary data!</p><img src='https://upload.wikimedia.org/wikipedia/en/1/1f/Pokémon_Charizard_art.png' />"
     else:
         proprietary = ""
-
-        
 
     return HTMLResponse(f"<h1>Hello, {payload['username']}</h1>{proprietary}")

@@ -15,10 +15,10 @@ class RefreshKey(SQLModel, table=True):
 
     user_id: UUID = Field(
         foreign_key="user.user_id", ondelete="CASCADE"
-    )  # Foreign key into users table
+    )
     app_id: UUID = Field(
         foreign_key="app.app_id", ondelete="CASCADE"
-    )  # Foreign key into app table
+    )
 
     hash_algorithm: str
     hashed_content: str
@@ -28,7 +28,7 @@ class RefreshKey(SQLModel, table=True):
     revoked: bool
     previous: Optional[UUID] = Field(
         foreign_key="refreshkey.refresh_key_id", default=None
-    )  # Foreign key into this table
+    )
 
     created_at: datetime
     expires_at: datetime

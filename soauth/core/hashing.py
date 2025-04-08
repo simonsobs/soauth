@@ -2,7 +2,9 @@
 Utilities for hashing and comparing hashes.
 """
 
-from hashlib import _Hash
+from __future__ import annotations
+
+import hashlib
 
 import xxhash
 
@@ -11,7 +13,7 @@ class UnsupportedHashAlgorithm(Exception):
     pass
 
 
-def match_name_to_algorithm(name: str) -> _Hash:
+def match_name_to_algorithm(name: str) -> hashlib._Hash:
     match name:
         case "xxh3":
             return xxhash.xxh3_64

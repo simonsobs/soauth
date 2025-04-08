@@ -9,9 +9,11 @@ from sqlmodel import Field, Relationship, SQLModel
 
 from soauth.core.user import UserData
 from soauth.core.uuid import UUID, uuid7
+from soauth.database.group import GroupMembership
 
 if TYPE_CHECKING:
-    from .group import GroupMembership
+    from .app import App
+    from .group import Group
 
 
 class User(SQLModel, table=True):
@@ -29,14 +31,18 @@ class User(SQLModel, table=True):
     gh_last_logged_in: datetime | None = None
 
     # Access token usage
-    last_access_token: str | None = None
+    last_access_token: UUID | None = None
     last_access_time: datetime | None = None
     number_of_access_tokens: int = 0
 
-    # Need to link to group membership AND MAKE SURE CASCADING DELETE WORKS
-    groups: list["GroupMembership"] = Relationship(
-        back_populates="user", cascade_delete=True
+    # Group membership is important! We should always emit it.
+    groups: list["Group"] = Relationship(
+        back_populates="members",
+        link_model=GroupMembership,
+        sa_relationship_kwargs=dict(lazy="joined"),
     )
+
+    managed_apps: list["App"] = Relationship(back_populates="created_by")
 
     def has_grant(self, grant: str) -> bool:
         """
@@ -76,5 +82,5 @@ class User(SQLModel, table=True):
             user_name=self.user_name,
             email=self.email,
             grants=set(self.grants.split(" ")),
-            groups=set(x.name for x in self.groups),
+            groups=set(x.group_name for x in self.groups),
         )

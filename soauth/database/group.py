@@ -3,7 +3,7 @@ Group ORM
 """
 
 from datetime import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from sqlmodel import Field, Relationship, SQLModel
 
@@ -11,6 +11,25 @@ from soauth.core.uuid import UUID, uuid7
 
 if TYPE_CHECKING:
     from .user import User
+
+
+class GroupMembership(SQLModel, table=True):
+    """
+    A record of a user's group membership.
+    """
+
+    # A composite primary key of these two is pretty much it.
+    user_id: Optional[UUID] = Field(
+        primary_key=True, foreign_key="user.user_id"
+    )  # Foreign key into Users table
+    group_id: Optional[UUID] = Field(
+        primary_key=True, foreign_key="group.group_id"
+    )  # Foreign key into Group table
+
+    # user: "User" = Relationship(back_populates="groups")
+    # group: "Group" = Relationship(back_populates="members")
+
+    # created_at: datetime
 
 
 class Group(SQLModel, table=True):
@@ -21,25 +40,7 @@ class Group(SQLModel, table=True):
     created_by: "User" = Relationship()
     created_at: datetime
 
-    members: list["GroupMembership"] = Relationship(
-        back_populates="group", cascade_delete=True
+    members: list["User"] = Relationship(
+        back_populates="groups",
+        link_model=GroupMembership,
     )
-
-
-class GroupMembership(SQLModel, table=True):
-    """
-    A record of a user's group membership.
-    """
-
-    # A composite primary key of these two is pretty much it.
-    user_id: UUID = Field(
-        primary_key=True, foreign_key="user.user_id"
-    )  # Foreign key into Users table
-    group_id: UUID = Field(
-        primary_key=True, foreign_key="group.group_id"
-    )  # Foreign key into Group table
-
-    user: "User" = Relationship(back_populates="groups")
-    group: "Group" = Relationship(back_populates="members")
-
-    created_at: datetime

@@ -3,16 +3,21 @@ Applications/TLDs accessible from the auth server.
 """
 
 from datetime import datetime
+from typing import TYPE_CHECKING, Optional
 
-from sqlmodel import Field, SQLModel
+from sqlmodel import Field, Relationship, SQLModel
 
 from soauth.core.uuid import UUID, uuid7
+
+if TYPE_CHECKING:
+    from .user import User
 
 
 class App(SQLModel, table=True):
     app_id: UUID = Field(primary_key=True, default_factory=uuid7)
 
-    created_by: int = Field()  # Foreign key into users
+    created_by_user_id: UUID | None = Field(foreign_key="user.user_id")
+    created_by: Optional["User"] = Relationship(back_populates="managed_apps")
     created_at: datetime
 
     domain: str

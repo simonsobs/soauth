@@ -21,14 +21,17 @@ class AppNotFound(Exception):
 async def create(
     domain: str, user: User, settings: Settings, conn: AsyncSession, log: BoundLogger
 ) -> App:
-    log.bind(user=user.user_id, domain=domain, key_pair_type=settings.key_pair_type)
+    log = log.bind(
+        user=user.user_id, domain=domain, key_pair_type=settings.key_pair_type
+    )
 
     public_key, private_key = generate_key_pair(
         key_pair_type=settings.key_pair_type, key_password=settings.key_password
     )
 
     app = App(
-        created_by=user.user_id,
+        created_by_user_id=user.user_id,
+        created_by=user,
         created_at=datetime.now(),
         domain=domain,
         key_pair_type=settings.key_pair_type,
@@ -37,10 +40,8 @@ async def create(
     )
 
     conn.add(app)
-    await conn.commit()
-    await conn.refresh(app)
 
-    log.bind(app_id=app.app_id)
+    log = log.bind(app_id=app.app_id)
     await log.ainfo("app.created")
 
     return app
@@ -58,7 +59,7 @@ async def read_by_id(app_id: UUID, conn: AsyncSession) -> App:
 async def refresh_keys(
     app_id: UUID, settings: Settings, conn: AsyncSession, log: BoundLogger
 ) -> App:
-    log.bind(app_id=app_id, key_paid_type=settings.key_pair_type)
+    log = log.bind(app_id=app_id, key_pair_type=settings.key_pair_type)
     app = await read_by_id(app_id=app_id, conn=conn)
 
     public_key, private_key = generate_key_pair(
@@ -70,8 +71,6 @@ async def refresh_keys(
     app.private_key = private_key
 
     conn.add(app)
-    await conn.commit()
-    await conn.refresh(app)
 
     await log.ainfo("app.key_refreshed")
 
@@ -79,12 +78,15 @@ async def refresh_keys(
 
 
 async def delete(app_id: UUID, conn: AsyncSession, log: BoundLogger) -> None:
-    log.bind(app_id=app_id)
+    log = log.bind(app_id=app_id)
     app = await read_by_id(app_id=app_id, conn=conn)
-    log.bind(created_by=app.created_by, created_at=app.created_at, domain=app.domain)
+    log = log.bind(
+        created_by_user_id=app.created_by_user_id,
+        created_at=app.created_at,
+        domain=app.domain,
+    )
 
     await conn.delete(app)
-    await conn.commit()
 
     await log.ainfo("app.deleted")
 

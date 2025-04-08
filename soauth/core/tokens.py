@@ -7,7 +7,7 @@ from typing import Any
 
 import jwt
 
-from soauth.core.uuid import uuid7
+from soauth.core.uuid import UUID, uuid7
 
 from .cryptography import (
     EncryptionSerializationError,
@@ -31,8 +31,18 @@ def match_key_pair_type_to_pyjwt_algorithm(key_pair_type: str) -> str:
     return algorithm
 
 
+def filter_payload_item_for_serialization(p) -> Any:
+    match p:
+        case UUID():
+            return p.int
+        case set():
+            return list(p)
+        case _:
+            return p
+
+
 def sign_payload(
-    app_id: int,
+    app_id: UUID,
     key_password: str,
     private_key: bytes,
     key_pair_type: str,
@@ -60,7 +70,12 @@ def sign_payload(
     algorithm = match_key_pair_type_to_pyjwt_algorithm(key_pair_type=key_pair_type)
 
     encrypted = jwt.encode(
-        payload=payload, key=key, algorithm=algorithm, headers={"aid": app_id}
+        payload={
+            x: filter_payload_item_for_serialization(p) for x, p in payload.items()
+        },
+        key=key,
+        algorithm=algorithm,
+        headers={"aid": app_id.int},
     )
 
     return encrypted
@@ -132,7 +147,7 @@ def build_payload_with_claims(
         "exp": expiration_time,
         "nbf": valid_from if valid_from is not None else current_time,
         "iat": current_time,
-        "uuid": str(uuid7()),
+        "uuid": uuid7(),
         **base_payload,
     }
 
@@ -184,6 +199,6 @@ def refresh_refresh_key_payload(payload: dict[str, Any]) -> dict[str, Any]:
 
     new_payload["iat"] = current_time
     new_payload["nbf"] = current_time
-    new_payload["uuid"] = str(uuid7())
+    new_payload["uuid"] = uuid7()
 
     return new_payload

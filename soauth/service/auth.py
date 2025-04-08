@@ -2,6 +2,8 @@
 Creation/deletion for authentication keys.
 """
 
+from datetime import datetime
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from soauth.config.settings import Settings
@@ -21,15 +23,20 @@ async def create_auth_key(
     Returned is the packaged and encrypted data.
     """
 
-    user = await conn.get(User, refresh_key.user_id)
+    with conn.no_autoflush:
+        user = await conn.get(User, refresh_key.user_id, populate_existing=True)
+
     app = await conn.get(App, refresh_key.app_id)
 
     user_data = user.to_core()
     base_payload = user_data.model_dump()
 
+    current_time = datetime.now()
+    expiration_time = current_time + settings.access_key_expiry
+
     payload = build_payload_with_claims(
         base_payload=base_payload,
-        expiration_time=settings.access_key_expiry,
+        expiration_time=expiration_time,
         valid_from=None,
         issuer=None,
         audience=None,
@@ -50,6 +57,5 @@ async def create_auth_key(
     user.number_of_access_tokens += 1
 
     conn.add_all([refresh_key, user])
-    await conn.commit()
 
     return signed_payload

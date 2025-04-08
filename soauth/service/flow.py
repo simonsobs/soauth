@@ -5,6 +5,7 @@ a new access token.
 """
 
 from sqlalchemy.ext.asyncio import AsyncSession
+from structlog import BoundLogger
 
 from soauth.config.settings import Settings
 from soauth.database.app import App
@@ -20,7 +21,7 @@ from .refresh import (
 
 
 async def primary(
-    user: User, app: App, settings: Settings, conn: AsyncSession
+    user: User, app: App, settings: Settings, conn: AsyncSession, log: BoundLogger
 ) -> tuple[str]:
     """
     Primary authentication flow - assumes that you just created the 'user'
@@ -40,6 +41,8 @@ async def primary(
         Server settings.
     conn
         Database session.
+    log
+        StructLog logger to use.
 
     Returns
     -------
@@ -48,13 +51,17 @@ async def primary(
     encoded_refresh_key
         The new refresh key.
     """
+    log = log.bind(user_id=user.user_id, app_id=app.app_id)
     encoded_refresh_key, refresh_key = await create_refresh_key(
         user=user, app=app, settings=settings, conn=conn
     )
+    log = log.bind(refresh_key_id=refresh_key.refresh_key_id)
+    await log.ainfo("primary.refresh_key_created")
 
     encoded_auth_key = await create_auth_key(
-        refresh_key=refresh_key, settings=Settings, conn=conn
+        refresh_key=refresh_key, settings=settings, conn=conn
     )
+    await log.ainfo("primary.auth_key_created")
 
     return encoded_auth_key, encoded_refresh_key
 

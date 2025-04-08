@@ -33,6 +33,7 @@ async def test_create_user(server_settings, session_manager, logger):
         async with conn.begin():
             user = await user_service.read_by_id(user_id=USER_ID, conn=conn)
 
+            assert len(user.groups) > 0
             assert user.has_grant("test_grant")
 
     async with session_manager.session() as conn:
@@ -60,5 +61,3 @@ async def test_create_user(server_settings, session_manager, logger):
         async with session_manager.session() as conn:
             async with conn.begin():
                 user = await user_service.read_by_name(user_name=USER_NAME, conn=conn)
-
-    raise Exception

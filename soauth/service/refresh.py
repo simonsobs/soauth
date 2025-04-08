@@ -31,8 +31,8 @@ async def expire_refresh_keys(user: User, app: App, conn: AsyncSession):
     """
     Expires all refresh keys for a given user/app combination.
     """
-    query = select(RefreshKey).filter_by(
-        RefreshKey.created_by == user.user_id,
+    query = select(RefreshKey).filter(
+        RefreshKey.user_id == user.user_id,
         RefreshKey.app_id == app.app_id,
         RefreshKey.revoked is False,
     )
@@ -44,8 +44,6 @@ async def expire_refresh_keys(user: User, app: App, conn: AsyncSession):
         key.revoked = True
 
         conn.add(key)
-
-    await conn.commit()
 
     return
 
@@ -71,6 +69,7 @@ async def create_refresh_key(
     uuid = payload["uuid"]
 
     content = sign_payload(
+        app_id=app.app_id,
         key_password=settings.key_password,
         private_key=app.private_key,
         key_pair_type=app.key_pair_type,
@@ -89,14 +88,11 @@ async def create_refresh_key(
         used=0,
         revoked=False,
         previous=None,
-        created_by=user,
         created_at=create_time,
         expires_at=expiry_time,
     )
 
     conn.add(refresh_key)
-    await conn.commit()
-    await conn.refresh(refresh_key)
 
     return content, refresh_key
 
@@ -171,6 +167,7 @@ async def refresh_refresh_key(
     uuid = new_payload["uuid"]
 
     content = sign_payload(
+        app_id=app.app_id,
         key_password=settings.key_password,
         private_key=app.private_key,
         key_pair_type=app.key_pair_type,

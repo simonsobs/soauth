@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from structlog import BoundLogger
 
 from soauth.core.uuid import UUID
-from soauth.database.group import Group, GroupMembership
+from soauth.database.group import Group
 from soauth.database.user import User
 
 
@@ -40,13 +40,10 @@ async def create(
         created_by_user_id=user.user_id,
         created_by=user,
         created_at=current_time,
+        members=[user],
     )
 
-    member = GroupMembership(
-        user_id=user.user_id, group_id=group.group_id, created_at=current_time
-    )
-
-    conn.add_all([user, group, member])
+    conn.add_all([user, group])
 
     log = log.bind(user_id=user.user_id, group_id=group.group_id)
     await log.ainfo("user.created")
@@ -65,7 +62,7 @@ async def read_by_id(user_id: UUID, conn: AsyncSession) -> User:
 
 async def read_by_name(user_name: str, conn: AsyncSession) -> User:
     query = select(User).filter(User.user_name == user_name)
-    res = (await conn.execute(query)).scalar_one_or_none()
+    res = (await conn.execute(query)).unique().scalar_one_or_none()
 
     if res is None:
         raise UserNotFound(f"User with name {user_name} not found in the database")

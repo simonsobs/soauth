@@ -3,6 +3,7 @@ User-facing APIs.
 """
 
 from fastapi import APIRouter, Request
+from fastapi.responses import HTMLResponse
 
 from soauth.core.tokens import (
     KeyDecodeError,
@@ -23,7 +24,7 @@ async def home(
     access_token = request.cookies.get("access_token", None)
 
     if access_token is None:
-        return "No access token found"
+        return HTMLResponse("No access token found")
 
     app_id = app_id_from_signed_payload(access_token)
     app = await app_service.read_by_id(app_id, conn=conn)
@@ -35,6 +36,13 @@ async def home(
             key_pair_type=app.key_pair_type,
         )
     except KeyDecodeError:
-        return "Access token invalid/expired"
+        return HTMLResponse("Access token invalid/expired")
+    
+    if "simonsobs" in payload["grants"]:
+        proprietary = "<p>Congratulations, you have access to proprietary data!</p><img src='https://upload.wikimedia.org/wikipedia/en/1/1f/Pokémon_Charizard_art.png' />"
+    else:
+        proprietary = ""
 
-    return f"Hello, {payload['username']}"
+        
+
+    return HTMLResponse(f"<h1>Hello, {payload['username']}</h1>{proprietary}")

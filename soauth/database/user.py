@@ -2,19 +2,19 @@
 ORM for user information.
 """
 
-import uuid
+from soauth.core.uuid import uuid7, UUID
 from datetime import datetime
 
-from sqlmodel import Field, SQLModel
+from sqlmodel import Field, SQLModel, Relationship
 
 from soauth.core.user import UserData
 
 
-class User(SQLModel):
-    user_id: uuid.uuid7 = Field(primary_key=True, default_factory=uuid.uuid7)
+class User(SQLModel, table=True):
+    user_id: UUID = Field(primary_key=True, default_factory=uuid7)
 
-    name: str = Field()
-    username: str = Field(unique=True)
+    full_name: str = Field()
+    user_name: str = Field(unique=True)
     email: str
 
     # A list of grants (space separated!) that this user has.
@@ -30,7 +30,7 @@ class User(SQLModel):
     number_of_access_tokens: int = 0
 
     # Need to link to group membership AND MAKE SURE CASCADING DELETE WORKS
-    groups = []
+    groups: list['GroupMembership'] = Relationship(back_populates="user", cascade_delete=True)
 
     def has_grant(self, grant: str) -> bool:
         """
@@ -67,7 +67,7 @@ class User(SQLModel):
     def to_core(self) -> UserData:
         return UserData(
             user_id=self.user_id,
-            username=self.username,
+            user_name=self.user_name,
             email=self.email,
             grants=set(self.grants.split(" ")),
             groups=set(x.name for x in self.groups),

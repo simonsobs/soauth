@@ -2,7 +2,7 @@
 Tools for encoding, building, and decoding JWTs.
 """
 
-import uuid
+from soauth.core.uuid import uuid7, UUID
 from datetime import datetime, timedelta
 from typing import Any
 

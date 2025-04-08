@@ -70,7 +70,7 @@ class Settings(BaseSettings):
         )
 
     def sync_manager(self) -> SyncSessionManager:
-        return SyncSessionManager(connection_url=self.sync_rui, echo=self.database_echo)
+        return SyncSessionManager(connection_url=self.sync_uri, echo=self.database_echo)
 
     @property
     def async_uri(self) -> URL:
@@ -83,7 +83,7 @@ class Settings(BaseSettings):
             database=self.database_db,
         )
 
-    def async_manager(self) -> SyncSessionManager:
+    def async_manager(self) -> AsyncSessionManager:
         return AsyncSessionManager(
             connection_url=self.async_uri, echo=self.database_echo
         )

@@ -12,6 +12,7 @@ dependencies = [
     "sqlmodel",
     "psycopg_binary",
     "asyncpg",
+    "psycopg",
     "sqlalchemy[asyncio]",
     "pyjwt[crypto]",
     "cryptography",
@@ -19,6 +20,8 @@ dependencies = [
     "httpx",
     "xxhash",
     "fastapi",
+    "structlog",
+    "uuid7"
 ]
 
 [project.optional-dependencies]
@@ -29,6 +32,7 @@ dev = [
     "coverage",
     "pytest-cov",
     "pre-commit",
+    "testcontainers[postgres]"
 ]
 
 [tool.ruff.lint]

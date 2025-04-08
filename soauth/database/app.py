@@ -2,14 +2,14 @@
 Applications/TLDs accessible from the auth server.
 """
 
-import uuid
+from soauth.core.uuid import uuid7, UUID
 from datetime import datetime
 
 from sqlmodel import Field, SQLModel
 
 
-class App(SQLModel):
-    app_id: uuid.uuid7 = Field(primary_key=True, default_factory=uuid.uuid7)
+class App(SQLModel, table=True):
+    app_id: UUID = Field(primary_key=True, default_factory=uuid7)
 
     created_by: int = Field()  # Foreign key into users
     created_at: datetime

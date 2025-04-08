@@ -2,10 +2,10 @@
 Main login flow - redirection to GitHub and handling of responses.
 """
 
-import uuid
-
 from fastapi import APIRouter, HTTPException, Request, status
 from fastapi.responses import RedirectResponse
+
+from soauth.core.uuid import uuid7, UUID
 
 from soauth.service import app as app_service
 from soauth.service import flow as flow_service
@@ -20,7 +20,7 @@ login_router = APIRouter()
 
 @login_router.get("/login/{app_id}")
 async def login(
-    app_id: uuid.uuid7,
+    app_id: UUID,
     request: Request,
     settings: SettingsDependency,
     conn: DatabaseDependency,
@@ -34,7 +34,7 @@ async def login(
     `Referer` header.
     """
     try:
-        app = await app_service.read_by_id(uid=app_id, conn=conn)
+        app = await app_service.read_by_id(app_id=app_id, conn=conn)
     except app_service.AppNotFound:
         raise HTTPException(status.HTTP_404_NOT_FOUND, f"App {app_id} not found")
 
@@ -51,7 +51,7 @@ async def login(
 
 @login_router.get("/github")
 async def github(
-    code: str, state: uuid.uuid7, settings: SettingsDependency, conn: DatabaseDependency
+    code: str, state: UUID, settings: SettingsDependency, conn: DatabaseDependency
 ) -> RedirectResponse:
     """
     This endpoint is 'called' by GitHub itself, and attempts to complete

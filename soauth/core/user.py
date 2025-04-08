@@ -2,14 +2,14 @@
 A shared user object that is serialized.
 """
 
-import uuid
+from soauth.core.uuid import uuid7, UUID
 
 import pydantic
 
 
 class UserData(pydantic.BaseModel):
-    user_id: uuid.uuid7
-    username: str
+    user_id: UUID
+    user_name: str
     email: str
     grants: set[str]
     groups: set[str]

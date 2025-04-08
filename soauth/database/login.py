@@ -2,17 +2,17 @@
 Login request tracking.
 """
 
-import uuid
+from soauth.core.uuid import uuid7, UUID
 from datetime import datetime
 
 from sqlmodel import Field, SQLModel
 
 
-class LoginRequest(SQLModel):
-    login_request_id: uuid.uuid7 = Field(primary_key=True, default_factory=uuid.uuid7)
+class LoginRequest(SQLModel, table=True):
+    login_request_id: UUID = Field(primary_key=True, default_factory=uuid7)
 
-    app_id: uuid.uuid7  # Foreign key
-    user_id: uuid.uuid7 | None = None  # Foreign key
+    app_id: UUID  # Foreign key
+    user_id: UUID | None = None  # Foreign key
 
     redirect_to: str | None = None
 

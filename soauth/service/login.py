@@ -2,7 +2,7 @@
 Login request handling.
 """
 
-import uuid
+from soauth.core.uuid import uuid7, UUID
 from datetime import datetime
 from urllib.parse import urlparse
 
@@ -97,7 +97,7 @@ async def build_redirect(user: User, app: App, request: LoginRequest) -> str:
     return redirect_to
 
 
-async def read(login_request_id: uuid.uuid7, conn: AsyncSession) -> LoginRequest:
+async def read(login_request_id: UUID, conn: AsyncSession) -> LoginRequest:
     """
     Get a login request, and return it.
 

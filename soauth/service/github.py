@@ -79,7 +79,7 @@ async def github_check_orgs_without_login(
     """
 
     organization_info = await github_api_call(
-        None, url=f"https://api.github.com/users/{user.username}/orgs"
+        None, url=f"https://api.github.com/users/{user.user_name}/orgs"
     )
 
     user = apply_organization_grants(
@@ -150,11 +150,11 @@ async def github_login(code: str, settings: Settings, conn: AsyncSession) -> Use
     username = user_info["login"]
 
     try:
-        user = await read_by_name(username=username, conn=conn)
+        user = await read_by_name(user_name=username, conn=conn)
     except UserNotFound:
         user = User(
-            name=user_info["name"],
-            username=username,
+            full_name=user_info["name"],
+            user_name=username,
             email=user_info["email"],
         )
 

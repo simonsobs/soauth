@@ -2,14 +2,14 @@
 ORM for authentication data
 """
 
-import uuid
+from soauth.core.uuid import uuid7, UUID
 from datetime import datetime
 
 from sqlmodel import Field, SQLModel
 
 
-class RefreshKey(SQLModel):
-    refresh_key_id: uuid.uuid7 = Field(primary_key=True, default_factory=uuid.uuid7)
+class RefreshKey(SQLModel, table=True):
+    refresh_key_id: UUID = Field(primary_key=True, default_factory=uuid7)
 
     user_id: int = Field()  # Foreign key into users table
     app_id: int = Field()  # Foreign key into app table

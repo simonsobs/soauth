@@ -21,6 +21,7 @@ async def test_create_user(server_settings, session_manager, logger):
             )
 
             USER_ID = user.user_id
+            USER_NAME = user.user_name
 
     async with session_manager.session() as conn:
         async with conn.begin():
@@ -54,3 +55,10 @@ async def test_create_user(server_settings, session_manager, logger):
         async with session_manager.session() as conn:
             async with conn.begin():
                 user = await user_service.read_by_id(user_id=USER_ID, conn=conn)
+
+    with pytest.raises(user_service.UserNotFound):
+        async with session_manager.session() as conn:
+            async with conn.begin():
+                user = await user_service.read_by_name(user_name=USER_NAME, conn=conn)
+
+    raise Exception

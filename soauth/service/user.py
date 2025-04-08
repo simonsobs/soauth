@@ -29,7 +29,7 @@ async def create(
     Creates a user, if they do not exist.
     """
 
-    log = log.bind(username=user_name, email=email, grants=grants)
+    log = log.bind(user_name=user_name, email=email, grants=grants)
 
     current_time = datetime.now()
 
@@ -76,7 +76,7 @@ async def read_by_name(user_name: str, conn: AsyncSession) -> User:
 async def add_grant(
     user_name: str, grant: str, conn: AsyncSession, log: BoundLogger
 ) -> User:
-    log = log.bind(username=user_name, grant=grant)
+    log = log.bind(user_name=user_name, grant=grant)
     user = await read_by_name(user_name=user_name, conn=conn)
     log = log.bind(user_id=user.user_id)
 
@@ -91,7 +91,7 @@ async def add_grant(
 async def remove_grant(
     user_name: str, grant: str, conn: AsyncSession, log: BoundLogger
 ) -> User:
-    log = log.bind(username=user_name, grant=grant)
+    log = log.bind(user_name=user_name, grant=grant)
     user = await read_by_name(user_name=user_name, conn=conn)
     log = log.bind(user_id=user.user_id)
 

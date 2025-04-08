@@ -40,5 +40,5 @@ extend-select = ["I"]
 
 [tool.coverage.run]
 source = [
-    "lightcurvedb",
+    "soauth",
 ]

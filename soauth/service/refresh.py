@@ -5,7 +5,7 @@ Core functions for the auth flow, including connections to the GitHub APIs.
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import false, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from soauth.config.settings import Settings
@@ -18,6 +18,7 @@ from soauth.core.tokens import (
     refresh_refresh_key_payload,
     sign_payload,
 )
+from soauth.core.uuid import UUID
 from soauth.database.app import App
 from soauth.database.auth import RefreshKey
 from soauth.database.user import User
@@ -34,7 +35,7 @@ async def expire_refresh_keys(user: User, app: App, conn: AsyncSession):
     query = select(RefreshKey).filter(
         RefreshKey.user_id == user.user_id,
         RefreshKey.app_id == app.app_id,
-        RefreshKey.revoked is False,
+        RefreshKey.revoked == false(),
     )
 
     all_unexpired = (await conn.execute(query)).scalars().all()
@@ -79,7 +80,7 @@ async def create_refresh_key(
     hashed_content = checksum(content=content, hash_algorithm=settings.hash_algorithm)
 
     refresh_key = RefreshKey(
-        uuid=uuid,
+        refresh_key_id=uuid,
         user_id=user.user_id,
         app_id=app.app_id,
         hash_algorithm=settings.hash_algorithm,
@@ -118,6 +119,10 @@ async def decode_refresh_key(
             "Unable to reconstruct the application ID from the key"
         )
 
+    # UUIDs are serialized to integers
+    if isinstance(app_id, int):
+        app_id = UUID(int=app_id)
+
     app = await conn.get(App, app_id)
 
     if app is None:
@@ -148,9 +153,10 @@ async def refresh_refresh_key(
 
     uuid = payload["uuid"]
 
-    query = select(RefreshKey).filter(RefreshKey.uuid == uuid)
+    if isinstance(uuid, int):
+        uuid = UUID(int=uuid)
 
-    res = (await conn.execute(query)).scalar_one_or_none()
+    res = await conn.get(RefreshKey, uuid)
 
     if res is None:
         raise AuthorizationError("Prior key not found")
@@ -160,11 +166,17 @@ async def refresh_refresh_key(
 
     # We have an active key.
     new_payload = refresh_refresh_key_payload(payload)
-    app = res.app
+    app = await conn.get(App, res.app_id)
 
     create_time = new_payload["iat"]
     expiry_time = new_payload["exp"]
     uuid = new_payload["uuid"]
+
+    if isinstance(create_time, int):
+        create_time = datetime.fromtimestamp(create_time)
+
+    if isinstance(expiry_time, int):
+        expiry_time = datetime.fromtimestamp(expiry_time)
 
     content = sign_payload(
         app_id=app.app_id,
@@ -177,7 +189,7 @@ async def refresh_refresh_key(
     hashed_content = checksum(content=content, hash_algorithm=settings.hash_algorithm)
 
     refresh_key = RefreshKey(
-        uuid=uuid,
+        refresh_key_id=uuid,
         user_id=res.user_id,
         app_id=res.app_id,
         hash_algorithm=settings.hash_algorithm,
@@ -198,9 +210,6 @@ async def refresh_refresh_key(
     conn.add(refresh_key)
     conn.add(res)
 
-    await conn.commit()
-    await conn.refresh(refresh_key)
-
     return content, refresh_key
 
 
@@ -213,9 +222,10 @@ async def expire_refresh_key(
 
     uuid = payload["uuid"]
 
-    query = select(RefreshKey).filter(RefreshKey.refresh_key_id == uuid)
+    if isinstance(uuid, int):
+        uuid = UUID(int=uuid)
 
-    res = (await conn.execute(query)).scalar_one_or_none()
+    res = await conn.get(RefreshKey, uuid)
 
     if res is None:
         return

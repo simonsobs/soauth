@@ -13,12 +13,8 @@ from soauth.core.uuid import UUID, uuid7
 class RefreshKey(SQLModel, table=True):
     refresh_key_id: UUID = Field(primary_key=True, default_factory=uuid7)
 
-    user_id: UUID = Field(
-        foreign_key="user.user_id", ondelete="CASCADE"
-    )
-    app_id: UUID = Field(
-        foreign_key="app.app_id", ondelete="CASCADE"
-    )
+    user_id: UUID = Field(foreign_key="user.user_id", ondelete="CASCADE")
+    app_id: UUID = Field(foreign_key="app.app_id", ondelete="CASCADE")
 
     hash_algorithm: str
     hashed_content: str

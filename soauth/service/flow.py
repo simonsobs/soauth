@@ -98,7 +98,7 @@ async def secondary(
         payload=decoded_payload, settings=settings, conn=conn
     )
 
-    encoded_auth_key = create_auth_key(
+    encoded_auth_key = await create_auth_key(
         refresh_key=refresh_key, settings=settings, conn=conn
     )
 

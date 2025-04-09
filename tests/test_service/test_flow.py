@@ -41,7 +41,10 @@ async def test_primary_then_secondary(
     async with session_manager.session() as conn:
         async with conn.begin():
             auth, refresh = await flow_service.secondary(
-                encoded_refresh_key=refresh, settings=server_settings, conn=conn
+                encoded_refresh_key=refresh,
+                settings=server_settings,
+                conn=conn,
+                log=logger,
             )
 
     # Check we can decode it ok!
@@ -55,5 +58,10 @@ async def test_primary_then_secondary(
     async with session_manager.session() as conn:
         async with conn.begin():
             await flow_service.logout(
-                encoded_refresh_key=refresh, settings=server_settings, conn=conn
+                encoded_refresh_key=refresh,
+                settings=server_settings,
+                conn=conn,
+                log=logger,
             )
+
+    raise Exception

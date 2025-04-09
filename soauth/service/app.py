@@ -22,7 +22,7 @@ async def create(
     domain: str, user: User, settings: Settings, conn: AsyncSession, log: BoundLogger
 ) -> App:
     log = log.bind(
-        user=user.user_id, domain=domain, key_pair_type=settings.key_pair_type
+        user_id=user.user_id, domain=domain, key_pair_type=settings.key_pair_type
     )
 
     public_key, private_key = generate_key_pair(

@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from structlog import BoundLogger
 
 from soauth.config.settings import Settings
+from soauth.core.uuid import UUID
 from soauth.database.app import App
 from soauth.database.user import User
 
@@ -58,6 +59,12 @@ async def primary(
     log = log.bind(refresh_key_id=refresh_key.refresh_key_id)
     await log.ainfo("primary.refresh_key_created")
 
+    log = log.bind(
+        user_id=refresh_key.user_id,
+        app_id=refresh_key.app_id,
+        refresh_key_id=refresh_key.refresh_key_id,
+    )
+
     encoded_auth_key = await create_auth_key(
         refresh_key=refresh_key, settings=settings, conn=conn
     )
@@ -67,7 +74,7 @@ async def primary(
 
 
 async def secondary(
-    encoded_refresh_key: str, settings: Settings, conn: AsyncSession
+    encoded_refresh_key: str, settings: Settings, conn: AsyncSession, log: BoundLogger
 ) -> tuple[str]:
     """
     Secondary authentication flow - turn in your encoded refresh key
@@ -94,18 +101,42 @@ async def secondary(
         encoded_payload=encoded_refresh_key, conn=conn
     )
 
+    log = log.bind(
+        user_id=UUID(int=decoded_payload["user_id"]),
+        app_id=UUID(int=decoded_payload["app_id"]),
+        old_issued_at=decoded_payload["iat"],
+        old_expiry_time=decoded_payload["exp"],
+        old_refresh_key_id=UUID(int=decoded_payload["uuid"]),
+    )
+
     encoded_refresh_key, refresh_key = await refresh_refresh_key(
         payload=decoded_payload, settings=settings, conn=conn
     )
+
+    log = log.bind(
+        new_refresh_key_id=refresh_key.refresh_key_id,
+    )
+
+    await log.ainfo("secondary.refresh_key_exchanged")
 
     encoded_auth_key = await create_auth_key(
         refresh_key=refresh_key, settings=settings, conn=conn
     )
 
+    log = log.bind(
+        user_id=refresh_key.user_id,
+        app_id=refresh_key.app_id,
+        refresh_key_id=refresh_key.refresh_key_id,
+    )
+
+    await log.ainfo("secondary.auth_key_created")
+
     return encoded_auth_key, encoded_refresh_key
 
 
-async def logout(encoded_refresh_key: str, settings: Settings, conn: AsyncSession):
+async def logout(
+    encoded_refresh_key: str, settings: Settings, conn: AsyncSession, log: BoundLogger
+):
     """
     Expire a refresh key in the database and log out.
     """
@@ -114,6 +145,16 @@ async def logout(encoded_refresh_key: str, settings: Settings, conn: AsyncSessio
         encoded_payload=encoded_refresh_key, conn=conn
     )
 
+    log = log.bind(
+        user_id=UUID(int=decoded_payload["user_id"]),
+        app_id=UUID(int=decoded_payload["app_id"]),
+        issued_at=decoded_payload["iat"],
+        expiry_time=decoded_payload["exp"],
+        refresh_key_id=UUID(int=decoded_payload["uuid"]),
+    )
+
     await expire_refresh_key(payload=decoded_payload, settings=settings, conn=conn)
+
+    await log.ainfo("logout.completed")
 
     return

@@ -5,7 +5,7 @@ a new access token.
 """
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from structlog import BoundLogger
+from structlog.typing import FilteringBoundLogger
 
 from soauth.config.settings import Settings
 from soauth.core.uuid import UUID
@@ -14,6 +14,7 @@ from soauth.database.user import User
 
 from .auth import create_auth_key
 from .refresh import (
+    AuthorizationError,
     create_refresh_key,
     decode_refresh_key,
     expire_refresh_key,
@@ -22,7 +23,11 @@ from .refresh import (
 
 
 async def primary(
-    user: User, app: App, settings: Settings, conn: AsyncSession, log: BoundLogger
+    user: User,
+    app: App,
+    settings: Settings,
+    conn: AsyncSession,
+    log: FilteringBoundLogger,
 ) -> tuple[str]:
     """
     Primary authentication flow - assumes that you just created the 'user'
@@ -74,7 +79,10 @@ async def primary(
 
 
 async def secondary(
-    encoded_refresh_key: str, settings: Settings, conn: AsyncSession, log: BoundLogger
+    encoded_refresh_key: str,
+    settings: Settings,
+    conn: AsyncSession,
+    log: FilteringBoundLogger,
 ) -> tuple[str]:
     """
     Secondary authentication flow - turn in your encoded refresh key
@@ -135,15 +143,23 @@ async def secondary(
 
 
 async def logout(
-    encoded_refresh_key: str, settings: Settings, conn: AsyncSession, log: BoundLogger
+    encoded_refresh_key: str,
+    settings: Settings,
+    conn: AsyncSession,
+    log: FilteringBoundLogger,
 ):
     """
     Expire a refresh key in the database and log out.
     """
 
-    decoded_payload = await decode_refresh_key(
-        encoded_payload=encoded_refresh_key, conn=conn
-    )
+    try:
+        decoded_payload = await decode_refresh_key(
+            encoded_payload=encoded_refresh_key, conn=conn
+        )
+    except AuthorizationError:
+        # Their refresh key was never valid anyway!
+        await log.ainfo("logout.invalid_refresh_key")
+        return
 
     log = log.bind(
         user_id=UUID(int=decoded_payload["user_id"]),

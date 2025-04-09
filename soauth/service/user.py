@@ -6,7 +6,7 @@ from datetime import datetime
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from structlog import BoundLogger
+from structlog.typing import FilteringBoundLogger
 
 from soauth.core.uuid import UUID
 from soauth.database.group import Group
@@ -23,7 +23,7 @@ async def create(
     full_name: str,
     grants: str,
     conn: AsyncSession,
-    log: BoundLogger,
+    log: FilteringBoundLogger,
 ) -> User:
     """
     Creates a user, if they do not exist.
@@ -71,7 +71,7 @@ async def read_by_name(user_name: str, conn: AsyncSession) -> User:
 
 
 async def add_grant(
-    user_name: str, grant: str, conn: AsyncSession, log: BoundLogger
+    user_name: str, grant: str, conn: AsyncSession, log: FilteringBoundLogger
 ) -> User:
     log = log.bind(user_name=user_name, grant=grant)
     user = await read_by_name(user_name=user_name, conn=conn)
@@ -86,7 +86,7 @@ async def add_grant(
 
 
 async def remove_grant(
-    user_name: str, grant: str, conn: AsyncSession, log: BoundLogger
+    user_name: str, grant: str, conn: AsyncSession, log: FilteringBoundLogger
 ) -> User:
     log = log.bind(user_name=user_name, grant=grant)
     user = await read_by_name(user_name=user_name, conn=conn)
@@ -100,7 +100,7 @@ async def remove_grant(
     return user
 
 
-async def delete(user_name: str, conn: AsyncSession, log: BoundLogger):
+async def delete(user_name: str, conn: AsyncSession, log: FilteringBoundLogger):
     """
     Deletes both the 'User' and 'Group' model.
     """

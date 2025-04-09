@@ -10,6 +10,7 @@ from soauth.core.uuid import UUID
 class UserData(pydantic.BaseModel):
     user_id: UUID
     user_name: str
+    full_name: str
     email: str
     grants: set[str]
     groups: set[str]

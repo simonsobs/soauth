@@ -35,6 +35,9 @@ dev = [
     "testcontainers[postgres]"
 ]
 
+[project.scripts]
+soauth = "soauth.scripts.cli:main"
+
 [tool.ruff.lint]
 extend-select = ["I"]
 

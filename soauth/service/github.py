@@ -12,6 +12,7 @@ from typing import Any
 
 import httpx
 from sqlalchemy.ext.asyncio import AsyncSession
+from structlog.typing import FilteringBoundLogger
 
 from soauth.config.settings import Settings
 from soauth.database.login import LoginRequest
@@ -59,7 +60,7 @@ def apply_organization_grants(
     for organization in settings.github_organization_checks:
         org_found = False
         for item in organization_info:
-            if item.login == organization:
+            if item["login"] == organization:
                 org_found = True
                 user.add_grant(organization)
                 break
@@ -87,13 +88,13 @@ async def github_check_orgs_without_login(
     )
 
     conn.add(user)
-    await conn.commit()
-    await conn.refresh(user)
 
     return user
 
 
-async def github_login(code: str, settings: Settings, conn: AsyncSession) -> User:
+async def github_login(
+    code: str, settings: Settings, conn: AsyncSession, log: FilteringBoundLogger
+) -> User:
     """
     Perform the GitHub login _after recieving the code from the GitHub
     authentication service. That code is used to authenticate against
@@ -107,6 +108,8 @@ async def github_login(code: str, settings: Settings, conn: AsyncSession) -> Use
         Server settings, containing our GitHub App auth codes.
     conn: AsyncSession
         Database session
+    log: FilteringBoundLogger
+        Logger
 
     Returns
     -------
@@ -117,7 +120,7 @@ async def github_login(code: str, settings: Settings, conn: AsyncSession) -> Use
     login_error = GitHubLoginError("Could not authenticate with GitHub")
 
     async with httpx.AsyncClient() as client:
-        response = client.post(
+        response = await client.post(
             "https://github.com/login/oauth/access_token",
             data={
                 "client_id": settings.github_client_id,
@@ -128,14 +131,20 @@ async def github_login(code: str, settings: Settings, conn: AsyncSession) -> Use
             headers={"Accept": "application/json"},
         )
 
+    log = log.bind(status_code=response.status_code, content=response.json())
+
     if response.status_code != 200:
+        await log.aerror("github.login.code_exchange_failed")
         raise login_error
 
     gh_access_token = response.json().get("access_token")
     gh_last_logged_in = datetime.now()
 
     if gh_access_token is None:
+        await log.aerror("github.login.no_access_token")
         raise login_error
+
+    await log.ainfo("github.login.code_exchange_success")
 
     # Attain user info.
     user_info = await github_api_call(
@@ -149,25 +158,37 @@ async def github_login(code: str, settings: Settings, conn: AsyncSession) -> Use
 
     username = user_info["login"]
 
+    log = log.bind(
+        user_name=username, email=user_info["email"], full_name=user_info["name"]
+    )
+
     try:
         user = await read_by_name(user_name=username, conn=conn)
+        log = log.bind(user_read=True, user_created=False)
     except UserNotFound:
         user = User(
             full_name=user_info["name"],
             user_name=username,
             email=user_info["email"],
         )
+        log = log.bind(user_created=True, user_read=False)
+
+    log.bind(user_id=user.user_id)
 
     user.gh_access_token = gh_access_token
     user.gh_last_logged_in = gh_last_logged_in
+
+    log.bind(gh_last_logged_in=gh_last_logged_in)
 
     user = apply_organization_grants(
         organization_info=organization_info, user=user, settings=settings
     )
 
+    log.bind(grants=user.grants)
+
     conn.add(user)
-    await conn.commit()
-    await conn.refresh(user)
+
+    await log.ainfo("github.login.success")
 
     return user
 
@@ -179,14 +200,14 @@ async def github_login_redirect(login_request: LoginRequest, settings: Settings)
 
     method = "https"
     host = "github.com"
-    endpoint = "login/oauth/autorhize"
+    endpoint = "login/oauth/authorize"
     query = {
         "client_id": settings.github_client_id,
         "state": str(login_request.login_request_id),
     }
 
     url = urllib.parse.urlunparse(
-        (method, host, endpoint, "", urllib.parse.urlencode(query))
+        (method, host, endpoint, "", urllib.parse.urlencode(query), "")
     )
 
     return url

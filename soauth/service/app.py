@@ -5,7 +5,7 @@ Service layer for creating applications.
 from datetime import datetime
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from structlog import BoundLogger
+from structlog.typing import FilteringBoundLogger
 
 from soauth.config.settings import Settings
 from soauth.core.cryptography import generate_key_pair
@@ -19,7 +19,11 @@ class AppNotFound(Exception):
 
 
 async def create(
-    domain: str, user: User, settings: Settings, conn: AsyncSession, log: BoundLogger
+    domain: str,
+    user: User,
+    settings: Settings,
+    conn: AsyncSession,
+    log: FilteringBoundLogger,
 ) -> App:
     log = log.bind(
         user_id=user.user_id, domain=domain, key_pair_type=settings.key_pair_type
@@ -57,7 +61,7 @@ async def read_by_id(app_id: UUID, conn: AsyncSession) -> App:
 
 
 async def refresh_keys(
-    app_id: UUID, settings: Settings, conn: AsyncSession, log: BoundLogger
+    app_id: UUID, settings: Settings, conn: AsyncSession, log: FilteringBoundLogger
 ) -> App:
     log = log.bind(app_id=app_id, key_pair_type=settings.key_pair_type)
     app = await read_by_id(app_id=app_id, conn=conn)
@@ -77,7 +81,7 @@ async def refresh_keys(
     return app
 
 
-async def delete(app_id: UUID, conn: AsyncSession, log: BoundLogger) -> None:
+async def delete(app_id: UUID, conn: AsyncSession, log: FilteringBoundLogger) -> None:
     log = log.bind(app_id=app_id)
     app = await read_by_id(app_id=app_id, conn=conn)
     log = log.bind(

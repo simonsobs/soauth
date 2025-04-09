@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     database_db: str = "soauth.db"
 
     database_echo: bool = False
+    create_example_app_and_user: bool = False
 
     key_pair_type: str = "Ed25519"
     key_password: str = "CHANGEME"
@@ -36,7 +37,7 @@ class Settings(BaseSettings):
     github_redirect_uri: str
     github_organization_checks: list[str]
 
-    model_config = SettingsConfigDict(env_prefix="SOAUTH_")
+    model_config = SettingsConfigDict(env_prefix="SOAUTH_", env_file=".env")
 
     @property
     def sync_driver(self) -> str:

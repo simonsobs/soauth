@@ -12,7 +12,7 @@ from soauth.service import github as github_service
 from soauth.service import login as login_service
 from soauth.service import refresh as refresh_service
 
-from .dependencies import DatabaseDependency, SettingsDependency
+from .dependencies import DatabaseDependency, LoggerDependency, SettingsDependency
 
 login_router = APIRouter()
 
@@ -23,6 +23,7 @@ async def login(
     request: Request,
     settings: SettingsDependency,
     conn: DatabaseDependency,
+    log: LoggerDependency,
 ) -> RedirectResponse:
     """
     Login flow - use this to be redirected to GitHub for login, and have
@@ -38,19 +39,28 @@ async def login(
         raise HTTPException(status.HTTP_404_NOT_FOUND, f"App {app_id} not found")
 
     login_request = await login_service.create(
-        app=app, redirect_to=request.headers.get("Referer", None), conn=conn
+        app=app, redirect_to=request.headers.get("Referer", None), conn=conn, log=log
     )
 
     redirect_url = await github_service.github_login_redirect(
         login_request=login_request, settings=settings
     )
 
+    log = log.bind(
+        redirect_url=redirect_url, login_request_id=login_request.login_request_id
+    )
+    await log.ainfo("api.login.login.redirect")
+
     return RedirectResponse(redirect_url, status_code=status.HTTP_302_FOUND)
 
 
 @login_router.get("/github")
 async def github(
-    code: str, state: UUID, settings: SettingsDependency, conn: DatabaseDependency
+    code: str,
+    state: UUID,
+    settings: SettingsDependency,
+    conn: DatabaseDependency,
+    log: LoggerDependency,
 ) -> RedirectResponse:
     """
     This endpoint is 'called' by GitHub itself, and attempts to complete
@@ -61,39 +71,48 @@ async def github(
         status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication failed"
     )
 
+    log = log.bind(login_request_id=state)
+
     # Check that this login request is valid on our end, by reconstructing our
     # login request from the database.
     try:
         login_request = await login_service.read(login_request_id=state, conn=conn)
     except login_service.StaleRequestError:
+        await log.aerror("api.login.github.stale")
         raise unauthorized
 
     # This calls GitHub upp and authenticates as the user, allowing us access
     # to user information and to actually validate the login
     try:
         user = await github_service.github_login(
-            code=code, settings=settings, conn=conn
+            code=code, settings=settings, conn=conn, log=log
         )
     except github_service.GitHubLoginError:
+        await log.aerror("api.login.github.github_error")
         raise unauthorized
 
     # Create the codes!
+    app = await app_service.read_by_id(app_id=login_request.app_id, conn=conn)
     auth_key, refresh_key = await flow_service.primary(
-        user=user, app=login_request.app, settings=settings, conn=conn
+        user=user, app=app, settings=settings, conn=conn, log=log
     )
 
     # Check in to make sure we're still valid and close out the login
     try:
         redirect = await login_service.complete(
-            login_request=login_request, user=user, conn=conn
+            login_request=login_request, user=user, conn=conn, log=log
         )
     except (login_service.StaleRequestError, login_service.RedirectInvalidError):
         raise unauthorized
+
+    log.bind(redirect_to=redirect, login_request_id=login_request.login_request_id)
 
     response = RedirectResponse(url=redirect)
 
     response.set_cookie("access_token", auth_key, httponly=True)
     response.set_cookie("refresh_token", refresh_key, httponly=True)
+
+    await log.ainfo("api.login.github.success")
 
     return response
 

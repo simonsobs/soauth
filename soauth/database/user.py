@@ -48,6 +48,8 @@ class User(SQLModel, table=True):
         """
         Check if this user posseses the grant `grant`.
         """
+        if self.grants is None:
+            return False
         return grant in self.grants.split(" ")
 
     def add_grant(self, grant: str):
@@ -59,6 +61,10 @@ class User(SQLModel, table=True):
         this function) must be committed to the database separately.
         """
         if self.has_grant(grant):
+            return
+
+        if self.grants is None:
+            self.grants = f"{grant}"
             return
 
         self.grants += f" {grant}"
@@ -80,6 +86,7 @@ class User(SQLModel, table=True):
         return UserData(
             user_id=self.user_id,
             user_name=self.user_name,
+            full_name=self.full_name,
             email=self.email,
             grants=set(self.grants.split(" ")),
             groups=set(x.group_name for x in self.groups),

@@ -68,6 +68,20 @@ Second, it contains pydantic models for authenticated users, such that
 their contents can easily be deserialized. Finally, it contains
 authentication wrappers for FastAPI services.
 
+Core Endpoints
+--------------
+
+This server epxoses several core endpoints:
+
+- `/login/{app_id}` - This allows users to be redirected to GitHub to authenticate
+  and get a fresh refresh and authentication token.
+- `/github` - This is used by GitHub as a callback URL. Your GitHub redirect URI
+  should be pointed at this endpoint.
+- `/exchange` - This allows for the refresh token to be exhanged for a new refresh
+  token and access token.
+- `/logout` - This invalidates your local refresh token andaccess token, as well as
+  deleting the refresh token on the server so it can no longer be used.
+
 OAuth2 Compatibility
 --------------------
 

@@ -63,5 +63,3 @@ async def test_primary_then_secondary(
                 conn=conn,
                 log=logger,
             )
-
-    raise Exception

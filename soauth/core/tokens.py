@@ -21,6 +21,10 @@ class KeyDecodeError(Exception):
     pass
 
 
+class KeyExpiredError(Exception):
+    pass
+
+
 def match_key_pair_type_to_pyjwt_algorithm(key_pair_type: str) -> str:
     match key_pair_type:
         case "Ed25519":
@@ -34,7 +38,7 @@ def match_key_pair_type_to_pyjwt_algorithm(key_pair_type: str) -> str:
 def filter_payload_item_for_serialization(p) -> Any:
     match p:
         case UUID():
-            return p.int
+            return p.hex
         case set():
             return list(p)
         case _:
@@ -75,7 +79,7 @@ def sign_payload(
         },
         key=key,
         algorithm=algorithm,
-        headers={"aid": app_id.int},
+        headers={"aid": app_id.hex},
     )
 
     return encrypted
@@ -94,7 +98,7 @@ def app_id_from_signed_payload(webtoken: str | bytes) -> int:
     header = jwt.get_unverified_header(webtoken)
 
     try:
-        code = int(header["aid"])
+        code = header["aid"]
     except Exception:
         raise KeyDecodeError("Error reconstructing unverified header")
 
@@ -124,6 +128,8 @@ def reconstruct_payload(
             key=key,
             algorithms=[algorithm],
         )
+    except jwt.ExpiredSignatureError:
+        raise KeyExpiredError("Content of the payload has expired")
     except (jwt.DecodeError, EncryptionSerializationError):
         raise KeyDecodeError("Unable to deserialize content")
 

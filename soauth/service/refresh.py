@@ -121,7 +121,7 @@ async def decode_refresh_key(
 
     # UUIDs are serialized to integers
     if isinstance(app_id, int):
-        app_id = UUID(int=app_id)
+        app_id = UUID(hex=app_id)
 
     app = await conn.get(App, app_id)
 
@@ -154,7 +154,7 @@ async def refresh_refresh_key(
     uuid = payload["uuid"]
 
     if isinstance(uuid, int):
-        uuid = UUID(int=uuid)
+        uuid = UUID(hex=uuid)
 
     res = await conn.get(RefreshKey, uuid)
 
@@ -223,7 +223,7 @@ async def expire_refresh_key(
     uuid = payload["uuid"]
 
     if isinstance(uuid, int):
-        uuid = UUID(int=uuid)
+        uuid = UUID(hex=uuid)
 
     res = await conn.get(RefreshKey, uuid)
 

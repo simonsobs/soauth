@@ -58,6 +58,8 @@ def SETTINGS():
             conn.add_all([user, group, app])
             conn.commit()
             print(f"Created example, app_id: {app.app_id}")
+            settings.created_app_id = app.app_id
+            settings.created_app_public_key = app.public_key
 
     return settings
 

@@ -35,7 +35,7 @@ async def test_primary_then_secondary(
         webtoken=auth, public_key=APP_PUBLIC_KEY, key_pair_type=APP_KEY_PAIR_TYPE
     )
 
-    assert decoded_authentication["user_id"] == USER_ID.int
+    assert decoded_authentication["user_id"] == USER_ID.hex
 
     # Ok, now let's refresh it!
     async with session_manager.session() as conn:
@@ -52,7 +52,7 @@ async def test_primary_then_secondary(
         webtoken=auth, public_key=APP_PUBLIC_KEY, key_pair_type=APP_KEY_PAIR_TYPE
     )
 
-    assert decoded_authentication["user_id"] == USER_ID.int
+    assert decoded_authentication["user_id"] == USER_ID.hex
 
     # Log them out.
     async with session_manager.session() as conn:

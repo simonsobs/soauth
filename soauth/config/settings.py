@@ -8,6 +8,8 @@ from typing import Literal
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy import URL
 
+from soauth.core.uuid import UUID
+
 from .managers import AsyncSessionManager, SyncSessionManager
 
 
@@ -20,7 +22,10 @@ class Settings(BaseSettings):
     database_db: str = "soauth.db"
 
     database_echo: bool = False
+
     create_example_app_and_user: bool = False
+    created_app_public_key: str | bytes | None = None
+    created_app_id: UUID | None = None
 
     key_pair_type: str = "Ed25519"
     key_password: str = "CHANGEME"

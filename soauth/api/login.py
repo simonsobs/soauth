@@ -154,6 +154,36 @@ async def exchange(
     return response
 
 
+@login_router.post("/exchange")
+async def exchange_post(
+    refresh_token: str | bytes,
+    request: Request,
+    settings: SettingsDependency,
+    conn: DatabaseDependency,
+) -> RedirectResponse:
+    """
+    Exchange your refresh key for a new refresh key and a new auth key.
+
+    The refresh key should be passed as a POST parameter, and you will
+    recieve back a JSON blob that contains:
+
+    {"access_token": xxxx, "refresh_token": xxxx}
+    """
+
+    try:
+        auth_key, refresh_key = await flow_service.secondary(
+            encoded_refresh_key=refresh_token,
+            settings=settings,
+            conn=conn,
+        )
+    except refresh_service.AuthorizationError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Bad refresh token"
+        )
+
+    return {"access_token": auth_key, "refresh_token": refresh_token}
+
+
 @login_router.get("/logout")
 async def logout(
     request: Request, settings: SettingsDependency, conn: DatabaseDependency

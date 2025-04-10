@@ -30,7 +30,7 @@ async def test_create_refresh_key(user, app, session_manager, logger, server_set
                 encoded_payload=encoded, conn=conn
             )
 
-    assert decoded["uuid"] == REFRESH_KEY_ID.int
+    assert decoded["uuid"] == REFRESH_KEY_ID.hex
 
     # Now create a new refresh key, and check that we expire the previous one
     async with session_manager.session() as conn:

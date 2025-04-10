@@ -110,11 +110,11 @@ async def secondary(
     )
 
     log = log.bind(
-        user_id=UUID(int=decoded_payload["user_id"]),
-        app_id=UUID(int=decoded_payload["app_id"]),
+        user_id=UUID(hex=decoded_payload["user_id"]),
+        app_id=UUID(hex=decoded_payload["app_id"]),
         old_issued_at=decoded_payload["iat"],
         old_expiry_time=decoded_payload["exp"],
-        old_refresh_key_id=UUID(int=decoded_payload["uuid"]),
+        old_refresh_key_id=UUID(hex=decoded_payload["uuid"]),
     )
 
     encoded_refresh_key, refresh_key = await refresh_refresh_key(
@@ -162,11 +162,11 @@ async def logout(
         return
 
     log = log.bind(
-        user_id=UUID(int=decoded_payload["user_id"]),
-        app_id=UUID(int=decoded_payload["app_id"]),
+        user_id=UUID(hex=decoded_payload["user_id"]),
+        app_id=UUID(hex=decoded_payload["app_id"]),
         issued_at=decoded_payload["iat"],
         expiry_time=decoded_payload["exp"],
-        refresh_key_id=UUID(int=decoded_payload["uuid"]),
+        refresh_key_id=UUID(hex=decoded_payload["uuid"]),
     )
 
     await expire_refresh_key(payload=decoded_payload, settings=settings, conn=conn)

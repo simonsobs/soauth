@@ -19,6 +19,9 @@ def main():
 
     if run and dev:
         with PostgresContainer() as container:
+            print(
+                f"Container details: username={container.username}, password={container.password}, port={container.get_exposed_port(container.port)}"
+            )
             os.environ["SOAUTH_DATABASE_TYPE"] = "postgres"
             os.environ["SOAUTH_DATABASE_USER"] = container.username
             os.environ["SOAUTH_DATABASE_PASSWORD"] = container.password
@@ -29,5 +32,8 @@ def main():
             os.environ["SOAUTH_DATABASE_DB"] = container.dbname
             os.environ["SOAUTH_DATABASE_ECHO"] = "False"
             os.environ["SOAUTH_CREATE_EXAMPLE_APP_AND_USER"] = "True"
+
+            os.environ["SOAUTH_REFRESH_KEY_EXPIRY"] = "00:01:00"
+            os.environ["SOAUTH_AUTH_KEY_EXPIRY"] = "00:00:15"
 
             uvicorn.run("soauth.api.app:app")

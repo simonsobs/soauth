@@ -37,6 +37,7 @@ from starlette.authentication import (
 )
 from starlette.requests import Request
 from starlette.responses import RedirectResponse
+from structlog import get_logger
 
 from soauth.core.auth import KeyDecodeError, decode_access_token
 from soauth.core.tokens import KeyExpiredError
@@ -92,7 +93,12 @@ class SOAuthCookieBackend(AuthenticationBackend):
         self.key_pair_type = key_pair_type
 
     async def authenticate(self, conn: Request):
+        log = get_logger()
+
+        log = log.bind(client=conn.client)
+
         if "access_token" not in conn.cookies:
+            log.debug("tk.starlette.auth.no_cookies")
             return AuthCredentials([]), SOUser(
                 is_authenticated=False, display_name=None
             )
@@ -100,6 +106,7 @@ class SOAuthCookieBackend(AuthenticationBackend):
         access_token = conn.cookies["access_token"]
 
         if access_token is None:
+            log.debug("tk.starlette.auth.no_token")
             raise AuthenticationExpiredError
 
         try:
@@ -109,8 +116,10 @@ class SOAuthCookieBackend(AuthenticationBackend):
                 key_pair_type=self.key_pair_type,
             )
         except KeyDecodeError:
+            log.debug("tk.starlette.auth.no_decode")
             raise AuthenticationDecodeError("Could not decode token")
         except KeyExpiredError:
+            log.debug("tk.starlette.auth.expired")
             raise AuthenticationExpiredError("Token expired")
 
         user = SOUser(
@@ -122,7 +131,12 @@ class SOAuthCookieBackend(AuthenticationBackend):
             groups=user_data.groups,
         )
 
+        log = log.bind(**user.model_dump())
+
         credentials = AuthCredentials(user_data.grants)
+
+        log = log.bind(grants=user_data.grants)
+        log.debug("tk.starlette.auth.success")
 
         return credentials, user
 
@@ -144,15 +158,21 @@ def key_expired_handler(request: Request, exc: KeyExpiredError) -> RedirectRespo
 
     refresh_key = request.cookies["refresh_token"]
 
+    log = get_logger()
+    log = log.bind(orginal_url=request.url)
+
     if refresh_key is None:
+        log.info("tk.starlette.expired.no_token")
         raise KeyDecodeError("You do not have a refresh token, go get one!")
 
     with httpx.Client() as client:
+        log = log.bind(refresh_key_url=request.app_refresh_key_url)
         response = client.post(
             request.app.refresh_key_url, data={"refresh_key": refresh_key}
         )
 
         if response.status_code != 200:
+            log.info("tk.starlette.expired.cannot_refresh_key")
             raise KeyDecodeError("Unable to refresh key!")
 
         content = response.json()
@@ -161,6 +181,8 @@ def key_expired_handler(request: Request, exc: KeyExpiredError) -> RedirectRespo
 
     response.set_cookie("access_token", content["access_token"])
     response.set_cookie("refresh_token", content["refresh_token"])
+
+    log.info("tk.starlette.expired.refreshed")
 
     return response
 
@@ -174,10 +196,17 @@ def key_decode_handler(request: Request, exc: KeyDecodeError) -> RedirectRespons
     the lifecycle handlers.
     """
 
+    log = get_logger()
+    log = log.bind(orginal_url=request.url)
+
     response = RedirectResponse(url=request.app.login_url, status_code=302)
+
+    log = log.bind(redirect_to=request.app.login_url)
 
     response.delete_cookie("access_token")
     response.delete_cookie("refresh_token")
+
+    log.info("tk.starlette.decode.redirecting")
 
     return response
 

@@ -15,8 +15,10 @@ settings = SETTINGS()
 
 
 async def lifespan(app: FastAPI):
+    app.settings = settings
     app.login_url = f"http://localhost:8000/login/{settings.created_app_id}"
     app.refresh_url = "http://localhost:8000/refresh"
+
     yield
 
 

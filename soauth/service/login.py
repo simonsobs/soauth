@@ -2,7 +2,7 @@
 Login request handling.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from urllib.parse import urlparse
 
 from sqlalchemy import delete, update
@@ -30,7 +30,7 @@ async def expire_stale_requests(settings: Settings, conn: AsyncSession):
     Expires all stale requests according to the settings timeout.
     """
 
-    current_time = datetime.now()
+    current_time = datetime.now(timezone.utc)
     delete_before = current_time - settings.login_record_length
     stale_before = current_time - settings.stale_login_expiry
 
@@ -66,12 +66,12 @@ async def create(
     log = log.bind(app_id=app.app_id, redirect_to=redirect_to)
 
     request = LoginRequest(
-        app_id=app.app_id, redirect_to=redirect_to, initiated_at=datetime.now()
+        app_id=app.app_id,
+        redirect_to=redirect_to,
+        initiated_at=datetime.now(timezone.utc),
     )
 
     conn.add(request)
-    await conn.commit()
-    await conn.refresh(request)
 
     await log.ainfo("login.request_created")
 
@@ -161,7 +161,7 @@ async def complete(
     login_request.redirect_to = await build_redirect(
         user=user, app=app, request=login_request
     )
-    login_request.completed_at = datetime.now()
+    login_request.completed_at = datetime.now(timezone.utc)
     login_request.user_id = user.user_id
 
     log = log.bind(

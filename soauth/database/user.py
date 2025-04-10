@@ -5,6 +5,7 @@ ORM for user information.
 from datetime import datetime
 from typing import TYPE_CHECKING
 
+from sqlalchemy import Column, DateTime
 from sqlmodel import Field, Relationship, SQLModel
 
 from soauth.core.user import UserData
@@ -28,11 +29,15 @@ class User(SQLModel, table=True):
 
     gh_access_token: str | None = None
     # gh_refresh_token: str | None = None
-    gh_last_logged_in: datetime | None = None
+    gh_last_logged_in: datetime | None = Field(
+        sa_column=Column(DateTime(timezone=True)), default=None
+    )
 
     # Access token usage
     last_access_token: UUID | None = None
-    last_access_time: datetime | None = None
+    last_access_time: datetime | None = Field(
+        sa_column=Column(DateTime(timezone=True)), default=None
+    )
     number_of_access_tokens: int = 0
 
     # Group membership is important! We should always emit it.

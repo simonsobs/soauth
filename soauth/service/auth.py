@@ -2,7 +2,7 @@
 Creation/deletion for authentication keys.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -25,13 +25,14 @@ async def create_auth_key(
 
     with conn.no_autoflush:
         user = await conn.get(User, refresh_key.user_id, populate_existing=True)
+        # groups = await user.groups
 
     app = await conn.get(App, refresh_key.app_id)
 
     user_data = user.to_core()
     base_payload = user_data.model_dump()
 
-    current_time = datetime.now()
+    current_time = datetime.now(timezone.utc)
     expiration_time = current_time + settings.access_key_expiry
 
     payload = build_payload_with_claims(

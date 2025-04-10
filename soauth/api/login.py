@@ -4,6 +4,7 @@ Main login flow - redirection to GitHub and handling of responses.
 
 from fastapi import APIRouter, HTTPException, Request, status
 from fastapi.responses import RedirectResponse
+from pydantic import BaseModel
 
 from soauth.core.tokens import KeyExpiredError
 from soauth.core.uuid import UUID
@@ -13,12 +14,17 @@ from soauth.service import github as github_service
 from soauth.service import login as login_service
 from soauth.service import refresh as refresh_service
 
-from .dependencies import DatabaseDependency, LoggerDependency, SettingsDependency
+from .dependencies import (
+    SETTINGS,
+    DatabaseDependency,
+    LoggerDependency,
+    SettingsDependency,
+)
 
-login_router = APIRouter()
+login_app = APIRouter()
 
 
-@login_router.get("/login/{app_id}")
+@login_app.get("/login/{app_id}")
 async def login(
     app_id: UUID,
     request: Request,
@@ -55,7 +61,7 @@ async def login(
     return RedirectResponse(redirect_url, status_code=status.HTTP_302_FOUND)
 
 
-@login_router.get("/github")
+@login_app.get("/github")
 async def github(
     code: str,
     state: UUID,
@@ -91,7 +97,7 @@ async def github(
     except github_service.GitHubLoginError:
         await log.aerror("api.login.github.github_error")
         raise unauthorized
-    
+
     # Create the codes!
     app = await app_service.read_by_id(app_id=login_request.app_id, conn=conn)
     auth_key, refresh_key = await flow_service.primary(
@@ -108,7 +114,7 @@ async def github(
 
     log.bind(redirect_to=redirect, login_request_id=login_request.login_request_id)
 
-    response = RedirectResponse(url=redirect)
+    response = RedirectResponse(url=redirect, status_code=302)
 
     response.set_cookie("access_token", auth_key, httponly=True)
     response.set_cookie("refresh_token", refresh_key, httponly=True)
@@ -118,9 +124,12 @@ async def github(
     return response
 
 
-@login_router.get("/exchange")
+@login_app.get("/exchange")
 async def exchange(
-    request: Request, settings: SettingsDependency, conn: DatabaseDependency
+    request: Request,
+    settings: SettingsDependency,
+    conn: DatabaseDependency,
+    log: LoggerDependency,
 ) -> RedirectResponse:
     """
     Exchange your refresh key for a new refresh key and a new auth key.
@@ -141,13 +150,14 @@ async def exchange(
             encoded_refresh_key=request.cookies.get("refresh_token", ""),
             settings=settings,
             conn=conn,
+            log=log,
         )
     except refresh_service.AuthorizationError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Bad refresh token"
         )
 
-    response = RedirectResponse(url=redirect)
+    response = RedirectResponse(url=redirect, status_code=302)
 
     response.set_cookie("access_token", auth_key, httponly=True)
     response.set_cookie("refresh_token", refresh_key, httponly=True)
@@ -155,12 +165,18 @@ async def exchange(
     return response
 
 
-@login_router.post("/exchange")
+class Content(BaseModel):
+    refresh_token: str | bytes
+
+
+@login_app.post("/exchange")
 async def exchange_post(
-    refresh_token: str | bytes,
+    content: Content,
+    # refresh_token: str | bytes,
     request: Request,
     settings: SettingsDependency,
     conn: DatabaseDependency,
+    log: LoggerDependency,
 ) -> RedirectResponse:
     """
     Exchange your refresh key for a new refresh key and a new auth key.
@@ -171,23 +187,34 @@ async def exchange_post(
     {"access_token": xxxx, "refresh_token": xxxx}
     """
 
+    refresh_token = content.refresh_token
+
     try:
         auth_key, refresh_key = await flow_service.secondary(
-            encoded_refresh_key=refresh_token,
-            settings=settings,
-            conn=conn,
+            encoded_refresh_key=refresh_token, settings=settings, conn=conn, log=log
         )
-    except refresh_service.AuthorizationError:
+    except refresh_service.AuthorizationError as e:
+        log = log.bind(error=str(e))
+        await log.adebug("api.exchange_post.failed")
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Bad refresh token"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Bad refresh token"
+        )
+    except KeyExpiredError as e:
+        log = log.bind(error=str(e))
+        await log.adebug("api.exchange_post.expired")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token expired"
         )
 
-    return {"access_token": auth_key, "refresh_token": refresh_token}
+    return {"access_token": auth_key, "refresh_token": refresh_key}
 
 
-@login_router.get("/logout")
+@login_app.get("/logout")
 async def logout(
-    request: Request, settings: SettingsDependency, conn: DatabaseDependency, log=LoggerDependency
+    request: Request,
+    settings: SettingsDependency,
+    conn: DatabaseDependency,
+    log=LoggerDependency,
 ):
     """
     Log a user out and revoke the refresh key they are using. The user will be redirected
@@ -207,14 +234,30 @@ async def logout(
             encoded_refresh_key=request.cookies.get("refresh_token", ""),
             settings=settings,
             conn=conn,
-            log=log
+            log=log,
         )
     except (refresh_service.AuthorizationError, KeyExpiredError):
         # I mean, we can't decode it so it's not valid, I don't care.
         pass
 
-    response = RedirectResponse(url=redirect)
+    response = RedirectResponse(url=redirect, status_code=302)
     response.delete_cookie("access_token")
     response.delete_cookie("refresh_token")
 
     return response
+
+
+if SETTINGS().host_development_only_endpoint:
+
+    @login_app.get("/developer_details")
+    async def developer_details(settings: SettingsDependency):
+        """
+        A simple endpoint detailing information about the applicaiton for
+        development use (e.g. the self-contained APP ID)
+        """
+
+        return {
+            "authentication_app_id": settings.created_app_id,
+            "authentication_public_key": settings.created_app_public_key,
+            "authentication_key_type": settings.key_pair_type,
+        }

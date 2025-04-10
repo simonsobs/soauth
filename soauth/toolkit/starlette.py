@@ -29,7 +29,7 @@ app.add_middleware(
 """
 
 import httpx
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from starlette.authentication import (
     AuthCredentials,
     AuthenticationBackend,
@@ -58,7 +58,7 @@ class SOUser(BaseModel):
     user_id: UUID | None = None
     full_name: str | None = None
     email: str | None = None
-    groups: set[str] = set()
+    groups: set[str] = Field(default_factory=set)
 
 
 class SOAuthCookieBackend(AuthenticationBackend):
@@ -166,14 +166,33 @@ def key_expired_handler(request: Request, exc: KeyExpiredError) -> RedirectRespo
         raise KeyDecodeError("You do not have a refresh token, go get one!")
 
     with httpx.Client() as client:
-        log = log.bind(refresh_key_url=request.app_refresh_key_url)
-        response = client.post(
-            request.app.refresh_key_url, data={"refresh_key": refresh_key}
-        )
+        log = log.bind(refresh_key_url=request.app.refresh_url)
+        try:
+            response = client.post(
+                request.app.refresh_url, json={"refresh_token": refresh_key}
+            )
+        except httpx.ReadTimeout:
+            log.info("tk.starlette.expired.refresh_timeout")
+
+            # Best thing we can do is send them back where they came from, and make them run
+            # the login flow again.
+            response = RedirectResponse(request.url, status_code=302)
+
+            response.delete_cookie("access_token")
+            response.delete_cookie("refresh_token")
+            return response
 
         if response.status_code != 200:
+            log = log.bind(status_code=response.status_code, content=response.json())
             log.info("tk.starlette.expired.cannot_refresh_key")
-            raise KeyDecodeError("Unable to refresh key!")
+
+            # Best thing we can do is send them back where they came from, and make them run
+            # the login flow again.
+            response = RedirectResponse(request.url, status_code=302)
+
+            response.delete_cookie("access_token")
+            response.delete_cookie("refresh_token")
+            return response
 
         content = response.json()
 

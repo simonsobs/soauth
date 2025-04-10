@@ -2,7 +2,7 @@
 Tools for encoding, building, and decoding JWTs.
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 import jwt
@@ -147,7 +147,7 @@ def build_payload_with_claims(
         if a in base_payload:
             raise ValueError(f"Base payload cannot contain key {a}")
 
-    current_time = datetime.now()
+    current_time = datetime.now(timezone.utc)
 
     payload = {
         "exp": expiration_time,
@@ -177,7 +177,7 @@ def build_refresh_key_payload(
         "app_id": app_id,
     }
 
-    current_time = datetime.now()
+    current_time = datetime.now(timezone.utc)
 
     expiration_time = current_time + validity
     valid_from = current_time
@@ -201,7 +201,7 @@ def refresh_refresh_key_payload(payload: dict[str, Any]) -> dict[str, Any]:
 
     new_payload = {**payload}
 
-    current_time = datetime.now()
+    current_time = datetime.now(timezone.utc)
 
     new_payload["iat"] = current_time
     new_payload["nbf"] = current_time

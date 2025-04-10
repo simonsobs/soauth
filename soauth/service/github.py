@@ -7,7 +7,7 @@ that point later.
 """
 
 import urllib
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 import httpx
@@ -18,6 +18,7 @@ from soauth.config.settings import Settings
 from soauth.database.login import LoginRequest
 from soauth.database.user import User
 from soauth.service.user import UserNotFound, read_by_name
+from soauth.service.user import create as create_user
 
 
 class GitHubLoginError(Exception):
@@ -138,7 +139,7 @@ async def github_login(
         raise login_error
 
     gh_access_token = response.json().get("access_token")
-    gh_last_logged_in = datetime.now()
+    gh_last_logged_in = datetime.now(timezone.utc)
 
     if gh_access_token is None:
         await log.aerror("github.login.no_access_token")
@@ -156,7 +157,7 @@ async def github_login(
         github_api_access_token=gh_access_token, url=user_info["organizations_url"]
     )
 
-    username = user_info["login"]
+    username = user_info["login"].lower()
 
     log = log.bind(
         user_name=username, email=user_info["email"], full_name=user_info["name"]
@@ -166,10 +167,13 @@ async def github_login(
         user = await read_by_name(user_name=username, conn=conn)
         log = log.bind(user_read=True, user_created=False)
     except UserNotFound:
-        user = User(
-            full_name=user_info["name"],
+        user = await create_user(
             user_name=username,
             email=user_info["email"],
+            full_name=user_info["name"],
+            grants="",
+            conn=conn,
+            log=log,
         )
         log = log.bind(user_created=True, user_read=False)
 

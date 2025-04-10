@@ -2,7 +2,7 @@
 Service layer for users
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -31,7 +31,7 @@ async def create(
 
     log = log.bind(user_name=user_name, email=email, grants=grants)
 
-    current_time = datetime.now()
+    current_time = datetime.now(timezone.utc)
 
     user = User(user_name=user_name, email=email, grants=grants, full_name=full_name)
 
@@ -42,6 +42,8 @@ async def create(
         created_at=current_time,
         members=[user],
     )
+
+    user.groups = [group]
 
     conn.add_all([user, group])
 

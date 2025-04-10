@@ -2,7 +2,7 @@
 Service layer for creating applications.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from structlog.typing import FilteringBoundLogger
@@ -36,7 +36,7 @@ async def create(
     app = App(
         created_by_user_id=user.user_id,
         created_by=user,
-        created_at=datetime.now(),
+        created_at=datetime.now(timezone.utc),
         domain=domain,
         key_pair_type=settings.key_pair_type,
         public_key=public_key,

@@ -2,7 +2,7 @@
 Core functions for the auth flow, including connections to the GitHub APIs.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 from sqlalchemy import false, select
@@ -41,7 +41,7 @@ async def expire_refresh_keys(user: User, app: App, conn: AsyncSession):
     all_unexpired = (await conn.execute(query)).scalars().all()
 
     for key in all_unexpired:
-        key.last_used = datetime.now()
+        key.last_used = datetime.now(timezone.utc)
         key.revoked = True
 
         conn.add(key)
@@ -159,7 +159,8 @@ async def refresh_refresh_key(
     res = await conn.get(RefreshKey, uuid)
 
     if res is None:
-        raise AuthorizationError("Prior key not found")
+        results = (await conn.execute(select(RefreshKey))).scalars().all()
+        raise AuthorizationError(f"Prior key not found ({uuid}) {results}")
 
     if res.revoked:
         raise AuthorizationError("Key used for refresh has been revoked")
@@ -230,7 +231,7 @@ async def expire_refresh_key(
     if res is None:
         return
 
-    res.last_used = datetime.now()
+    res.last_used = datetime.now(timezone.utc)
     res.revoked = True
 
     conn.add(res)

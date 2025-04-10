@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     create_example_app_and_user: bool = False
     created_app_public_key: str | bytes | None = None
     created_app_id: UUID | None = None
+    host_development_only_endpoint: bool = False
 
     key_pair_type: str = "Ed25519"
     key_password: str = "CHANGEME"

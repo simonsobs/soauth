@@ -21,9 +21,9 @@ def SETTINGS():
         import datetime
 
         from soauth.core.cryptography import generate_key_pair
-        from soauth.database.meta import ALL_TABLES
         from soauth.database.app import App
         from soauth.database.group import Group
+        from soauth.database.meta import ALL_TABLES
         from soauth.database.user import User
 
         ALL_TABLES[1]
@@ -43,7 +43,7 @@ def SETTINGS():
                 group_name="example_user",
                 created_by_user_id=user.user_id,
                 created_by=user,
-                created_at=datetime.datetime.now(),
+                created_at=datetime.datetime.now(datetime.timezone.utc),
                 members=[user],
             )
             public, private = generate_key_pair(
@@ -52,8 +52,8 @@ def SETTINGS():
             app = App(
                 created_by_user_id=user.user_id,
                 created_by=user,
-                created_at=datetime.datetime.now(),
-                domain="http://localhost:8000",
+                created_at=datetime.datetime.now(datetime.timezone.utc),
+                domain="http://localhost:8001",
                 key_pair_type=settings.key_pair_type,
                 public_key=public,
                 private_key=private,
@@ -72,7 +72,8 @@ DATABASE_MANAGER = SETTINGS().async_manager()
 
 async def get_async_session():
     async with DATABASE_MANAGER.session() as session:
-        yield session
+        async with session.begin():
+            yield session
 
 
 def logger():

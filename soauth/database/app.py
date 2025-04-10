@@ -5,6 +5,7 @@ Applications/TLDs accessible from the auth server.
 from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 
+from sqlalchemy import Column, DateTime
 from sqlmodel import Field, Relationship, SQLModel
 
 from soauth.core.uuid import UUID, uuid7
@@ -18,7 +19,7 @@ class App(SQLModel, table=True):
 
     created_by_user_id: UUID | None = Field(foreign_key="user.user_id")
     created_by: Optional["User"] = Relationship(back_populates="managed_apps")
-    created_at: datetime
+    created_at: datetime = Field(sa_column=Column(DateTime(timezone=True)))
 
     domain: str
 

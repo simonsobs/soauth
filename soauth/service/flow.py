@@ -106,6 +106,7 @@ async def secondary(
     encoded_refresh_key
         The new refresh key.
     """
+    log.debug("secondary.decoding_key")
     decoded_payload = await decode_refresh_key(
         encoded_payload=encoded_refresh_key, conn=conn
     )

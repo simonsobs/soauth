@@ -4,6 +4,7 @@ Login request tracking.
 
 from datetime import datetime
 
+from sqlalchemy import Column, DateTime
 from sqlmodel import Field, SQLModel
 
 from soauth.core.uuid import UUID, uuid7
@@ -17,7 +18,9 @@ class LoginRequest(SQLModel, table=True):
 
     redirect_to: str | None = None
 
-    initiated_at: datetime
-    completed_at: datetime | None = None
+    initiated_at: datetime = Field(sa_column=Column(DateTime(timezone=True)))
+    completed_at: datetime | None = Field(
+        sa_column=Column(DateTime(timezone=True)), default=None
+    )
 
     stale: bool = False

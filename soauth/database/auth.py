@@ -5,6 +5,7 @@ ORM for authentication data
 from datetime import datetime
 from typing import Optional
 
+from sqlalchemy import Column, DateTime
 from sqlmodel import Field, SQLModel
 
 from soauth.core.uuid import UUID, uuid7
@@ -19,12 +20,12 @@ class RefreshKey(SQLModel, table=True):
     hash_algorithm: str
     hashed_content: str
 
-    last_used: datetime
+    last_used: datetime = Field(sa_column=Column(DateTime(timezone=True)))
     used: int
     revoked: bool
     previous: Optional[UUID] = Field(
         foreign_key="refreshkey.refresh_key_id", default=None
     )
 
-    created_at: datetime
-    expires_at: datetime
+    created_at: datetime = Field(sa_column=Column(DateTime(timezone=True)))
+    expires_at: datetime = Field(sa_column=Column(DateTime(timezone=True)))

@@ -27,28 +27,13 @@ async def home(
         login = f"<a href='/login/{only_app.app_id}'>Login</a>"
         return HTMLResponse(f"No access token found, login? {login}")
 
-    # try:
-    #     app_id = UUID(hex=app_id_from_signed_payload(access_token))
-    #     log = log.bind(app_id=app_id)
-    #     app = await app_service.read_by_id(app_id, conn=conn)
-    # except app_service.AppNotFound:
-    #     await log.ainfo("api.request.home.app_not_found")
-    #     await flow_service.logout(
-    #         encoded_refresh_key=request.cookies.get("refresh_token", ""),
-    #         settings=settings,
-    #         conn=conn,
-    #         log=log,
-    #     )
-    #     response = RedirectResponse("/")
-    #     response.delete_cookie("access_token")
-    #     response.delete_cookie("refresh_token")
-    #     return response
-
     if "simonsobs" in request.auth.scopes:
         proprietary = "<p>Congratulations, you have access to proprietary data!</p><img src='https://upload.wikimedia.org/wikipedia/en/1/1f/Pokémon_Charizard_art.png' />"
     else:
         proprietary = ""
 
+    logout = "<p><a href='/logout'>Logout</a></p>"
+
     return HTMLResponse(
-        f"<h1>Hello, {request.user.full_name} ({request.user.display_name})</h1>{proprietary}"
+        f"<h1>Hello, {request.user.full_name} ({request.user.display_name})</h1>{proprietary}{logout}"
     )

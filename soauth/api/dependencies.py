@@ -21,9 +21,12 @@ def SETTINGS():
         import datetime
 
         from soauth.core.cryptography import generate_key_pair
+        from soauth.database.meta import ALL_TABLES
         from soauth.database.app import App
         from soauth.database.group import Group
         from soauth.database.user import User
+
+        ALL_TABLES[1]
 
         manager = settings.sync_manager()
 

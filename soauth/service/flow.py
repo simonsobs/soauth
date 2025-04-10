@@ -15,6 +15,7 @@ from soauth.database.user import User
 from .auth import create_auth_key
 from .refresh import (
     AuthorizationError,
+    KeyDecodeError,
     create_refresh_key,
     decode_refresh_key,
     expire_refresh_key,
@@ -156,7 +157,7 @@ async def logout(
         decoded_payload = await decode_refresh_key(
             encoded_payload=encoded_refresh_key, conn=conn
         )
-    except AuthorizationError:
+    except (AuthorizationError, KeyDecodeError):
         # Their refresh key was never valid anyway!
         await log.ainfo("logout.invalid_refresh_key")
         return

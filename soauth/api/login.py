@@ -5,6 +5,7 @@ Main login flow - redirection to GitHub and handling of responses.
 from fastapi import APIRouter, HTTPException, Request, status
 from fastapi.responses import RedirectResponse
 
+from soauth.core.tokens import KeyExpiredError
 from soauth.core.uuid import UUID
 from soauth.service import app as app_service
 from soauth.service import flow as flow_service
@@ -90,7 +91,7 @@ async def github(
     except github_service.GitHubLoginError:
         await log.aerror("api.login.github.github_error")
         raise unauthorized
-
+    
     # Create the codes!
     app = await app_service.read_by_id(app_id=login_request.app_id, conn=conn)
     auth_key, refresh_key = await flow_service.primary(
@@ -186,7 +187,7 @@ async def exchange_post(
 
 @login_router.get("/logout")
 async def logout(
-    request: Request, settings: SettingsDependency, conn: DatabaseDependency
+    request: Request, settings: SettingsDependency, conn: DatabaseDependency, log=LoggerDependency
 ):
     """
     Log a user out and revoke the refresh key they are using. The user will be redirected
@@ -206,8 +207,9 @@ async def logout(
             encoded_refresh_key=request.cookies.get("refresh_token", ""),
             settings=settings,
             conn=conn,
+            log=log
         )
-    except refresh_service.AuthorizationError:
+    except (refresh_service.AuthorizationError, KeyExpiredError):
         # I mean, we can't decode it so it's not valid, I don't care.
         pass
 

@@ -214,7 +214,7 @@ async def logout(
     request: Request,
     settings: SettingsDependency,
     conn: DatabaseDependency,
-    log=LoggerDependency,
+    log: LoggerDependency,
 ):
     """
     Log a user out and revoke the refresh key they are using. The user will be redirected

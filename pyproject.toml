@@ -21,7 +21,8 @@ dependencies = [
     "xxhash",
     "fastapi",
     "structlog",
-    "uuid7"
+    "uuid7",
+    "jinja2"
 ]
 
 [project.optional-dependencies]

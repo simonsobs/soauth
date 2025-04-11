@@ -159,8 +159,7 @@ async def refresh_refresh_key(
     res = await conn.get(RefreshKey, uuid)
 
     if res is None:
-        results = (await conn.execute(select(RefreshKey))).scalars().all()
-        raise AuthorizationError(f"Prior key not found ({uuid}) {results}")
+        raise AuthorizationError(f"Prior key not found ({uuid})")
 
     if res.revoked:
         raise AuthorizationError("Key used for refresh has been revoked")

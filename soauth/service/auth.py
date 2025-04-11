@@ -25,7 +25,6 @@ async def create_auth_key(
 
     with conn.no_autoflush:
         user = await conn.get(User, refresh_key.user_id, populate_existing=True)
-        # groups = await user.groups
 
     app = await conn.get(App, refresh_key.app_id)
 

@@ -172,7 +172,6 @@ class Content(BaseModel):
 @login_app.post("/exchange")
 async def exchange_post(
     content: Content,
-    # refresh_token: str | bytes,
     request: Request,
     settings: SettingsDependency,
     conn: DatabaseDependency,

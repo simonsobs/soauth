@@ -154,6 +154,9 @@ def add_grant(
     log = log.bind(user_id=user_id, grant_add_field=grant)
     log.debug("app.admin.grant_add_field")
 
+    if " " in grant or grant == "":
+        return RedirectResponse(url=f"/users/{user_id}", status_code=303)
+
     response = httpx.post(
         url=f"{app.user_detail_url}/{user_id}",
         cookies=request.cookies,
@@ -178,6 +181,9 @@ def remove_grant(
 ):
     log = log.bind(user_id=user_id, grant_remove_field=grant)
     log.debug("app.admin.grant_remove_field")
+
+    if " " in grant or grant == "":
+        return RedirectResponse(url=f"/users/{user_id}", status_code=303)
 
     response = httpx.post(
         url=f"{app.user_detail_url}/{user_id}",

@@ -39,7 +39,9 @@
                 {% if other_user.grants %}
                   <ul class="nes-list is-circle">
                     {% for grant in other_user.grants %}
+                    {% if grant %}
                     <li>{{ grant }}</li>
+                    {% endif %}
                     {% endfor %}
                   </ul>
                 {% endif %}
@@ -82,11 +84,12 @@
                 <dialog class="nes-dialog is-rounded" id="add-grant-dialog">
                 <form method="POST" action="/users/{{other_user.user_id}}/grant_add">
                     <h3 class="title">Add Grant</h3>
+                    <p>Add any grant you wish to add to <span class="nes-text is-error">{{other_user.user_name}}</span>.  <span class="nes-text is-warning">No whitespace is allowed in grant names</span>. They will have to refresh their access tokens (either by logging out and back in, manually requesting a refresh through their application, or waiting for the natural refresh cycle) for changes to take effect.</p>
                     <div class="nes-field is-inline">
                         <label for="add-grant-field">Grant:</label>
-                        <input type="text" id="add-grant-field" name="grant" class="nes-input is-success" placeholder="..." style="margin-bottom:1em" />
+                        <input type="text" id="add-grant-field" name="grant" class="nes-input is-success" placeholder="..." style="margin-bottom:1em" required />
                     </div>
-                    <button class="nes-btn" onclick="document.getElementById('add-grant-dialog').close();">Cancel</button>
+                    <button type="button" class="nes-btn" onclick="document.getElementById('add-grant-dialog').close();">Cancel</button>
                     <input class="nes-btn is-error" type="submit" value="Confirm" / >
                 </form>
                 </dialog>
@@ -98,16 +101,19 @@
                 <dialog class="nes-dialog is-rounded" id="remove-grant-dialog">
                 <form method="POST" action="/users/{{other_user.user_id}}/grant_remove">
                     <h3 class="title">Remove Grant</h3>
+                    <p>Select the grant you wish to remove from <span class="nes-text is-error">{{other_user.user_name}}</span>. They will have to refresh their access tokens (either by logging out and back in, manually requesting a refresh through their application, or waiting for the natural refresh cycle) for changes to take effect.</p>
                     <div style="padding:2em">
                         {% for grant in other_user.grants %}
+                        {% if grant %}
                         <label style="display:block">
-                            <input type="radio" class="nes-radio" name="grant" value="{{grant}}"/>
+                            <input type="radio" class="nes-radio" name="grant" value="{{grant}}" required/>
                             <span>{{grant}}</span>
                         </label>
+                        {% endif %}
                         {% endfor %}  
                     </ul>
                     </div>
-                    <button class="nes-btn" onclick="document.getElementById('remove-grant-dialog').close();">Cancel</button>
+                    <button type="button" class="nes-btn" onclick="document.getElementById('remove-grant-dialog').close();">Cancel</button>
                     <input class="nes-btn is-error" type="submit" value="Confirm" / >
                 </form>
                 </dialog>

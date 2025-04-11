@@ -172,6 +172,10 @@ async def refresh_refresh_key(
     expiry_time = new_payload["exp"]
     uuid = new_payload["uuid"]
 
+    # TODO: should we not check against GitHub to update the user's info
+    #       here? We could have a service function reverify_user that does
+    #       this for us.
+
     if isinstance(create_time, int):
         create_time = datetime.fromtimestamp(create_time)
 

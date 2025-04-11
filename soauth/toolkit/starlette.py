@@ -97,6 +97,8 @@ class SOAuthCookieBackend(AuthenticationBackend):
 
         log = log.bind(client=conn.client)
 
+        # TODO: What if they have refresh token but not access token?
+
         if "access_token" not in conn.cookies:
             log.debug("tk.starlette.auth.no_cookies")
             return AuthCredentials([]), SOUser(

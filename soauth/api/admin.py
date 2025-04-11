@@ -5,6 +5,7 @@ Administration endpoints.
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from pydantic import BaseModel
 
 from soauth.core.uuid import UUID
 from soauth.service import user as user_service
@@ -55,9 +56,38 @@ async def user(
     return result
 
 
+class ModifyUserContent(BaseModel):
+    grant_add: str | None = None
+    grant_remove: str | None = None
+
+
 @admin_app.post("/user/{user_id}")
-async def modify_user(user_id: UUID, admin_user: AdminUser) -> user_service.UserData:
-    return None
+async def modify_user(
+    content: ModifyUserContent,
+    user_id: UUID,
+    admin_user: AdminUser,
+    conn: DatabaseDependency,
+    log: LoggerDependency,
+) -> user_service.UserData:
+    log = log.bind(admin_user=admin_user, requested_user_id=user_id)
+
+    user = await user_service.read_by_id(user_id=user_id, conn=conn)
+
+    if (grant := content.grant_add) is not None:
+        await user_service.add_grant(
+            user_name=user.user_name, grant=grant, conn=conn, log=log
+        )
+        log = log.bind(added_grant=grant)
+
+    if (grant := content.grant_remove) is not None:
+        await user_service.remove_grant(
+            user_name=user.user_name, grant=grant, conn=conn, log=log
+        )
+        log = log.bind(removed_grant=grant)
+
+    await log.ainfo("api.admin.modify_user")
+
+    return user.to_core()
 
 
 @admin_app.post("/user/{user_id}/revoke")
@@ -71,9 +101,17 @@ async def revoke(user_id: UUID, admin_user: AdminUser) -> user_service.UserData:
 
 
 @admin_app.delete("/user/{user_id}")
-async def delete(user_id: UUID, admin_user: AdminUser):
+async def delete(
+    user_id: UUID,
+    admin_user: AdminUser,
+    conn: DatabaseDependency,
+    log: LoggerDependency,
+):
     """
     Delete a user!
     """
-
-    return
+    log = log.bind(admin_user=admin_user, requested_user_id=user_id)
+    user = await user_service.read_by_id(user_id=user_id, conn=conn)
+    log = log.bind(user=user)
+    await user_service.delete(user_name=user.user_name, conn=conn, log=log)
+    await log.ainfo("api.admin.user_deleted")

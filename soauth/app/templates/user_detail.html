@@ -8,8 +8,11 @@
     href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&family=Press+Start+2P&display=swap"
     rel="stylesheet">
   <style>
-    section {
+    .section {
       margin-bottom: 1em;
+    }
+    .buttonholder {
+      margin-right: 1em
     }
   </style>
 </head>
@@ -25,7 +28,7 @@
     {% if user.is_authenticated %}
     <div class="nes-container with-title">
       <p class="title">Data</p>
-      <section>
+      <section class="section">
         <div class="nes-container with-title">
           <p class="title">User Information</p>
           <ul class="nes-list is-disc">
@@ -51,6 +54,65 @@
                 {% endif %}
                 </li>
             </ul>
+        </div>
+      </section>
+      <section class="section">
+        <div class="nes-container with-title">
+          <p class="title">User Management</p>
+            <div style="display: flex">
+            <section class="buttonholder">
+                <button type="button" class="nes-btn is-error" onclick="document.getElementById('delete-user-dialog').showModal();">
+                Delete User
+                </button>
+                <dialog class="nes-dialog is-rounded" id="delete-user-dialog">
+                <form method="dialog">
+                    <h3 class="title">Are you sure?</h3>
+                    <p>Proceeding will <span class="nes-text is-primary">(in an un-recoverable way)</span> delete the user <span class="nes-text is-error">{{other_user.user_name}}</span>.</p>
+                    <menu class="dialog-menu" style="padding-left:0">
+                    <button class="nes-btn">Cancel</button>
+                    <button class="nes-btn is-error" onclick="location.href='{{other_user.user_id}}/delete'">Confirm</button>
+                    </menu>
+                </form>
+                </dialog>
+            </section>
+            <section class="buttonholder">
+                <button type="button" class="nes-btn is-success" onclick="document.getElementById('add-grant-dialog').showModal();">
+                Add Grant
+                </button>
+                <dialog class="nes-dialog is-rounded" id="add-grant-dialog">
+                <form method="POST" action="/users/{{other_user.user_id}}/grant_add">
+                    <h3 class="title">Add Grant</h3>
+                    <div class="nes-field is-inline">
+                        <label for="add-grant-field">Grant:</label>
+                        <input type="text" id="add-grant-field" name="grant" class="nes-input is-success" placeholder="..." style="margin-bottom:1em" />
+                    </div>
+                    <button class="nes-btn" onclick="document.getElementById('add-grant-dialog').close();">Cancel</button>
+                    <input class="nes-btn is-error" type="submit" value="Confirm" / >
+                </form>
+                </dialog>
+            </section>
+            <section class="buttonholder">
+                <button type="button" class="nes-btn is-warning" onclick="document.getElementById('remove-grant-dialog').showModal();">
+                Remove Grant
+                </button>
+                <dialog class="nes-dialog is-rounded" id="remove-grant-dialog">
+                <form method="POST" action="/users/{{other_user.user_id}}/grant_remove">
+                    <h3 class="title">Remove Grant</h3>
+                    <div style="padding:2em">
+                        {% for grant in other_user.grants %}
+                        <label style="display:block">
+                            <input type="radio" class="nes-radio" name="grant" value="{{grant}}"/>
+                            <span>{{grant}}</span>
+                        </label>
+                        {% endfor %}  
+                    </ul>
+                    </div>
+                    <button class="nes-btn" onclick="document.getElementById('remove-grant-dialog').close();">Cancel</button>
+                    <input class="nes-btn is-error" type="submit" value="Confirm" / >
+                </form>
+                </dialog>
+            </section>
+        </div>
         </div>
       </section>
     </div>

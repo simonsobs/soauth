@@ -4,8 +4,11 @@ This does not require any access to the database, and purely uses the
 soauth authentication scheme. It is packed purely for simplicity.
 """
 
+from typing import Annotated
+
 import httpx
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, Form, HTTPException, Request
+from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 from starlette.authentication import requires
 from starlette.middleware.authentication import AuthenticationMiddleware
@@ -75,7 +78,7 @@ def home(
 @app.get("/users")
 @requires("admin")
 def users(request: Request, log: LoggerDependency):
-    log.debug("app.request.users")
+    log.debug("app.admin.users")
 
     response = httpx.get(url=app.user_list_url, cookies=request.cookies)
 
@@ -100,7 +103,7 @@ def users(request: Request, log: LoggerDependency):
 @app.get("/users/{user_id}")
 @requires("admin")
 def user_detail(user_id: UUID, request: Request, log: LoggerDependency):
-    log.debug("app.request.users")
+    log.debug("app.admin.use_detail")
 
     response = httpx.get(
         url=f"{app.user_detail_url}/{user_id}", cookies=request.cookies
@@ -120,3 +123,71 @@ def user_detail(user_id: UUID, request: Request, log: LoggerDependency):
             user=request.user, scopes=request.auth.scopes, other_user=other_user
         ),
     )
+
+
+@app.get("/users/{user_id}/delete")
+@requires("admin")
+def user_delete(user_id: UUID, request: Request, log: LoggerDependency):
+    log = log.bind(user_id=user_id)
+    log.debug("app.admin.user_delete")
+
+    response = httpx.delete(
+        url=f"{app.user_detail_url}/{user_id}", cookies=request.cookies
+    )
+
+    try:
+        response.raise_for_status()
+    except httpx.HTTPStatusError:
+        raise HTTPException(status_code=401, detail="Error from downstream API")
+
+    return RedirectResponse(url="/users")
+
+
+@app.post("/users/{user_id}/grant_add")
+@requires("admin")
+def add_grant(
+    grant: Annotated[str, Form()],
+    user_id: UUID,
+    request: Request,
+    log: LoggerDependency,
+):
+    log = log.bind(user_id=user_id, grant_add_field=grant)
+    log.debug("app.admin.grant_add_field")
+
+    response = httpx.post(
+        url=f"{app.user_detail_url}/{user_id}",
+        cookies=request.cookies,
+        json={"grant_add": grant},
+    )
+
+    try:
+        response.raise_for_status()
+    except httpx.HTTPStatusError:
+        raise HTTPException(status_code=401, detail="Error from downstream API")
+
+    return RedirectResponse(url=f"/users/{user_id}", status_code=303)
+
+
+@app.post("/users/{user_id}/grant_remove")
+@requires("admin")
+def remove_grant(
+    grant: Annotated[str, Form()],
+    user_id: UUID,
+    request: Request,
+    log: LoggerDependency,
+):
+    log = log.bind(user_id=user_id, grant_remove_field=grant)
+    log.debug("app.admin.grant_remove_field")
+
+    response = httpx.post(
+        url=f"{app.user_detail_url}/{user_id}",
+        cookies=request.cookies,
+        json={"grant_remove": grant},
+    )
+
+    try:
+        response.raise_for_status()
+    except httpx.HTTPStatusError:
+        raise HTTPException(status_code=401, detail="Error from downstream API")
+
+    return RedirectResponse(url=f"/users/{user_id}", status_code=303)

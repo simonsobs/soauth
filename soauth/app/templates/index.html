@@ -73,12 +73,12 @@
         <div class="nes-container with-title is-dark">
           <p class="title">Access Control</p>
           {% if user.is_authenticated %}
-          <a href="{{logout}}"><button type="button" class="nes-btn is-error">Logout</button></a>
+          <button type="button" class="nes-btn is-error" onclick="location.href='{{logout}}'">Logout</button>
           {% else %}
-          <a href="{{login}}"><button type="button" class="nes-btn is-primary">Login</button></a>
+          <button type="button" class="nes-btn is-primary" onclick="location.href='{{login}}'">Login</button>
           {% endif %}
           {% if "admin" in scopes %}
-          <a href="{{user_list}}"><button type="button" class="nes-btn is-primary">User List</button></a>
+          <button type="button" class="nes-btn is-primary" onclick="location.href='{{user_list}}'">User List</button>
           {% endif %}
         </div>
       </section>

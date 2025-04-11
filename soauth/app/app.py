@@ -5,10 +5,12 @@ soauth authentication scheme. It is packed purely for simplicity.
 """
 
 import httpx
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.templating import Jinja2Templates
+from starlette.authentication import requires
 from starlette.middleware.authentication import AuthenticationMiddleware
 
+from soauth.core.uuid import UUID
 from soauth.toolkit.starlette import SOAuthCookieBackend, on_auth_error
 
 from .dependencies import LoggerDependency
@@ -32,6 +34,8 @@ async def lifespan(app: FastAPI):
     app.login_url = f"{AUTHENTICATION_SERVICE_URL}/login/{app_id}"
     app.logout_url = f"{AUTHENTICATION_SERVICE_URL}/logout"
     app.refresh_url = f"{AUTHENTICATION_SERVICE_URL}/exchange"
+    app.user_list_url = f"{AUTHENTICATION_SERVICE_URL}/admin/users"
+    app.user_detail_url = f"{AUTHENTICATION_SERVICE_URL}/admin/user"
 
     yield
 
@@ -57,11 +61,62 @@ def home(
 
     return templates.TemplateResponse(
         request=request,
-        name="index.jinja2",
+        name="index.html",
         context=dict(
             user=request.user,
             scopes=request.auth.scopes,
             login=request.app.login_url,
             logout=request.app.logout_url,
+            user_list="users",
+        ),
+    )
+
+
+@app.get("/users")
+@requires("admin")
+def users(request: Request, log: LoggerDependency):
+    log.debug("app.request.users")
+
+    response = httpx.get(url=app.user_list_url, cookies=request.cookies)
+
+    try:
+        response.raise_for_status()
+    except httpx.HTTPStatusError:
+        raise HTTPException(status_code=401, detail="Error from downstream API")
+
+    users = response.json()
+
+    return templates.TemplateResponse(
+        request=request,
+        name="users.html",
+        context=dict(
+            user=request.user,
+            scopes=request.auth.scopes,
+            users=users,
+        ),
+    )
+
+
+@app.get("/users/{user_id}")
+@requires("admin")
+def user_detail(user_id: UUID, request: Request, log: LoggerDependency):
+    log.debug("app.request.users")
+
+    response = httpx.get(
+        url=f"{app.user_detail_url}/{user_id}", cookies=request.cookies
+    )
+
+    try:
+        response.raise_for_status()
+    except httpx.HTTPStatusError:
+        raise HTTPException(status_code=401, detail="Error from downstream API")
+
+    other_user = response.json()
+
+    return templates.TemplateResponse(
+        request=request,
+        name="user_detail.html",
+        context=dict(
+            user=request.user, scopes=request.auth.scopes, other_user=other_user
         ),
     )

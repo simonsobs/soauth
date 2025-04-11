@@ -25,6 +25,7 @@ class Settings(BaseSettings):
 
     create_example_app_and_user: bool = False
     created_app_public_key: str | bytes | None = None
+    create_admin_users: list[str] = []
     created_app_id: UUID | None = None
     host_development_only_endpoint: bool = False
 

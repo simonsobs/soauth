@@ -41,9 +41,10 @@ def main():
                 "SOAUTH_DATABASE_DB": container.dbname,
                 "SOAUTH_DATABASE_ECHO": "False",
                 "SOAUTH_CREATE_EXAMPLE_APP_AND_USER": "True",
-                "SOAUTH_REFRESH_KEY_EXPIRY": "00:00:59",
-                "SOAUTH_ACCESS_KEY_EXPIRY": "00:00:05",
+                # "SOAUTH_REFRESH_KEY_EXPIRY": "00:00:59",
+                # "SOAUTH_ACCESS_KEY_EXPIRY": "00:00:05",
                 "soauth_host_development_only_endpoint": "True",
+                "SOAUTH_CREATE_ADMIN_USERS": '["jborrow"]',
             }
 
             background_process = Process(target=run_server, kwargs=environment)

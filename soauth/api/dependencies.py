@@ -39,6 +39,7 @@ def SETTINGS():
                 email="no@email",
                 grants="admin",
             )
+
             group = Group(
                 group_name="example_user",
                 created_by_user_id=user.user_id,
@@ -46,6 +47,7 @@ def SETTINGS():
                 created_at=datetime.datetime.now(datetime.timezone.utc),
                 members=[user],
             )
+
             public, private = generate_key_pair(
                 key_pair_type=settings.key_pair_type, key_password=settings.key_password
             )
@@ -58,7 +60,22 @@ def SETTINGS():
                 public_key=public,
                 private_key=private,
             )
+
             conn.add_all([user, group, app])
+
+            for admin_user in settings.create_admin_users:
+                new_user = User(
+                    user_name=admin_user, grants="admin", full_name="TBD", email="TBD"
+                )
+                new_group = Group(
+                    group_name=admin_user,
+                    created_by_user_id=new_user.user_id,
+                    created_by=new_user,
+                    created_at=datetime.datetime.now(datetime.timezone.utc),
+                    members=[new_user],
+                )
+                conn.add_all([new_user, new_group])
+
             conn.commit()
             print(f"Created example, app_id: {app.app_id}")
             settings.created_app_id = app.app_id

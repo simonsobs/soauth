@@ -165,6 +165,8 @@ async def github_login(
 
     try:
         user = await read_by_name(user_name=username, conn=conn)
+        user.email = user_info["email"]
+        user.full_name = user_info["name"]
         log = log.bind(user_read=True, user_created=False)
     except UserNotFound:
         user = await create_user(

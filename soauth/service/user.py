@@ -8,6 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from structlog.typing import FilteringBoundLogger
 
+from soauth.core.user import UserData
 from soauth.core.uuid import UUID
 from soauth.database.group import Group
 from soauth.database.user import User
@@ -70,6 +71,15 @@ async def read_by_name(user_name: str, conn: AsyncSession) -> User:
         raise UserNotFound(f"User with name {user_name} not found in the database")
 
     return res
+
+
+async def get_user_list(conn: AsyncSession) -> list[UserData]:
+    """
+    Get a list of all users registered to the system.
+    """
+    query = select(User)
+    res = (await conn.execute(query)).unique().scalars().all()
+    return [u.to_core() for u in res]
 
 
 async def add_grant(

@@ -1,85 +1,53 @@
-<html>
-
-<head>
-  <link href="https://unpkg.com/nes.css@2.3.0/css/nes.min.css" rel="stylesheet" />
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link
-    href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&family=Press+Start+2P&display=swap"
-    rel="stylesheet">
-  <style>
-    section {
-      margin-bottom: 1em;
-    }
-  </style>
-</head>
-
-<body>
-  <div class="nes-container">
-    {% if user.is_authenticated %}
-    <h1>Welcome {{user.full_name}}</h1>
-    <h3>{{user.display_name}}</h3>
-    {% else %}
-    <h1>Welcome</h1>
-    {% endif %}
-    {% if user.is_authenticated %}
+{% extends "core.html" %}
+{% block content %}
+{% if user.is_authenticated %}
+<div class="nes-container with-title">
+  <p class="title">Data</p>
+  <section>
     <div class="nes-container with-title">
-      <p class="title">Data</p>
-      <section>
-        <div class="nes-container with-title">
-          <p class="title">User Information</p>
-          <ul class="nes-list is-disc">
-            <li><span class="nes-text is-primary">Username</span> {{user.display_name}}</li>
-            <li><span class="nes-text is-primary">Full name</span> {{user.full_name}}</li>
-            <li><span class="nes-text is-primary">Email</span> {{user.email}}</li>
-            <li><span class="nes-text is-primary">Grants</span>
-              {% if scopes %}
-                <ul class="nes-list is-circle">
-                  {% for grant in scopes %}
-                  <li>{{ grant }}</li>
-                  {% endfor %}
-                </ul>
-              {% endif %}
+      <p class="title">User Information</p>
+      <ul class="nes-list is-disc">
+        <li><span class="nes-text is-primary">Username</span> {{user.display_name}}</li>
+        <li><span class="nes-text is-primary">Full name</span> {{user.full_name}}</li>
+        <li><span class="nes-text is-primary">Email</span> {{user.email}}</li>
+        <li><span class="nes-text is-primary">Grants</span>
+          {% if scopes %}
+            <ul class="nes-list is-circle">
+              {% for grant in scopes %}
+              <li>{{ grant }}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+      </li>
+      <li><span class="nes-text is-primary">Groups</span>
+          {% if user.groups %}
+            <ul class="nes-list is-circle">
+              {% for group in user.groups %}
+              <li>{{ group }}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
           </li>
-          <li><span class="nes-text is-primary">Groups</span>
-              {% if user.groups %}
-                <ul class="nes-list is-circle">
-                  {% for group in user.groups %}
-                  <li>{{ group }}</li>
-                  {% endfor %}
-                </ul>
-              {% endif %}
-              </li>
-          </ul>
-        </div>
-      </section>
-      <section>
-        <div class="nes-container with-title">
-          <p class="title">Super Proprietary Data</p>
-          {% if "simonsobs" in scopes %}
-          <p>Choose your fighter:</p>
-          <div style="display:flex; justify-content:center; align-items:center">
-            <i class="nes-bulbasaur" style="margin:3em"></i>
-            <i class="nes-charmander" style="margin:3em"></i>
-            <i class="nes-squirtle" style="margin:3em"></i>
-          </div>
-          {% else %}
-          <p>Unfortunately, you do not have access to proprietary data.</p>
-          {% endif %}
-        </div>
-      </section>
+      </ul>
+    </div>
+  </section>
+  <section>
+    <div class="nes-container with-title">
+      <p class="title">Super Proprietary Data</p>
+      {% if "simonsobs" in scopes %}
+      <p>Choose your fighter:</p>
+      <div style="display:flex; justify-content:center; align-items:center">
+        <i class="nes-bulbasaur" style="margin:3em"></i>
+        <i class="nes-charmander" style="margin:3em"></i>
+        <i class="nes-squirtle" style="margin:3em"></i>
+      </div>
+      {% else %}
+      <p>Unfortunately, you do not have access to proprietary data.</p>
       {% endif %}
-      <section>
-        <div class="nes-container with-title is-dark">
-          <p class="title">Access Control</p>
-          {% if user.is_authenticated %}
-          <button type="button" class="nes-btn is-error" onclick="location.href='{{logout}}'">Logout</button>
-          {% else %}
-          <button type="button" class="nes-btn is-primary" onclick="location.href='{{login}}'">Login</button>
-          {% endif %}
-          {% if "admin" in scopes %}
-          <button type="button" class="nes-btn is-primary" onclick="location.href='{{user_list}}'">User List</button>
-          {% endif %}
-        </div>
-      </section>
-</body>
+    </div>
+  </section>
+</div>
+{% else %}
+<p>Please login with GitHub {{ login }}</p>
+{% endif %}
+{% endblock %}

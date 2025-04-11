@@ -1,0 +1,46 @@
+<html>
+
+<head>
+  <link href="https://unpkg.com/nes.css@2.3.0/css/nes.min.css" rel="stylesheet" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&family=Press+Start+2P&display=swap"
+    rel="stylesheet">
+  <style>
+    section {
+      margin-bottom: 1em;
+    }
+
+    .buttonholder {
+        margin-right: 1em;
+        margin-bottom: 0em;
+    }
+  </style>
+</head>
+
+<body>
+  <main style="padding-bottom:8em">
+  <div class="nes-container">
+    <h1 style="color:#F15A29">Simons Observatory</h1>
+    <h3>User Identity Service</h3>
+    {% block content %}
+    <p>If you are seeing this, there is a rendering error.</p>
+    {% endblock %}
+  </div>
+  </main>
+  <footer class="page-footer" style="position:fixed;bottom:0;width:100%">
+    <div class="nes-container with-title is-dark">
+      <p class="title">{{user.display_name}}</p>
+      {% if user.is_authenticated %}
+      <button type="button" class="nes-btn is-success" onclick="location.href='/'">Home</button>
+      <button type="button" class="nes-btn is-error" style="float:right" onclick="location.href='{{logout}}'">Logout</button>
+      {% else %}
+      <button type="button" class="nes-btn is-primary" onclick="location.href='{{login}}'">Login</button>
+      {% endif %}
+      {% if "admin" in scopes %}
+      <button type="button" class="nes-btn is-primary" onclick="location.href='{{user_list}}'">User List</button>
+      {% endif %}
+    </div>
+  </footer>
+</body>

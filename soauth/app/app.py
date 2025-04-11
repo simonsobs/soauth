@@ -70,7 +70,7 @@ def home(
             scopes=request.auth.scopes,
             login=request.app.login_url,
             logout=request.app.logout_url,
-            user_list="users",
+            user_list="/users",
         ),
     )
 
@@ -95,6 +95,9 @@ def users(request: Request, log: LoggerDependency):
         context=dict(
             user=request.user,
             scopes=request.auth.scopes,
+            login=request.app.login_url,
+            logout=request.app.logout_url,
+            user_list="/users",
             users=users,
         ),
     )
@@ -120,7 +123,12 @@ def user_detail(user_id: UUID, request: Request, log: LoggerDependency):
         request=request,
         name="user_detail.html",
         context=dict(
-            user=request.user, scopes=request.auth.scopes, other_user=other_user
+            user=request.user,
+            scopes=request.auth.scopes,
+            other_user=other_user,
+            login=request.app.login_url,
+            logout=request.app.logout_url,
+            user_list="/users",
         ),
     )
 

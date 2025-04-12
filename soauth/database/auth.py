@@ -6,9 +6,10 @@ from datetime import datetime
 from typing import Optional
 
 from sqlalchemy import Column, DateTime
-from sqlmodel import Field, SQLModel
+from sqlmodel import Field, Relationship, SQLModel
 
 from soauth.core.uuid import UUID, uuid7
+from soauth.database.user import User
 
 
 class RefreshKey(SQLModel, table=True):
@@ -16,6 +17,8 @@ class RefreshKey(SQLModel, table=True):
 
     user_id: UUID = Field(foreign_key="user.user_id", ondelete="CASCADE")
     app_id: UUID = Field(foreign_key="app.app_id", ondelete="CASCADE")
+
+    user: User = Relationship()
 
     hash_algorithm: str
     hashed_content: str

@@ -76,6 +76,18 @@ def SETTINGS():
                 )
                 conn.add_all([new_user, new_group])
 
+            second_demo_app = App(
+                created_by_user_id=user.user_id,
+                created_by=user,
+                created_at=datetime.datetime.now(datetime.timezone.utc),
+                domain="http://simonsobs.org",
+                key_pair_type=settings.key_pair_type,
+                public_key=public,
+                private_key=private,
+            )
+
+            conn.add(second_demo_app)
+
             conn.commit()
             print(f"Created example, app_id: {app.app_id}")
             settings.created_app_id = app.app_id

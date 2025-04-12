@@ -39,6 +39,8 @@ async def lifespan(app: FastAPI):
     app.refresh_url = f"{AUTHENTICATION_SERVICE_URL}/exchange"
     app.user_list_url = f"{AUTHENTICATION_SERVICE_URL}/admin/users"
     app.user_detail_url = f"{AUTHENTICATION_SERVICE_URL}/admin/user"
+    app.app_list_url = f"{AUTHENTICATION_SERVICE_URL}/apps/apps"
+    app.app_detail_url = f"{AUTHENTICATION_SERVICE_URL}/apps/app"
 
     yield
 
@@ -71,6 +73,7 @@ def home(
             login=request.app.login_url,
             logout=request.app.logout_url,
             user_list="/users",
+            apps_list="/apps",
         ),
     )
 
@@ -98,6 +101,7 @@ def users(request: Request, log: LoggerDependency):
             login=request.app.login_url,
             logout=request.app.logout_url,
             user_list="/users",
+            apps_list="/apps",
             users=users,
         ),
     )
@@ -129,6 +133,7 @@ def user_detail(user_id: UUID, request: Request, log: LoggerDependency):
             login=request.app.login_url,
             logout=request.app.logout_url,
             user_list="/users",
+            apps_list="/apps",
         ),
     )
 
@@ -205,3 +210,105 @@ def remove_grant(
         raise HTTPException(status_code=401, detail="Error from downstream API")
 
     return RedirectResponse(url=f"/users/{user_id}", status_code=303)
+
+
+@app.get("/apps")
+def list_apps(request: Request, log: LoggerDependency):
+    # Manual because we got an either OR situation
+    if "admin" not in request.auth.scopes:
+        if "appmanager" not in request.auth.scopes:
+            raise HTTPException(status_code=401)
+
+    response = httpx.get(url=app.app_list_url, cookies=request.cookies)
+
+    try:
+        response.raise_for_status()
+    except httpx.HTTPStatusError:
+        raise HTTPException(status_code=401, detail="Error from downstream API")
+
+    content = response.json()
+    return templates.TemplateResponse(
+        request=request,
+        name="apps.html",
+        context=dict(
+            user=request.user,
+            scopes=request.auth.scopes,
+            login=request.app.login_url,
+            logout=request.app.logout_url,
+            apps=content,
+            user_list="/users",
+            apps_list="/apps",
+        ),
+    )
+
+
+@app.get("/apps/{app_id}")
+def app_detail(
+    app_id: UUID,
+    request: Request,
+    log: LoggerDependency,
+):
+    # Manual because we got an either OR situation
+    if "admin" not in request.auth.scopes:
+        if "appmanager" not in request.auth.scopes:
+            raise HTTPException(status_code=401)
+
+    response = httpx.get(url=f"{app.app_detail_url}/{app_id}", cookies=request.cookies)
+
+    try:
+        response.raise_for_status()
+    except httpx.HTTPStatusError:
+        raise HTTPException(status_code=401, detail="Error from downstream API")
+
+    content = response.json()
+    return templates.TemplateResponse(
+        request=request,
+        name="app_detail.html",
+        context=dict(
+            user=request.user,
+            scopes=request.auth.scopes,
+            login=request.app.login_url,
+            logout=request.app.logout_url,
+            app=content["app"],
+            logged_in_users=content["users"],
+            user_list="/users",
+            apps_list="/apps",
+        ),
+    )
+
+
+@app.get("/apps/{app_id}/refresh")
+def refresh_app_keys(
+    app_id: UUID,
+    request: Request,
+    log: LoggerDependency,
+):
+    # Manual because we got an either OR situation
+    if "admin" not in request.auth.scopes:
+        if "appmanager" not in request.auth.scopes:
+            raise HTTPException(status_code=401)
+
+    response = httpx.post(
+        f"{app.app_detail_url}/{app_id}/refresh", cookies=request.cookies
+    )
+
+    try:
+        response.raise_for_status()
+    except httpx.HTTPStatusError:
+        raise HTTPException(status_code=401, detail="Error from downstream API")
+
+    content = response.json()
+    return templates.TemplateResponse(
+        request=request,
+        name="app_detail.html",
+        context=dict(
+            user=request.user,
+            scopes=request.auth.scopes,
+            login=request.app.login_url,
+            logout=request.app.logout_url,
+            app=content["app"],
+            public_key=content["public_key"],
+            user_list="/users",
+            apps_list="/apps",
+        ),
+    )

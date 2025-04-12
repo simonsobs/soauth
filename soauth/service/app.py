@@ -4,10 +4,12 @@ Service layer for creating applications.
 
 from datetime import datetime, timezone
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from structlog.typing import FilteringBoundLogger
 
 from soauth.config.settings import Settings
+from soauth.core.app import AppData
 from soauth.core.cryptography import generate_key_pair
 from soauth.core.uuid import UUID
 from soauth.database.app import App
@@ -49,6 +51,23 @@ async def create(
     await log.ainfo("app.created")
 
     return app
+
+
+async def get_app_list(
+    created_by_user_id: UUID | None, conn: AsyncSession
+) -> list[AppData]:
+    """
+    Get the app list, either all (created_by_user_id = None) or a specific
+    user.
+    """
+    query = select(App)
+
+    if created_by_user_id is not None:
+        query = query.filter_by(created_by_user_id=created_by_user_id)
+
+    res = await conn.execute(query)
+
+    return [x.to_core() for x in res.scalars().unique().all()]
 
 
 async def read_by_id(app_id: UUID, conn: AsyncSession) -> App:

@@ -86,6 +86,14 @@ async def test_create_refresh_key(user, app, session_manager, logger, server_set
 
     async with session_manager.session() as conn:
         async with conn.begin():
+            logged_in_users = await refresh_service.get_logged_in_users(
+                app_id=app, conn=conn, log=logger
+            )
+
+            assert logged_in_users > 0
+
+    async with session_manager.session() as conn:
+        async with conn.begin():
             pl = await refresh_service.decode_refresh_key(
                 encoded_payload=refreshed_encoded, conn=conn
             )

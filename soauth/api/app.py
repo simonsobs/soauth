@@ -7,6 +7,7 @@ from fastapi import FastAPI
 from soauth.toolkit.fastapi import add_exception_handlers
 
 from .admin import admin_app
+from .appmanager import app_manager_app
 from .dependencies import SETTINGS
 from .login import login_app
 
@@ -29,3 +30,4 @@ app = add_exception_handlers(app)
 
 app.include_router(login_app)
 app.include_router(admin_app, prefix="/admin")
+app.include_router(app_manager_app, prefix="/apps")

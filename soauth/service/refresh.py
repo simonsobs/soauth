@@ -7,8 +7,10 @@ from typing import Any
 
 from sqlalchemy import false, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from structlog.typing import FilteringBoundLogger
 
 from soauth.config.settings import Settings
+from soauth.core.app import LoggedInUserData
 from soauth.core.hashing import checksum
 from soauth.core.tokens import (
     KeyDecodeError,
@@ -241,3 +243,39 @@ async def expire_refresh_key(
     await conn.commit()
 
     return
+
+
+# TODO: function to get refresh keys associated with an app
+
+
+async def get_logged_in_users(
+    app_id: UUID, conn: AsyncSession, log: FilteringBoundLogger
+) -> list[LoggedInUserData]:
+    """
+    Get users that are 'logged in' (i.e. have refresh keys) for an application.
+    """
+
+    query = (
+        select(
+            RefreshKey.refresh_key_id,
+            User.user_name,
+            RefreshKey.created_at,
+            RefreshKey.last_used,
+            RefreshKey.expires_at,
+        )
+        .filter(RefreshKey.app_id == app_id, RefreshKey.revoked == false())
+        .join(RefreshKey.user)
+    )
+
+    result = await conn.execute(query)
+
+    def unpack(x):
+        return LoggedInUserData(
+            refresh_key_id=x[0],
+            user_name=x[1],
+            first_authenticated=x[2],
+            last_authenticated=x[3],
+            login_expires=x[4],
+        )
+
+    return [unpack(x) for x in result]

@@ -31,7 +31,7 @@
   </main>
   <footer class="page-footer" style="position:fixed;bottom:0;width:100%">
     <div class="nes-container with-title is-dark">
-      <p class="title">{{user.display_name}}</p>
+      <p class="title">{{user.display_name if user.display_name else "Login Here" }}</p>
       {% if user.is_authenticated %}
       <button type="button" class="nes-btn is-success" onclick="location.href='/'">Home</button>
       <button type="button" class="nes-btn is-error" style="float:right" onclick="location.href='{{logout}}'">Logout</button>
@@ -40,6 +40,9 @@
       {% endif %}
       {% if "admin" in scopes %}
       <button type="button" class="nes-btn is-primary" onclick="location.href='{{user_list}}'">User List</button>
+      {% endif %}
+      {% if "admin" in scopes or "appmanager" in scopes %}
+      <button type="button" class="nes-btn is-primary" onclick="location.href='{{apps_list}}'">App List</button>
       {% endif %}
     </div>
   </footer>

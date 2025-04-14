@@ -10,6 +10,7 @@ from soauth.core.app import AppData, LoggedInUserData
 from soauth.core.uuid import UUID
 from soauth.service import app as app_service
 from soauth.service import refresh as refresh_service
+from soauth.service import user as user_service
 from soauth.toolkit.fastapi import SOUserWithGrants, handle_authenticated_user
 
 from .dependencies import DatabaseDependency, LoggerDependency, SettingsDependency
@@ -32,6 +33,29 @@ async def handle_app_manager_user(request: Request) -> SOUserWithGrants:
 AppManagerUser = Annotated[SOUserWithGrants, Depends(handle_app_manager_user)]
 
 app_manager_app = APIRouter()
+
+
+@app_manager_app.put("/app")
+async def create_app(
+    domain: str,
+    user: AppManagerUser,
+    conn: DatabaseDependency,
+    settings: SettingsDependency,
+    log: LoggerDependency,
+) -> dict[str, AppData | str]:
+    log = log.bind(user=user, domain=domain)
+    # Need to grt the 'user' from the 'user'
+    database_user = await user_service.read_by_id(user_id=user.user_id, conn=conn)
+    app = await app_service.create(
+        domain=domain, user=database_user, settings=settings, conn=conn, log=log
+    )
+    log = log.bind(app_id=app.app_id)
+    await log.ainfo("api.appmanager.app.created")
+    return {
+        "app": app.to_core(),
+        "public_key": app.public_key.decode("utf-8"),
+        "key_pair_type": app.key_pair_type,
+    }
 
 
 @app_manager_app.get("/apps")
@@ -87,7 +111,11 @@ async def refresh(
     )
     await log.ainfo("api.appmanager.refresh.success")
 
-    return {"app": app.to_core(), "public_key": app.public_key.decode("utf-8")}
+    return {
+        "app": app.to_core(),
+        "public_key": app.public_key.decode("utf-8"),
+        "key_pair_type": app.key_pair_type,
+    }
 
 
 @app_manager_app.delete("/app/{app_id}")

@@ -8,7 +8,7 @@ from typing import Annotated
 
 import httpx
 from fastapi import FastAPI, Form, HTTPException, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from starlette.authentication import requires
 from starlette.middleware.authentication import AuthenticationMiddleware
@@ -21,6 +21,8 @@ from .dependencies import LoggerDependency
 AUTHENTICATION_SERVICE_URL = "http://localhost:8000"
 
 templates = Jinja2Templates(directory=__file__.replace("app.py", "templates"))
+favicon = FileResponse(__file__.replace("app.py", "favicon.ico"))
+apple_touch = FileResponse(__file__.replace("app.py", "apple-touch-icon.png"))
 
 # Grab the details
 with httpx.Client() as client:
@@ -55,6 +57,16 @@ app.add_middleware(
     ),
     on_error=on_auth_error,
 )
+
+
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon_call():
+    return favicon
+
+
+@app.get("/apple-touch-ico{param}.png", include_in_schema=False)
+async def apple(param: str | None):
+    return apple_touch
 
 
 @app.get("/")
@@ -129,7 +141,8 @@ def user_detail(user_id: UUID, request: Request, log: LoggerDependency):
         context=dict(
             user=request.user,
             scopes=request.auth.scopes,
-            other_user=other_user,
+            other_user=other_user["user"],
+            other_user_logins=other_user["logins"],
             login=request.app.login_url,
             logout=request.app.logout_url,
             user_list="/users",
@@ -242,6 +255,70 @@ def list_apps(request: Request, log: LoggerDependency):
     )
 
 
+@app.get("/apps/create")
+def app_create_form(request: Request, log: LoggerDependency):
+    # Manual because we got an either OR situation
+    if "admin" not in request.auth.scopes:
+        if "appmanager" not in request.auth.scopes:
+            raise HTTPException(status_code=401)
+
+    return templates.TemplateResponse(
+        request=request,
+        name="app_creation.html",
+        context=dict(
+            user=request.user,
+            scopes=request.auth.scopes,
+            login=request.app.login_url,
+            logout=request.app.logout_url,
+            user_list="/users",
+            apps_list="/apps",
+        ),
+    )
+
+
+@app.post("/apps/create")
+def app_create_post(
+    domain: Annotated[str, Form()],
+    request: Request,
+    log: LoggerDependency,
+):
+    if "admin" not in request.auth.scopes:
+        if "appmanager" not in request.auth.scopes:
+            raise HTTPException(status_code=401)
+
+    log = log.bind(domain=domain)
+    log.info("app.apps.create.submitting")
+
+    response = httpx.put(
+        f"{request.app.app_detail_url}",
+        cookies=request.cookies,
+        params={"domain": domain},
+    )
+
+    try:
+        response.raise_for_status()
+    except httpx.HTTPStatusError:
+        raise HTTPException(status_code=401, detail="Error from downstream API")
+
+    content = response.json()
+
+    return templates.TemplateResponse(
+        request=request,
+        name="app_detail.html",
+        context=dict(
+            user=request.user,
+            scopes=request.auth.scopes,
+            login=request.app.login_url,
+            logout=request.app.logout_url,
+            public_key=content["public_key"],
+            key_pair_type=content["key_pair_type"],
+            app=content["app"],
+            user_list="/users",
+            apps_list="/apps",
+        ),
+    )
+
+
 @app.get("/apps/{app_id}")
 def app_detail(
     app_id: UUID,
@@ -308,7 +385,29 @@ def refresh_app_keys(
             logout=request.app.logout_url,
             app=content["app"],
             public_key=content["public_key"],
+            key_pair_type=content["key_pair_type"],
             user_list="/users",
             apps_list="/apps",
         ),
     )
+
+
+@app.get("/apps/{app_id}/delete")
+def delete_app(
+    app_id: UUID,
+    request: Request,
+    log: LoggerDependency,
+):
+    # Manual because we got an either OR situation
+    if "admin" not in request.auth.scopes:
+        if "appmanager" not in request.auth.scopes:
+            raise HTTPException(status_code=401)
+
+    response = httpx.delete(f"{app.app_detail_url}/{app_id}", cookies=request.cookies)
+
+    try:
+        response.raise_for_status()
+    except httpx.HTTPStatusError:
+        raise HTTPException(status_code=401, detail="Error from downstream API")
+
+    return RedirectResponse(url="/apps", status_code=302)

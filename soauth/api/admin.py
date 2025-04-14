@@ -7,7 +7,9 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel
 
+from soauth.core.app import LoggedInUserData
 from soauth.core.uuid import UUID
+from soauth.service import refresh as refresh_service
 from soauth.service import user as user_service
 from soauth.toolkit.fastapi import SOUserWithGrants, handle_authenticated_user
 
@@ -48,12 +50,15 @@ async def user(
     admin_user: AdminUser,
     conn: DatabaseDependency,
     log: LoggerDependency,
-) -> user_service.UserData:
+) -> dict[str, user_service.UserData | list[LoggedInUserData]]:
     log = log.bind(admin_user=admin_user, requested_user_id=user_id)
     result = (await user_service.read_by_id(user_id=user_id, conn=conn)).to_core()
+    login_details = await refresh_service.get_all_logins_for_user(
+        user_id=user_id, conn=conn, log=log
+    )
     log = log.bind(read_user=result)
     await log.ainfo("api.admin.user")
-    return result
+    return {"user": result, "logins": login_details}
 
 
 class ModifyUserContent(BaseModel):

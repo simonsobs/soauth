@@ -30,20 +30,34 @@
   </div>
   </main>
   <footer class="page-footer" style="position:fixed;bottom:0;width:100%">
+    {% block extrafooter %}{% endblock %}
     <div class="nes-container with-title is-dark">
       <p class="title">{{user.display_name if user.display_name else "Login Here" }}</p>
-      {% if user.is_authenticated %}
-      <button type="button" class="nes-btn is-success" onclick="location.href='/'">Home</button>
-      <button type="button" class="nes-btn is-error" style="float:right" onclick="location.href='{{logout}}'">Logout</button>
-      {% else %}
-      <button type="button" class="nes-btn is-primary" onclick="location.href='{{login}}'">Login</button>
-      {% endif %}
+      <div style="display:flex;">
+
       {% if "admin" in scopes %}
+      <section class="buttonholder">
       <button type="button" class="nes-btn is-primary" onclick="location.href='{{user_list}}'">User List</button>
+    </section>
       {% endif %}
       {% if "admin" in scopes or "appmanager" in scopes %}
+      <section class="buttonholder">
       <button type="button" class="nes-btn is-primary" onclick="location.href='{{apps_list}}'">App List</button>
+    </section>
       {% endif %}
+      {% if user.is_authenticated %}
+      <section class="buttonholder">
+      <button type="button" class="nes-btn is-success" onclick="location.href='/'">Home</button>
+      </section>
+      <section class="buttonholder" style="margin-left:auto">
+      <button type="button" class="nes-btn is-error"onclick="location.href='{{logout}}'">Logout</button>
+    </section>
+      {% else %}
+      <section class="buttonholder">
+      <button type="button" class="nes-btn is-primary" onclick="location.href='{{login}}'">Login</button>
+    </section>
+      {% endif %}
+      </div>
     </div>
   </footer>
 </body>

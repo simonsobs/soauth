@@ -1,53 +1,58 @@
 {% extends "core.html" %}
 {% block content %}
 {% if user.is_authenticated %}
-<div class="nes-container with-title">
-  <p class="title">Data</p>
-  {% if public_key %}
-  <section class="section">
-    <div class="nes-container with-title">
-      <p class="title">New Public Key</p>
-      <p>Here is your new public key <span class="nes-text is-error">which will only be shown once and must be used immediately with your application</span>.</p>
-      <div class="nes-field">
-        <label for="key-field">Public Key</label>
-        <textarea id="key-field" class="nes-input" readonly rows="4">{{public_key}}</textarea>
-      </div>
+{% if public_key %}
+<section class="section">
+  <div class="nes-container with-title">
+    <p class="title">New Public Key</p>
+    <p>Here is your new public key <span class="nes-text is-error">which will only be shown once and must be used immediately with your application</span>.</p>
+    <div class="nes-field" style="margin-bottom:1em">
+      <label for="key-field">Public Key</label>
+      <textarea id="key-field" class="nes-input" readonly rows="4">{{public_key}}</textarea>
     </div>
-  </section>
-  {% endif %}
-  <section class="section">
+    <div class="nes-field"  style="margin-bottom:1em">
+      <label for="key-pair-type-field">Key Pair Type</label>
+      <input type="text" class="nes-input" readonly value='{{key_pair_type}}' />
+    </div>
+    <div class="nes-field"  style="margin-bottom:1em">
+      <label for="key-pair-type-field">App ID</label>
+      <input type="text" class="nes-input" readonly value='{{app.app_id}}' />
+    </div>
+  </div>
+</section>
+{% endif %}
+<section class="section">
+  <div class="nes-container with-title">
+    <p class="title">App Information</p>
+    <ul class="nes-list is-disc">
+        <li><span class="nes-text is-primary">App ID</span> {{app.app_id}}</li>
+        <li><span class="nes-text is-primary">Created by</span> {{app.created_by_user_name}}</li>
+        <li><span class="nes-text is-primary">Created at</span> {{app.created_at}}</li>
+        <li><span class="nes-text is-primary">Domain</span> {{app.domain}}</li>
+    </ul>
+  </div>
+</section>
+<section class="section">
+  <div class="nes-container with-title">
+    <p class="title">Active Users</p>
+    {% if logged_in_users %}
+    {% for user in logged_in_users %}
+    <section class="section">
     <div class="nes-container with-title">
-      <p class="title">App Information</p>
+      <p class="title"><a href="/users/{{user.user_id}}">{{ user.user_name }}</a></p>
       <ul class="nes-list is-disc">
-          <li><span class="nes-text is-primary">App ID</span> {{app.app_id}}</li>
-          <li><span class="nes-text is-primary">Created by</span> {{app.created_by_user_name}}</li>
-          <li><span class="nes-text is-primary">Created at</span> {{app.created_at}}</li>
-          <li><span class="nes-text is-primary">Domain</span> {{app.domain}}</li>
+          <li><span class="nes-text is-primary">Key ID</span> {{user.refresh_key_id}}</li>
+          <li><span class="nes-text is-primary">Created at</span> {{user.first_authenticated}}</li>
+          <li><span class="nes-text is-primary">Last Used</span> {{user.last_authenticated}}</li>
+          <li><span class="nes-text is-primary">Expires</span> {{user.login_expires}}</li>
       </ul>
     </div>
-  </section>
-  <section class="section">
-    <div class="nes-container with-title">
-      <p class="title">Active Users</p>
-      {% if logged_in_users %}
-      {% for user in logged_in_users %}
-      <section class="section">
-      <div class="nes-container with-title">
-        <p class="title">{{ user.user_name }}</p>
-        <ul class="nes-list is-disc">
-            <li><span class="nes-text is-primary">Key ID</span> {{user.refresh_key_id}}</li>
-            <li><span class="nes-text is-primary">Created at</span> {{user.first_authenticated}}</li>
-            <li><span class="nes-text is-primary">Last Used</span> {{user.last_authenticated}}</li>
-            <li><span class="nes-text is-primary">Expires</span> {{user.login_expires}}</li>
-        </ul>
-      </div>
-      </section>
-      {% endfor %}
-      {% else %}
-      No active users.
-      {% endif %}
-    </div>
-  </section>
-</div>
+    </section>
+    {% endfor %}
+    {% else %}
+    No active users.
+    {% endif %}
+  </div>
+</section>
 {% endif %}
 {% endblock %}

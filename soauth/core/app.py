@@ -19,6 +19,8 @@ class AppData(BaseModel):
 
 class LoggedInUserData(BaseModel):
     user_name: str
+    user_id: UUID
+    app_id: UUID
     refresh_key_id: UUID
     first_authenticated: datetime
     last_authenticated: datetime

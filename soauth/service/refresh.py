@@ -248,12 +248,60 @@ async def expire_refresh_key(
 # TODO: function to get refresh keys associated with an app
 
 
+async def get_all_logins_for_user(
+    user_id: UUID, conn: AsyncSession, log: FilteringBoundLogger
+) -> list[LoggedInUserData]:
+    """
+    Get all logins for a user. This is useful for showing the user
+    all their active sessions.
+    """
+
+    log = log.bind(user_id=user_id)
+
+    query = (
+        select(
+            RefreshKey.refresh_key_id,
+            RefreshKey.app_id,
+            User.user_name,
+            RefreshKey.created_at,
+            RefreshKey.last_used,
+            RefreshKey.expires_at,
+            User.user_id,
+        )
+        .filter(RefreshKey.user_id == user_id, RefreshKey.revoked == false())
+        .join(RefreshKey.user)
+    )
+
+    result = await conn.execute(query)
+
+    def unpack(x):
+        return LoggedInUserData(
+            refresh_key_id=x[0],
+            app_id=x[1],
+            user_name=x[2],
+            first_authenticated=x[3],
+            last_authenticated=x[4],
+            login_expires=x[5],
+            user_id=x[6],
+        )
+
+    unpacked = [unpack(x) for x in result]
+
+    log = log.bind(number_of_logins=len(unpacked))
+
+    await log.ainfo("refresh.all_logins")
+
+    return unpacked
+
+
 async def get_logged_in_users(
     app_id: UUID, conn: AsyncSession, log: FilteringBoundLogger
 ) -> list[LoggedInUserData]:
     """
     Get users that are 'logged in' (i.e. have refresh keys) for an application.
     """
+
+    log = log.bind(app_id=app_id)
 
     query = (
         select(
@@ -262,6 +310,8 @@ async def get_logged_in_users(
             RefreshKey.created_at,
             RefreshKey.last_used,
             RefreshKey.expires_at,
+            RefreshKey.app_id,
+            User.user_id,
         )
         .filter(RefreshKey.app_id == app_id, RefreshKey.revoked == false())
         .join(RefreshKey.user)
@@ -276,6 +326,14 @@ async def get_logged_in_users(
             first_authenticated=x[2],
             last_authenticated=x[3],
             login_expires=x[4],
+            app_id=x[5],
+            user_id=x[6],
         )
 
-    return [unpack(x) for x in result]
+    unpacked = [unpack(x) for x in result]
+
+    log = log.bind(number_of_users=len(unpacked))
+
+    await log.ainfo("refresh.all_users")
+
+    return unpacked

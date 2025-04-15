@@ -22,7 +22,8 @@ dependencies = [
     "fastapi",
     "structlog",
     "uuid7",
-    "jinja2"
+    "jinja2",
+    "python-multipart"
 ]
 
 [project.optional-dependencies]

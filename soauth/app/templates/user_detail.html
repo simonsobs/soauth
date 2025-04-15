@@ -38,7 +38,7 @@
     {% for app in other_user_logins %}
     <section class="section">
     <div class="nes-container with-title">
-      <p class="title"><a href="/apps/{{app.app_id}}">{{ app.app_id }}</a></p>
+      <p class="title"><a href="{{base_url}}/apps/{{app.app_id}}">{{ app.app_id }}</a></p>
       <ul class="nes-list is-disc">
           <li><span class="nes-text is-primary">Key ID</span> {{app.refresh_key_id}}</li>
           <li><span class="nes-text is-primary">Created at</span> {{app.first_authenticated}}</li>
@@ -69,7 +69,7 @@
                 class="nes-text is-error">{{other_user.user_name}}</span>.</p>
             <menu class="dialog-menu" style="padding-left:0">
               <button class="nes-btn">Cancel</button>
-              <button class="nes-btn is-error" onclick="location.href='{{other_user.user_id}}/delete'">Confirm</button>
+              <button class="nes-btn is-error" onclick="location.href='{{base_url}}/{{other_user.user_id}}/delete'">Confirm</button>
             </menu>
           </form>
         </dialog>
@@ -80,7 +80,7 @@
           Add Grant
         </button>
         <dialog class="nes-dialog is-rounded" id="add-grant-dialog">
-          <form method="POST" action="/users/{{other_user.user_id}}/grant_add">
+          <form method="POST" action="{{base_url}}/users/{{other_user.user_id}}/grant_add">
             <h3 class="title">Add Grant</h3>
             <p>Add any grant you wish to add to <span class="nes-text is-error">{{other_user.user_name}}</span>. <span
                 class="nes-text is-warning">No whitespace is allowed in grant names</span>. They will have to refresh
@@ -103,7 +103,7 @@
           Remove Grant
         </button>
         <dialog class="nes-dialog is-rounded" id="remove-grant-dialog">
-          <form method="POST" action="/users/{{other_user.user_id}}/grant_remove">
+          <form method="POST" action="{{base_url}}/users/{{other_user.user_id}}/grant_remove">
             <h3 class="title">Remove Grant</h3>
             <p>Select the grant you wish to remove from <span class="nes-text is-error">{{other_user.user_name}}</span>.
               They will have to refresh their access tokens (either by logging out and back in, manually requesting a

@@ -47,7 +47,7 @@
       {% endif %}
       {% if user.is_authenticated %}
       <section class="buttonholder">
-      <button type="button" class="nes-btn is-success" onclick="location.href='/'">Home</button>
+      <button type="button" class="nes-btn is-success" onclick="location.href='{{base_url}}'">Home</button>
       </section>
       <section class="buttonholder" style="margin-left:auto">
       <button type="button" class="nes-btn is-error"onclick="location.href='{{logout}}'">Logout</button>

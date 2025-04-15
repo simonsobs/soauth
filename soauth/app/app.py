@@ -10,6 +10,7 @@ import httpx
 from fastapi import FastAPI, Form, HTTPException, Request
 from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from starlette.authentication import requires
 from starlette.middleware.authentication import AuthenticationMiddleware
 
@@ -18,21 +19,42 @@ from soauth.toolkit.starlette import SOAuthCookieBackend, on_auth_error
 
 from .dependencies import LoggerDependency
 
-AUTHENTICATION_SERVICE_URL = "http://localhost:8000"
+
+class ManagementSettings(BaseSettings):
+    authentication_service_url: str = "http://localhost:8000"
+    management_service_url: str = "http://localhost:8001/management"
+    root_path: str = "/management"
+    app_id: str | None = None
+    public_key: str | None = None
+    key_type: str | None = None
+
+    model_config = SettingsConfigDict(env_prefix="SOAUTH_MANAGEMENT")
+
+
+settings = ManagementSettings()
+
+AUTHENTICATION_SERVICE_URL = settings.authentication_service_url
+MANAGEMENT_SERVICE_URL = settings.management_service_url
+ROOT_PATH = settings.root_path
 
 templates = Jinja2Templates(directory=__file__.replace("app.py", "templates"))
 favicon = FileResponse(__file__.replace("app.py", "favicon.ico"))
 apple_touch = FileResponse(__file__.replace("app.py", "apple-touch-icon.png"))
 
 # Grab the details
-with httpx.Client() as client:
-    response = client.get(f"{AUTHENTICATION_SERVICE_URL}/developer_details")
+if settings.app_id is None:
+    with httpx.Client() as client:
+        response = client.get(f"{AUTHENTICATION_SERVICE_URL}/developer_details")
 
-    content = response.json()
+        content = response.json()
 
-    app_id = content["authentication_app_id"]
-    public_key = content["authentication_public_key"]
-    key_type = content["authentication_key_type"]
+        app_id = content["authentication_app_id"]
+        public_key = content["authentication_public_key"]
+        key_type = content["authentication_key_type"]
+else:
+    app_id = settings.app_id
+    public_key = settings.public_key
+    key_type = settings.key_type
 
 
 async def lifespan(app: FastAPI):
@@ -44,10 +66,14 @@ async def lifespan(app: FastAPI):
     app.app_list_url = f"{AUTHENTICATION_SERVICE_URL}/apps/apps"
     app.app_detail_url = f"{AUTHENTICATION_SERVICE_URL}/apps/app"
 
+    app.base_url = MANAGEMENT_SERVICE_URL
+    app.user_list = f"{MANAGEMENT_SERVICE_URL}/users"
+    app.app_list = f"{MANAGEMENT_SERVICE_URL}/apps"
+
     yield
 
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(lifespan=lifespan, root_path=ROOT_PATH)
 
 app.add_middleware(
     AuthenticationMiddleware,
@@ -84,8 +110,9 @@ def home(
             scopes=request.auth.scopes,
             login=request.app.login_url,
             logout=request.app.logout_url,
-            user_list="/users",
-            apps_list="/apps",
+            user_list=request.app.user_list,
+            apps_list=request.app.app_list,
+            base_url=request.app.base_url,
         ),
     )
 
@@ -112,8 +139,9 @@ def users(request: Request, log: LoggerDependency):
             scopes=request.auth.scopes,
             login=request.app.login_url,
             logout=request.app.logout_url,
-            user_list="/users",
-            apps_list="/apps",
+            user_list=request.app.user_list,
+            apps_list=request.app.app_list,
+            base_url=request.app.base_url,
             users=users,
         ),
     )
@@ -145,8 +173,9 @@ def user_detail(user_id: UUID, request: Request, log: LoggerDependency):
             other_user_logins=other_user["logins"],
             login=request.app.login_url,
             logout=request.app.logout_url,
-            user_list="/users",
-            apps_list="/apps",
+            user_list=request.app.user_list,
+            apps_list=request.app.app_list,
+            base_url=request.app.base_url,
         ),
     )
 
@@ -249,8 +278,9 @@ def list_apps(request: Request, log: LoggerDependency):
             login=request.app.login_url,
             logout=request.app.logout_url,
             apps=content,
-            user_list="/users",
-            apps_list="/apps",
+            user_list=request.app.user_list,
+            apps_list=request.app.app_list,
+            base_url=request.app.base_url,
         ),
     )
 
@@ -270,8 +300,9 @@ def app_create_form(request: Request, log: LoggerDependency):
             scopes=request.auth.scopes,
             login=request.app.login_url,
             logout=request.app.logout_url,
-            user_list="/users",
-            apps_list="/apps",
+            user_list=request.app.user_list,
+            apps_list=request.app.app_list,
+            base_url=request.app.base_url,
         ),
     )
 
@@ -297,7 +328,7 @@ def app_create_post(
         params={
             "domain": domain,
             "access_token_name": access_token_name,
-            "refresh_token_name": refresh_token_name
+            "refresh_token_name": refresh_token_name,
         },
     )
 
@@ -319,8 +350,9 @@ def app_create_post(
             public_key=content["public_key"],
             key_pair_type=content["key_pair_type"],
             app=content["app"],
-            user_list="/users",
-            apps_list="/apps",
+            user_list=request.app.user_list,
+            apps_list=request.app.app_list,
+            base_url=request.app.base_url,
         ),
     )
 
@@ -354,8 +386,9 @@ def app_detail(
             logout=request.app.logout_url,
             app=content["app"],
             logged_in_users=content["users"],
-            user_list="/users",
-            apps_list="/apps",
+            user_list=request.app.user_list,
+            apps_list=request.app.app_list,
+            base_url=request.app.base_url,
         ),
     )
 
@@ -392,8 +425,9 @@ def refresh_app_keys(
             app=content["app"],
             public_key=content["public_key"],
             key_pair_type=content["key_pair_type"],
-            user_list="/users",
-            apps_list="/apps",
+            user_list=request.app.user_list,
+            apps_list=request.app.app_list,
+            base_url=request.app.base_url,
         ),
     )
 

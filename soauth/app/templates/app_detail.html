@@ -39,7 +39,7 @@
     {% for user in logged_in_users %}
     <section class="section">
     <div class="nes-container with-title">
-      <p class="title"><a href="/users/{{user.user_id}}">{{ user.user_name }}</a></p>
+      <p class="title"><a href="{{base_url}}/users/{{user.user_id}}">{{ user.user_name }}</a></p>
       <ul class="nes-list is-disc">
           <li><span class="nes-text is-primary">Key ID</span> {{user.refresh_key_id}}</li>
           <li><span class="nes-text is-primary">Created at</span> {{user.first_authenticated}}</li>

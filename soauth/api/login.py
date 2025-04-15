@@ -114,11 +114,16 @@ async def github(
         await log.aerror("api.login.github.redirect_error")
         raise unauthorized
 
-    log = log.bind(redirect_to=redirect, login_request_id=login_request.login_request_id)
+    log = log.bind(
+        redirect_to=redirect, login_request_id=login_request.login_request_id
+    )
 
     response = RedirectResponse(url=redirect, status_code=302)
 
-    log = log.bind(access_token_name=app.access_token_name, refresh_token_name=app.refresh_token_name)
+    log = log.bind(
+        access_token_name=app.access_token_name,
+        refresh_token_name=app.refresh_token_name,
+    )
 
     response.set_cookie(app.access_token_name, auth_key, httponly=True)
     response.set_cookie(app.refresh_token_name, refresh_key, httponly=True)

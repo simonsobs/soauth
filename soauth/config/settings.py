@@ -44,6 +44,8 @@ class Settings(BaseSettings):
     github_redirect_uri: str
     github_organization_checks: list[str]
 
+    hostname: str = "http://localhost:8000"
+
     model_config = SettingsConfigDict(env_prefix="SOAUTH_", env_file=".env")
 
     @property

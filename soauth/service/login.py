@@ -166,7 +166,7 @@ async def complete(
         log = log.bind(login_request=login_request)
         await log.aerror("login.redirect_invalid")
         raise e
-    
+
     login_request.completed_at = datetime.now(timezone.utc)
     login_request.user_id = user.user_id
 

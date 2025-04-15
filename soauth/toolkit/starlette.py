@@ -91,7 +91,7 @@ class SOAuthCookieBackend(AuthenticationBackend):
         public_key: str | bytes,
         key_pair_type: str,
         access_token_name: str = "access_token",
-        refresh_token_name: str = "access_token"
+        refresh_token_name: str = "access_token",
     ):
         self.public_key = public_key
         self.key_pair_type = key_pair_type

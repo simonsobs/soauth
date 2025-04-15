@@ -15,7 +15,7 @@
       <tbody>
       {% for user in users %}
         <tr>
-            <td><a href="users/{{user.user_id}}">{{user.user_name}}</a></td>
+            <td><a href="{{base_url}}/users/{{user.user_id}}">{{user.user_name}}</a></td>
             <td>{{user.full_name}}</td>
             <td>{{user.email}}</td>
         </tr>

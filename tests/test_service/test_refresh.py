@@ -90,7 +90,7 @@ async def test_create_refresh_key(user, app, session_manager, logger, server_set
                 app_id=app, conn=conn, log=logger
             )
 
-            assert logged_in_users > 0
+            assert len(logged_in_users) > 0
 
     async with session_manager.session() as conn:
         async with conn.begin():

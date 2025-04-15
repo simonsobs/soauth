@@ -37,7 +37,7 @@ with httpx.Client() as client:
 
 async def lifespan(app: FastAPI):
     app.login_url = f"{AUTHENTICATION_SERVICE_URL}/login/{app_id}"
-    app.logout_url = f"{AUTHENTICATION_SERVICE_URL}/logout"
+    app.logout_url = f"{AUTHENTICATION_SERVICE_URL}/logout/{app_id}"
     app.refresh_url = f"{AUTHENTICATION_SERVICE_URL}/exchange"
     app.user_list_url = f"{AUTHENTICATION_SERVICE_URL}/admin/users"
     app.user_detail_url = f"{AUTHENTICATION_SERVICE_URL}/admin/user"
@@ -279,6 +279,8 @@ def app_create_form(request: Request, log: LoggerDependency):
 @app.post("/apps/create")
 def app_create_post(
     domain: Annotated[str, Form()],
+    access_token_name: Annotated[str, Form()],
+    refresh_token_name: Annotated[str, Form()],
     request: Request,
     log: LoggerDependency,
 ):
@@ -292,7 +294,11 @@ def app_create_post(
     response = httpx.put(
         f"{request.app.app_detail_url}",
         cookies=request.cookies,
-        params={"domain": domain},
+        params={
+            "domain": domain,
+            "access_token_name": access_token_name,
+            "refresh_token_name": refresh_token_name
+        },
     )
 
     try:

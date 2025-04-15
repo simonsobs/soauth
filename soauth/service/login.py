@@ -99,7 +99,7 @@ async def build_redirect(user: User, app: App, request: LoginRequest) -> str:
 
     if app_host != redirect_host:
         raise RedirectInvalidError(
-            "Application host and redirection host are not the same"
+            f"Application host and redirection host are not the same {redirect_host} v.s. {app_host}"
         )
 
     return redirect_to
@@ -158,9 +158,15 @@ async def complete(
 
     app = await app_service.read_by_id(login_request.app_id, conn)
 
-    login_request.redirect_to = await build_redirect(
-        user=user, app=app, request=login_request
-    )
+    try:
+        login_request.redirect_to = await build_redirect(
+            user=user, app=app, request=login_request
+        )
+    except RedirectInvalidError as e:
+        log = log.bind(login_request=login_request)
+        await log.aerror("login.redirect_invalid")
+        raise e
+    
     login_request.completed_at = datetime.now(timezone.utc)
     login_request.user_id = user.user_id
 

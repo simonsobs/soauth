@@ -10,6 +10,14 @@
         <label for="domain_field">Domain</label>
         <input type="url" id="domain_field" class="nes-input" placeholder="..." style="margin-bottom: 1em" required name="domain" />
     </div>
+    <div class="nes-field">
+        <label for="access_token_field">Access Token Name</label>
+        <input type="text" id="access_token_field" class="nes-input" placeholder="access_token" value="access_token" style="margin-bottom: 1em" required name="access_token_name" />
+    </div>
+    <div class="nes-field">
+        <label for="refresh_token_field">Refresh Token Name</label>
+        <input type="text" id="refresh_token_field" class="nes-input" placeholder="refresh_token" value="refresh_token" style="margin-bottom: 1em" required name="refresh_token_name" />
+    </div>
     <button class="nes-btn is-success" type="submit" value="Create" / >Create</button>
   </form>
   {% else %}

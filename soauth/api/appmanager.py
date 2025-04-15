@@ -42,12 +42,20 @@ async def create_app(
     conn: DatabaseDependency,
     settings: SettingsDependency,
     log: LoggerDependency,
+    access_token_name: str = "access_token",
+    refresh_token_name: str = "refresh_token",
 ) -> dict[str, AppData | str]:
     log = log.bind(user=user, domain=domain)
-    # Need to grt the 'user' from the 'user'
+    # Need to get the 'user' from the 'user'
     database_user = await user_service.read_by_id(user_id=user.user_id, conn=conn)
     app = await app_service.create(
-        domain=domain, user=database_user, settings=settings, conn=conn, log=log
+        domain=domain,
+        user=database_user,
+        settings=settings,
+        conn=conn,
+        log=log,
+        access_token_name=access_token_name,
+        refresh_token_name=refresh_token_name,
     )
     log = log.bind(app_id=app.app_id)
     await log.ainfo("api.appmanager.app.created")

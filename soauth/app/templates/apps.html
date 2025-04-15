@@ -17,10 +17,10 @@
             <button class="nes-btn is-primary" onclick="location.href='apps/{{app.app_id}}'">Detail</button>
         </section>
         <section class="buttonholder">
-            <button type="button" class="nes-btn is-warning" onclick="document.getElementById('refresh-keys-dialog').showModal();">
+            <button type="button" class="nes-btn is-warning" onclick="document.getElementById('refresh-keys-dialog-{{app.app_id}}').showModal();">
             Refresh Keys
             </button>
-            <dialog class="nes-dialog is-rounded" id="refresh-keys-dialog">
+            <dialog class="nes-dialog is-rounded" id="refresh-keys-dialog-{{app.app_id}}">
             <form method="dialog">
                 <h3 class="title">Are you sure?</h3>
                 <p>Proceeding will <span class="nes-text is-primary">(in an un-recoverable way)</span> refresh the keys for <span class="nes-text is-error">{{app.domain}}</span>.</p>
@@ -32,10 +32,10 @@
             </dialog>
         </section>
         <section class="buttonholder">
-            <button type="button" class="nes-btn is-error" onclick="document.getElementById('delete-app-dialog').showModal();">
+            <button type="button" class="nes-btn is-error" onclick="document.getElementById('delete-app-dialog-{{app.app_id}}').showModal();">
             Delete
             </button>
-            <dialog class="nes-dialog is-rounded" id="delete-app-dialog">
+            <dialog class="nes-dialog is-rounded" id="delete-app-dialog-{{app.app_id}}">
             <form method="dialog">
                 <h3 class="title">Are you sure?</h3>
                 <p>Proceeding will <span class="nes-text is-primary">(in an un-recoverable way)</span> delete the application <span class="nes-text is-error">{{app.domain}} ({{app.app_id}})</span>.</p>

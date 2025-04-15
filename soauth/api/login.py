@@ -109,23 +109,28 @@ async def github(
         redirect = await login_service.complete(
             login_request=login_request, user=user, conn=conn, log=log
         )
-    except (login_service.StaleRequestError, login_service.RedirectInvalidError):
+    except (login_service.StaleRequestError, login_service.RedirectInvalidError) as e:
+        log = log.bind(error=e)
+        await log.aerror("api.login.github.redirect_error")
         raise unauthorized
 
-    log.bind(redirect_to=redirect, login_request_id=login_request.login_request_id)
+    log = log.bind(redirect_to=redirect, login_request_id=login_request.login_request_id)
 
     response = RedirectResponse(url=redirect, status_code=302)
 
-    response.set_cookie("access_token", auth_key, httponly=True)
-    response.set_cookie("refresh_token", refresh_key, httponly=True)
+    log = log.bind(access_token_name=app.access_token_name, refresh_token_name=app.refresh_token_name)
+
+    response.set_cookie(app.access_token_name, auth_key, httponly=True)
+    response.set_cookie(app.refresh_token_name, refresh_key, httponly=True)
 
     await log.ainfo("api.login.github.success")
 
     return response
 
 
-@login_app.get("/exchange")
+@login_app.get("/exchange/{app_id}")
 async def exchange(
+    app_id: UUID,
     request: Request,
     settings: SettingsDependency,
     conn: DatabaseDependency,
@@ -146,8 +151,15 @@ async def exchange(
         )
 
     try:
+        app = await app_service.read_by_id(app_id=app_id, conn=conn)
+    except app_service.AppNotFound:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"App {app_id} not found"
+        )
+
+    try:
         auth_key, refresh_key = await flow_service.secondary(
-            encoded_refresh_key=request.cookies.get("refresh_token", ""),
+            encoded_refresh_key=request.cookies.get(app.refresh_token_name, ""),
             settings=settings,
             conn=conn,
             log=log,
@@ -159,8 +171,8 @@ async def exchange(
 
     response = RedirectResponse(url=redirect, status_code=302)
 
-    response.set_cookie("access_token", auth_key, httponly=True)
-    response.set_cookie("refresh_token", refresh_key, httponly=True)
+    response.set_cookie(app.access_token_name, auth_key, httponly=True)
+    response.set_cookie(app.refresh_token_name, refresh_key, httponly=True)
 
     return response
 
@@ -169,8 +181,9 @@ class Content(BaseModel):
     refresh_token: str | bytes
 
 
-@login_app.post("/exchange")
+@login_app.post("/exchange/{app_id}")
 async def exchange_post(
+    app_id: UUID,
     content: Content,
     request: Request,
     settings: SettingsDependency,
@@ -208,8 +221,9 @@ async def exchange_post(
     return {"access_token": auth_key, "refresh_token": refresh_key}
 
 
-@login_app.get("/logout")
+@login_app.get("/logout/{app_id}")
 async def logout(
+    app_id: UUID,
     request: Request,
     settings: SettingsDependency,
     conn: DatabaseDependency,
@@ -222,6 +236,15 @@ async def logout(
 
     redirect = request.headers.get("Referer", None)
 
+    try:
+        app = await app_service.read_by_id(app_id=app_id, conn=conn)
+        access_token_name = app.access_token_name
+        refresh_token_name = app.refresh_token_name
+    except app_service.AppNotFound:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"App {app_id} not found"
+        )
+
     if redirect is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -230,7 +253,7 @@ async def logout(
 
     try:
         await flow_service.logout(
-            encoded_refresh_key=request.cookies.get("refresh_token", ""),
+            encoded_refresh_key=request.cookies.get(refresh_token_name, ""),
             settings=settings,
             conn=conn,
             log=log,
@@ -240,8 +263,8 @@ async def logout(
         pass
 
     response = RedirectResponse(url=redirect, status_code=302)
-    response.delete_cookie("access_token")
-    response.delete_cookie("refresh_token")
+    response.delete_cookie(access_token_name)
+    response.delete_cookie(refresh_token_name)
 
     return response
 

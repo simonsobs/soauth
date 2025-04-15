@@ -67,17 +67,24 @@ async def handle_user(request: Request) -> SOUserWithGrants:
     model to keep everything self-contained.
     """
 
+    refresh_token_name = getattr(request.app, "refresh_token_name", "refresh_token")
+    access_token_name = getattr(request.app, "access_token_name", "access_token")
+
     log = get_logger()
 
-    log = log.bind(client=request.client)
+    log = log.bind(
+        client=request.client,
+        refresh_token_name=refresh_token_name,
+        access_token_name=access_token_name,
+    )
 
     # TODO: What if they have refresh token but not access token?
 
-    if "access_token" not in request.cookies:
+    if access_token_name not in request.cookies:
         log.debug("tk.fastapi.auth.no_cookies")
         return SOUserWithGrants(is_authenticated=False)
 
-    access_token = request.cookies["access_token"]
+    access_token = request.cookies[access_token_name]
 
     if access_token is None:
         log.debug("tk.fastapi.auth.no_token")

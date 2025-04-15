@@ -26,6 +26,8 @@ async def create(
     settings: Settings,
     conn: AsyncSession,
     log: FilteringBoundLogger,
+    access_token_name: str = "access_token",
+    refresh_token_name: str = "refresh_token",
 ) -> App:
     log = log.bind(
         user_id=user.user_id, domain=domain, key_pair_type=settings.key_pair_type
@@ -43,6 +45,8 @@ async def create(
         key_pair_type=settings.key_pair_type,
         public_key=public_key,
         private_key=private_key,
+        access_token_name=access_token_name,
+        refresh_token_name=refresh_token_name,
     )
 
     conn.add(app)

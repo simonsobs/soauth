@@ -33,6 +33,9 @@ class App(SQLModel, table=True):
     public_key: bytes
     private_key: bytes
 
+    access_token_name: str = "access_token"
+    refresh_token_name: str = "refresh_token"
+
     def to_core(self) -> AppData:
         return AppData(
             app_id=self.app_id,

@@ -83,29 +83,39 @@ class SOAuthCookieBackend(AuthenticationBackend):
 
     public_key: str | bytes
     key_pair_type: str
+    access_token_name: str = "access_token"
+    refresh_token_name: str = "refresh_token"
 
     def __init__(
         self,
         public_key: str | bytes,
         key_pair_type: str,
+        access_token_name: str = "access_token",
+        refresh_token_name: str = "access_token"
     ):
         self.public_key = public_key
         self.key_pair_type = key_pair_type
+        self.access_token_name = access_token_name
+        self.refresh_token_name = refresh_token_name
 
     async def authenticate(self, conn: Request):
         log = get_logger()
 
-        log = log.bind(client=conn.client)
+        log = log.bind(
+            client=conn.client,
+            access_token_name=self.access_token_name,
+            refresh_token_name=self.refresh_token_name,
+        )
 
         # TODO: What if they have refresh token but not access token?
 
-        if "access_token" not in conn.cookies:
+        if self.access_token_name not in conn.cookies:
             log.debug("tk.starlette.auth.no_cookies")
             return AuthCredentials([]), SOUser(
                 is_authenticated=False, display_name=None
             )
 
-        access_token = conn.cookies["access_token"]
+        access_token = conn.cookies[self.access_token_name]
 
         if access_token is None:
             log.debug("tk.starlette.auth.no_token")
@@ -158,10 +168,17 @@ def key_expired_handler(request: Request, exc: KeyExpiredError) -> RedirectRespo
         key from a fresh login!
     """
 
-    refresh_key = request.cookies["refresh_token"]
+    refresh_token_name = getattr(request.app, "refresh_token_name", "refresh_token")
+    access_token_name = getattr(request.app, "access_token_name", "access_token")
+
+    refresh_key = request.cookies[refresh_token_name]
 
     log = get_logger()
-    log = log.bind(orginal_url=request.url)
+    log = log.bind(
+        orginal_url=request.url,
+        refresh_token_name=refresh_token_name,
+        access_token_name=access_token_name,
+    )
 
     if refresh_key is None:
         log.info("tk.starlette.expired.no_token")
@@ -180,8 +197,8 @@ def key_expired_handler(request: Request, exc: KeyExpiredError) -> RedirectRespo
             # the login flow again.
             response = RedirectResponse(request.url, status_code=302)
 
-            response.delete_cookie("access_token")
-            response.delete_cookie("refresh_token")
+            response.delete_cookie(access_token_name)
+            response.delete_cookie(refresh_token_name)
             return response
 
         if response.status_code != 200:
@@ -192,16 +209,16 @@ def key_expired_handler(request: Request, exc: KeyExpiredError) -> RedirectRespo
             # the login flow again.
             response = RedirectResponse(request.url, status_code=302)
 
-            response.delete_cookie("access_token")
-            response.delete_cookie("refresh_token")
+            response.delete_cookie(access_token_name)
+            response.delete_cookie(refresh_token_name)
             return response
 
         content = response.json()
 
     response = RedirectResponse(request.url, status_code=302)
 
-    response.set_cookie("access_token", content["access_token"])
-    response.set_cookie("refresh_token", content["refresh_token"])
+    response.set_cookie(access_token_name, content["access_token"])
+    response.set_cookie(refresh_token_name, content["refresh_token"])
 
     log.info("tk.starlette.expired.refreshed")
 
@@ -217,15 +234,22 @@ def key_decode_handler(request: Request, exc: KeyDecodeError) -> RedirectRespons
     the lifecycle handlers.
     """
 
+    refresh_token_name = getattr(request.app, "refresh_token_name", "refresh_token")
+    access_token_name = getattr(request.app, "access_token_name", "access_token")
+
     log = get_logger()
-    log = log.bind(orginal_url=request.url)
+    log = log.bind(
+        orginal_url=request.url,
+        refresh_token_name=refresh_token_name,
+        access_token_name=access_token_name,
+    )
 
     response = RedirectResponse(url=request.app.login_url, status_code=302)
 
     log = log.bind(redirect_to=request.app.login_url)
 
-    response.delete_cookie("access_token")
-    response.delete_cookie("refresh_token")
+    response.delete_cookie(access_token_name)
+    response.delete_cookie(refresh_token_name)
 
     log.info("tk.starlette.decode.redirecting")
 

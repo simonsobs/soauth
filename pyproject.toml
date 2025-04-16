@@ -23,7 +23,8 @@ dependencies = [
     "structlog",
     "uuid7",
     "jinja2",
-    "python-multipart"
+    "python-multipart",
+    "uvicorn"
 ]
 
 [project.optional-dependencies]
@@ -36,6 +37,13 @@ dev = [
     "pre-commit",
     "testcontainers[postgres]"
 ]
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.package-data]
+soauth = ["soauth/app/templates/*.html"]  # Or use **/*.html for nested folders
+
 
 [project.scripts]
 soauth = "soauth.scripts.cli:main"

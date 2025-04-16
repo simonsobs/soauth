@@ -22,7 +22,7 @@ class User(SQLModel, table=True):
 
     full_name: str = Field()
     user_name: str = Field(unique=True)
-    email: str
+    email: str | None = None
 
     # A list of grants (space separated!) that this user has.
     grants: str = Field()

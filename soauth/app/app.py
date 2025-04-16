@@ -28,7 +28,7 @@ class ManagementSettings(BaseSettings):
     public_key: str | None = None
     key_type: str | None = None
 
-    model_config = SettingsConfigDict(env_prefix="SOAUTH_MANAGEMENT")
+    model_config = SettingsConfigDict(env_prefix="SOAUTH_MANAGEMENT_")
 
 
 settings = ManagementSettings()

@@ -8,7 +8,7 @@ import time
 from multiprocessing import Process
 
 import uvicorn
-from testcontainers.postgres import PostgresContainer
+
 
 
 def run_server(**kwargs):
@@ -21,7 +21,7 @@ def run_server(**kwargs):
 def main():
     try:
         run = sys.argv[1] == "run"
-        setup = sys.argv[2] == "setup"
+        setup = sys.argv[1] == "setup"
         dev = sys.argv[2] == "dev"
         prod = sys.argv[2] == "prod"
         username = sys.argv[2]
@@ -32,6 +32,7 @@ def main():
         exit(1)
 
     if run and dev:
+        from testcontainers.postgres import PostgresContainer
         with PostgresContainer() as container:
             print(
                 f"Container details: username={container.username}, password={container.password}, port={container.get_exposed_port(container.port)}"
@@ -59,6 +60,7 @@ def main():
 
     if run and prod:
         background_process = Process(target=run_server)
+        background_process.start()
         time.sleep(1)
         uvicorn.run("soauth.app.app:app", host="0.0.0.0", port=8001)
 
@@ -114,5 +116,5 @@ def main():
             settings.created_app_id = app.app_id
             settings.created_app_public_key = app.public_key
             print(f"Created base app_id: {app.app_id}")
-            print(f"Public key: {app.public_key.encode('utf-8')}")
+            print(f"Public key: {app.public_key.decode('utf-8')}")
             print(f"Key pair type: {app.key_pair_type}")

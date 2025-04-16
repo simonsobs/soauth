@@ -21,6 +21,9 @@ async def lifespan(app: FastAPI):
     app.key_pair_type = settings.key_pair_type
     app.public_key = settings.created_app_public_key
 
+    if isinstance(app.public_key, str):
+        app.public_key = app.public_key.encode("utf-8")
+
     yield
 
 

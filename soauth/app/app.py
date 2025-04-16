@@ -41,7 +41,9 @@ MANAGEMENT_SERVICE_URL = settings.management_service_url
 ROOT_PATH = settings.root_path
 
 templates = Jinja2Templates(directory=__file__.replace("app.py", "templates"))
-favicon = FileResponse(__file__.replace("app.py", "favicon.ico"))
+favicon = FileResponse(
+    __file__.replace("app.py", "favicon.ico"), media_type="image/x-icon"
+)
 apple_touch = FileResponse(__file__.replace("app.py", "apple-touch-icon.png"))
 
 # Grab the details

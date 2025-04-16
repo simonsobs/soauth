@@ -2,12 +2,11 @@
 Main login flow - redirection to GitHub and handling of responses.
 """
 
-from datetime import datetime
 
 from fastapi import APIRouter, HTTPException, Request, status
 from fastapi.responses import RedirectResponse
-from pydantic import BaseModel
 
+from soauth.core.models import KeyRefreshResponse, RefreshTokenModel
 from soauth.core.tokens import KeyExpiredError
 from soauth.core.uuid import UUID
 from soauth.service import app as app_service
@@ -126,7 +125,7 @@ async def code(
     settings: SettingsDependency,
     conn: DatabaseDependency,
     log: LoggerDependency,
-) -> dict[str, str | datetime]:
+) -> KeyRefreshResponse:
     """
     Exchange a code and client secret for keys.
 
@@ -188,28 +187,24 @@ async def code(
         redirect_to=redirect, login_request_id=login_request.login_request_id
     )
 
-    return {
-        "access_token": auth_key,
-        "refresh_token": refresh_key,
-        "access_token_expires": auth_key_expires,
-        "refresh_token_expires": refresh_key_expires,
-        "redirect": redirect,
-    }
-
-
-class Content(BaseModel):
-    refresh_token: str | bytes
+    return KeyRefreshResponse(
+        access_token=auth_key,
+        refresh_token=refresh_key,
+        access_token_expires=auth_key_expires,
+        refresh_token_expires=refresh_key_expires,
+        redirect=redirect,
+    )
 
 
 @login_app.post("/exchange/{app_id}")
 async def exchange_post(
     app_id: UUID,
-    content: Content,
+    content: RefreshTokenModel,
     request: Request,
     settings: SettingsDependency,
     conn: DatabaseDependency,
     log: LoggerDependency,
-) -> dict[str, str | datetime]:
+) -> KeyRefreshResponse:
     """
     Exchange your refresh key for a new refresh key and a new auth key.
 
@@ -243,18 +238,18 @@ async def exchange_post(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token expired"
         )
 
-    return {
-        "access_token": auth_key,
-        "refresh_token": refresh_key,
-        "access_token_expires": auth_key_expires,
-        "refresh_token_expires": refresh_key_expires,
-    }
+    return KeyRefreshResponse(
+        access_token=auth_key,
+        refresh_token=refresh_key,
+        access_token_expires=auth_key_expires,
+        refresh_token_expires=refresh_key_expires,
+    )
 
 
 @login_app.post("/expire/{app_id}")
 async def expire(
     app_id: UUID,
-    content: Content,
+    content: RefreshTokenModel,
     request: Request,
     settings: SettingsDependency,
     conn: DatabaseDependency,

@@ -40,6 +40,7 @@ from starlette.responses import RedirectResponse
 from structlog import get_logger
 
 from soauth.core.auth import KeyDecodeError, decode_access_token
+from soauth.core.models import KeyRefreshResponse
 from soauth.core.tokens import KeyExpiredError
 from soauth.core.uuid import UUID
 
@@ -107,9 +108,10 @@ class SOAuthCookieBackend(AuthenticationBackend):
             refresh_token_name=self.refresh_token_name,
         )
 
-        # TODO: What if they have refresh token but not access token?
-
         if self.access_token_name not in conn.cookies:
+            if self.refresh_token_name in conn.cookies:
+                log.debug("tk.starlette.auth.only_refresh_cookie")
+                raise AuthenticationExpiredError("Token expired")
             log.debug("tk.starlette.auth.no_cookies")
             return AuthCredentials([]), SOUser(
                 is_authenticated=False, display_name=None
@@ -213,21 +215,21 @@ def key_expired_handler(request: Request, exc: KeyExpiredError) -> RedirectRespo
             response.delete_cookie(refresh_token_name)
             return response
 
-        content = response.json()
+        content = KeyRefreshResponse.model_validate_json(response.content)
 
     response = RedirectResponse(request.url, status_code=302)
 
     response.set_cookie(
         access_token_name,
-        content["access_token"],
+        content.access_token,
         httponly=True,
-        expires=content["access_token_expires"],
+        expires=content.access_token_expires,
     )
     response.set_cookie(
         refresh_token_name,
-        content["refresh_token"],
+        content.refresh_token,
         httponly=True,
-        expires=content["refresh_token_expires"],
+        expires=content.refresh_token_expires,
     )
 
     log.info("tk.starlette.expired.refreshed")

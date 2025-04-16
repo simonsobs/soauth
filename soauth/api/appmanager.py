@@ -38,24 +38,22 @@ app_manager_app = APIRouter()
 @app_manager_app.put("/app")
 async def create_app(
     domain: str,
+    redirect_url: str,
     user: AppManagerUser,
     conn: DatabaseDependency,
     settings: SettingsDependency,
     log: LoggerDependency,
-    access_token_name: str = "access_token",
-    refresh_token_name: str = "refresh_token",
 ) -> dict[str, AppData | str]:
     log = log.bind(user=user, domain=domain)
     # Need to get the 'user' from the 'user'
     database_user = await user_service.read_by_id(user_id=user.user_id, conn=conn)
     app = await app_service.create(
         domain=domain,
+        redirect_url=redirect_url,
         user=database_user,
         settings=settings,
         conn=conn,
         log=log,
-        access_token_name=access_token_name,
-        refresh_token_name=refresh_token_name,
     )
     log = log.bind(app_id=app.app_id)
     await log.ainfo("api.appmanager.app.created")
@@ -63,6 +61,7 @@ async def create_app(
         "app": app.to_core(),
         "public_key": app.public_key.decode("utf-8"),
         "key_pair_type": app.key_pair_type,
+        "client_secret": app.client_secret,
     }
 
 
@@ -121,6 +120,7 @@ async def refresh(
 
     return {
         "app": app.to_core(),
+        "client_secret": app.client_secret,
         "public_key": app.public_key.decode("utf-8"),
         "key_pair_type": app.key_pair_type,
     }

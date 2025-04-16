@@ -7,6 +7,7 @@ from datetime import datetime
 from sqlalchemy import Column, DateTime
 from sqlmodel import Field, SQLModel
 
+from soauth.core.random import auth_code
 from soauth.core.uuid import UUID, uuid7
 
 
@@ -22,5 +23,10 @@ class LoginRequest(SQLModel, table=True):
     completed_at: datetime | None = Field(
         sa_column=Column(DateTime(timezone=True)), default=None
     )
+
+    secret_code: str = Field(default_factory=auth_code)
+
+    access_token: str | None = None
+    refresh_token: str | None = None
 
     stale: bool = False

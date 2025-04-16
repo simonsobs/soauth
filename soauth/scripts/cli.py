@@ -10,7 +10,6 @@ from multiprocessing import Process
 import uvicorn
 
 
-
 def run_server(**kwargs):
     for k, v in kwargs.items():
         os.environ[k] = v
@@ -33,6 +32,7 @@ def main():
 
     if run and dev:
         from testcontainers.postgres import PostgresContainer
+
         with PostgresContainer() as container:
             print(
                 f"Container details: username={container.username}, password={container.password}, port={container.get_exposed_port(container.port)}"
@@ -105,6 +105,7 @@ def main():
                 created_by=user,
                 created_at=datetime.datetime.now(datetime.timezone.utc),
                 domain=settings.hostname,
+                redirect_url=f"{settings.hostname}/management/redirect",
                 key_pair_type=settings.key_pair_type,
                 public_key=public,
                 private_key=private,
@@ -117,4 +118,5 @@ def main():
             settings.created_app_public_key = app.public_key
             print(f"Created base app_id: {app.app_id}")
             print(f"Public key: {app.public_key.decode('utf-8')}")
+            print(f"Secret: {app.client_secret}")
             print(f"Key pair type: {app.key_pair_type}")

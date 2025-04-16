@@ -120,3 +120,19 @@ async def delete(
     log = log.bind(user=user)
     await user_service.delete(user_name=user.user_name, conn=conn, log=log)
     await log.ainfo("api.admin.user_deleted")
+
+
+@admin_app.delete("/keys/{key_id}")
+async def revoke_key(
+    key_id: UUID,
+    admin_user: AdminUser,
+    conn: DatabaseDependency,
+    log: LoggerDependency,
+):
+    """
+    Revoke a key!
+    """
+    log = log.bind(admin_user=admin_user, requested_key_id=key_id)
+    await refresh_service.expire_refresh_key_by_id(key_id=key_id, conn=conn)
+    await log.ainfo("api.admin.key_revoked")
+    return

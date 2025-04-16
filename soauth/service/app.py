@@ -11,6 +11,7 @@ from structlog.typing import FilteringBoundLogger
 from soauth.config.settings import Settings
 from soauth.core.app import AppData
 from soauth.core.cryptography import generate_key_pair
+from soauth.core.random import client_secret
 from soauth.core.uuid import UUID
 from soauth.database.app import App
 from soauth.database.user import User
@@ -22,12 +23,11 @@ class AppNotFound(Exception):
 
 async def create(
     domain: str,
+    redirect_url: str,
     user: User,
     settings: Settings,
     conn: AsyncSession,
     log: FilteringBoundLogger,
-    access_token_name: str = "access_token",
-    refresh_token_name: str = "refresh_token",
 ) -> App:
     log = log.bind(
         user_id=user.user_id, domain=domain, key_pair_type=settings.key_pair_type
@@ -42,11 +42,10 @@ async def create(
         created_by=user,
         created_at=datetime.now(timezone.utc),
         domain=domain,
+        redirect_url=redirect_url,
         key_pair_type=settings.key_pair_type,
         public_key=public_key,
         private_key=private_key,
-        access_token_name=access_token_name,
-        refresh_token_name=refresh_token_name,
     )
 
     conn.add(app)
@@ -96,6 +95,7 @@ async def refresh_keys(
 
     app.public_key = public_key
     app.private_key = private_key
+    app.client_secret = client_secret()
 
     conn.add(app)
 

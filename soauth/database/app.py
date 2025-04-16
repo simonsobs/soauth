@@ -9,6 +9,7 @@ from sqlalchemy import Column, DateTime
 from sqlmodel import Field, Relationship, SQLModel
 
 from soauth.core.app import AppData
+from soauth.core.random import client_secret
 from soauth.core.uuid import UUID, uuid7
 
 if TYPE_CHECKING:
@@ -33,8 +34,8 @@ class App(SQLModel, table=True):
     public_key: bytes
     private_key: bytes
 
-    access_token_name: str = "access_token"
-    refresh_token_name: str = "refresh_token"
+    client_secret: str = Field(default_factory=client_secret)
+    redirect_url: str
 
     def to_core(self) -> AppData:
         return AppData(

@@ -231,9 +231,22 @@ async def expire_refresh_key(
     if isinstance(uuid, int):
         uuid = UUID(hex=uuid)
 
-    res = await conn.get(RefreshKey, uuid)
+    await expire_refresh_key_by_id(key_id=uuid, conn=conn)
+
+    return
+
+
+async def expire_refresh_key_by_id(key_id: UUID, conn: AsyncSession):
+    """
+    Force-expire a refresh key based upon its id.
+    """
+
+    res = await conn.get(RefreshKey, key_id)
 
     if res is None:
+        return
+
+    if res.revoked:
         return
 
     res.last_used = datetime.now(timezone.utc)

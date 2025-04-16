@@ -5,7 +5,7 @@ Login request handling.
 from datetime import datetime, timezone
 from urllib.parse import urlparse
 
-from sqlalchemy import delete, update
+from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from structlog.typing import FilteringBoundLogger
 
@@ -120,6 +120,46 @@ async def read(login_request_id: UUID, conn: AsyncSession) -> LoginRequest:
 
     if login_request is None or login_request.stale:
         raise StaleRequestError("Login request not found or stale")
+
+    return login_request
+
+
+async def read_by_code(code: str, secret: str, conn: AsyncSession) -> LoginRequest:
+    """
+    Read a login request by its secret code, and validate that the
+    secret is valid.
+
+    Parameters
+    ----------
+    code: str
+        The secret code that can be exchanged by downstream applications
+        for keys.
+    secret: str
+        The secret key for the application the user is authenticating
+        against.
+    conn: AsyncSession
+        Database connection.
+
+    Raises
+    ------
+    StaleRequestError
+        In the case where the request is either not found, or it
+        has been marked as stale.
+    """
+
+    login_request = (
+        await conn.execute(
+            select(LoginRequest).filter(LoginRequest.secret_code == code)
+        )
+    ).scalar_one_or_none()
+
+    if login_request is None:
+        raise StaleRequestError("Secret key not found")
+
+    app = await app_service.read_by_id(app_id=login_request.app_id, conn=conn)
+
+    if app.client_secret != secret:
+        raise StaleRequestError("Client secret incorrect")
 
     return login_request
 

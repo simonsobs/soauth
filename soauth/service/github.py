@@ -127,7 +127,7 @@ async def github_login(
                 "client_id": settings.github_client_id,
                 "client_secret": settings.github_client_secret,
                 "redirect_uri": settings.github_redirect_uri,
-                "code": code
+                "code": code,
             },
             headers={"Accept": "application/json"},
         )
@@ -171,7 +171,8 @@ async def github_login(
     if user_email is None:
         try:
             user_email_info = await github_api_call(
-                github_api_access_token=gh_access_token, url="https://api.github.com/user/emails"
+                github_api_access_token=gh_access_token,
+                url="https://api.github.com/user/emails",
             )
             for email in user_email_info:
                 if email["primary"]:
@@ -228,7 +229,7 @@ async def github_login_redirect(login_request: LoginRequest, settings: Settings)
     query = {
         "client_id": settings.github_client_id,
         "state": str(login_request.login_request_id),
-        "scope": "read:user user:email"
+        "scope": "read:user user:email read:org",
     }
 
     url = urllib.parse.urlunparse(

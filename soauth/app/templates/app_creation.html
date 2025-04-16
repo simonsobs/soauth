@@ -4,20 +4,15 @@
 <div class="nes-container with-title">
   <p class="title">Create Application</p>
   {% if "admin" in scopes or "appmanager" in scopes %}
-  <p>Once you click <span class="nes-text is-primary">create</span>, you will be redirected to a page where you will see the <span class="nes-text is-error">public key</span> for your service, <span class="nes-text is-error">once and only once</span>.</p>
+  <p>Once you click <span class="nes-text is-primary">create</span>, you will be redirected to a page where you will see the <span class="nes-text is-error">public key</span> and <span class="nes-text is-error">client secret</span> for your service, <span class="nes-text is-error">once and only once</span>.</p>
   <form method="POST" action="{{base_url}}/apps/create">
     <div class="nes-field">
         <label for="domain_field">Domain</label>
         <input type="url" id="domain_field" class="nes-input" placeholder="..." style="margin-bottom: 1em" required name="domain" />
     </div>
-    <p>If you wish to use a non-default refresh key (for instance if you are hosting multiple applications under the same subdomain), you may change them here. Do not forget to <span class="nes-text is warning">set the appropriate values in your middlewares and exception handlers</span>.</p>
     <div class="nes-field">
-        <label for="access_token_field">Access Token Name</label>
-        <input type="text" id="access_token_field" class="nes-input" placeholder="access_token" value="access_token" style="margin-bottom: 1em" required name="access_token_name" />
-    </div>
-    <div class="nes-field">
-        <label for="refresh_token_field">Refresh Token Name</label>
-        <input type="text" id="refresh_token_field" class="nes-input" placeholder="refresh_token" value="refresh_token" style="margin-bottom: 1em" required name="refresh_token_name" />
+        <label for="redirect_field">Redirect</label>
+        <input type="url" id="redirect_field" class="nes-input" placeholder="..." style="margin-bottom: 1em" required name="redirect" />
     </div>
     <button class="nes-btn is-success" type="submit" value="Create" / >Create</button>
   </form>

@@ -217,8 +217,18 @@ def key_expired_handler(request: Request, exc: KeyExpiredError) -> RedirectRespo
 
     response = RedirectResponse(request.url, status_code=302)
 
-    response.set_cookie(access_token_name, content["access_token"], httponly=True, max_age=request.app.cookie_max_age.total_seconds() )
-    response.set_cookie(refresh_token_name, content["refresh_token"], httponly=True, max_age=request.app.cookie_max_age.total_seconds() )
+    response.set_cookie(
+        access_token_name,
+        content["access_token"],
+        httponly=True,
+        max_age=request.app.cookie_max_age.total_seconds(),
+    )
+    response.set_cookie(
+        refresh_token_name,
+        content["refresh_token"],
+        httponly=True,
+        max_age=request.app.cookie_max_age.total_seconds(),
+    )
 
     log.info("tk.starlette.expired.refreshed")
 

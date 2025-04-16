@@ -84,7 +84,7 @@ async def secondary(
     settings: Settings,
     conn: AsyncSession,
     log: FilteringBoundLogger,
-) -> tuple[str]:
+) -> tuple[str, str]:
     """
     Secondary authentication flow - turn in your encoded refresh key
     for a new one and an authentication key. This checks against

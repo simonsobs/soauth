@@ -4,6 +4,7 @@ This does not require any access to the database, and purely uses the
 soauth authentication scheme. It is packed purely for simplicity.
 """
 
+from datetime import timedelta
 from typing import Annotated
 
 import httpx
@@ -13,7 +14,6 @@ from fastapi.templating import Jinja2Templates
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from starlette.authentication import requires
 from starlette.middleware.authentication import AuthenticationMiddleware
-from datetime import timedelta
 
 from soauth.core.uuid import UUID
 from soauth.toolkit.starlette import SOAuthCookieBackend, on_auth_error
@@ -28,6 +28,7 @@ class ManagementSettings(BaseSettings):
     app_id: str | None = None
     public_key: str | None = None
     key_type: str | None = None
+    client_secret: str | None = None
 
     model_config = SettingsConfigDict(env_prefix="SOAUTH_MANAGEMENT_")
 
@@ -52,18 +53,23 @@ if settings.app_id is None:
         app_id = content["authentication_app_id"]
         public_key = content["authentication_public_key"]
         key_type = content["authentication_key_type"]
+        client_secret = content["authentication_client_secret"]
 else:
     app_id = settings.app_id
     public_key = settings.public_key
     key_type = settings.key_type
+    client_secret = settings.client_secret
 
 
 async def lifespan(app: FastAPI):
     app.login_url = f"{AUTHENTICATION_SERVICE_URL}/login/{app_id}"
-    app.logout_url = f"{AUTHENTICATION_SERVICE_URL}/logout/{app_id}"
+    app.code_url = f"{AUTHENTICATION_SERVICE_URL}/code/{app_id}"
+    app.client_secret = client_secret
+    app.expire_url = f"{AUTHENTICATION_SERVICE_URL}/expire/{app_id}"
     app.refresh_url = f"{AUTHENTICATION_SERVICE_URL}/exchange"
     app.user_list_url = f"{AUTHENTICATION_SERVICE_URL}/admin/users"
     app.user_detail_url = f"{AUTHENTICATION_SERVICE_URL}/admin/user"
+    app.key_revoke_url = f"{AUTHENTICATION_SERVICE_URL}/admin/keys"
     app.app_list_url = f"{AUTHENTICATION_SERVICE_URL}/apps/apps"
     app.app_detail_url = f"{AUTHENTICATION_SERVICE_URL}/apps/app"
     app.cookie_max_age = timedelta(days=7)
@@ -71,6 +77,7 @@ async def lifespan(app: FastAPI):
     app.base_url = MANAGEMENT_SERVICE_URL
     app.user_list = f"{MANAGEMENT_SERVICE_URL}/users"
     app.app_list = f"{MANAGEMENT_SERVICE_URL}/apps"
+    app.logout_url = f"{MANAGEMENT_SERVICE_URL}/logout"
 
     yield
 
@@ -117,6 +124,46 @@ def home(
             base_url=request.app.base_url,
         ),
     )
+
+
+@app.get("/logout")
+def logout(request: Request, log: LoggerDependency) -> RedirectResponse:
+    response = RedirectResponse(url=request.app.base_url)
+
+    if cookie := request.cookies.get("refresh_token", None):
+        httpx.post(request.app.expire_url, json={"refresh_token": cookie})
+
+    response.delete_cookie("refresh_token")
+    response.delete_cookie("access_token")
+
+    return response
+
+
+@app.get("/redirect")
+def redirect_login(
+    code: str, state: str, request: Request, log: LoggerDependency
+) -> RedirectResponse:
+    log.debug("app.redirect_login")
+
+    try:
+        response = httpx.post(
+            request.app.code_url,
+            params=dict(code=code, secret=request.app.client_secret),
+        )
+
+        response.raise_for_status()
+    except httpx.HTTPStatusError:
+        raise HTTPException(status_code=401)
+
+    content = response.json()
+
+    response = RedirectResponse(url=content["redirect"], status_code=302)
+
+    response.set_cookie(key="access_token", value=content["access_token"])
+
+    response.set_cookie(key="refresh_token", value=content["refresh_token"])
+
+    return response
 
 
 @app.get("/users")
@@ -312,8 +359,7 @@ def app_create_form(request: Request, log: LoggerDependency):
 @app.post("/apps/create")
 def app_create_post(
     domain: Annotated[str, Form()],
-    access_token_name: Annotated[str, Form()],
-    refresh_token_name: Annotated[str, Form()],
+    redirect: Annotated[str, Form()],
     request: Request,
     log: LoggerDependency,
 ):
@@ -327,11 +373,7 @@ def app_create_post(
     response = httpx.put(
         f"{request.app.app_detail_url}",
         cookies=request.cookies,
-        params={
-            "domain": domain,
-            "access_token_name": access_token_name,
-            "refresh_token_name": refresh_token_name,
-        },
+        params={"domain": domain, "redirect_url": redirect},
     )
 
     try:
@@ -352,6 +394,7 @@ def app_create_post(
             public_key=content["public_key"],
             key_pair_type=content["key_pair_type"],
             app=content["app"],
+            client_secret=content["client_secret"],
             user_list=request.app.user_list,
             apps_list=request.app.app_list,
             base_url=request.app.base_url,
@@ -395,6 +438,27 @@ def app_detail(
     )
 
 
+@app.get("/apps/{app_id}/revoke/{refresh_key_id}")
+@requires("admin")
+def revoke_key(
+    app_id: UUID,
+    refresh_key_id: UUID,
+    request: Request,
+    log: LoggerDependency,
+) -> RedirectResponse:
+    response = httpx.delete(
+        f"{app.key_revoke_url}/{refresh_key_id}", cookies=request.cookies
+    )
+    try:
+        response.raise_for_status()
+    except httpx.HTTPStatusError:
+        raise HTTPException(status_code=401, detail="Error from downstream API")
+
+    return RedirectResponse(
+        url=f"{request.app.base_url}/apps/{app_id}", status_code=302
+    )
+
+
 @app.get("/apps/{app_id}/refresh")
 def refresh_app_keys(
     app_id: UUID,
@@ -427,6 +491,7 @@ def refresh_app_keys(
             app=content["app"],
             public_key=content["public_key"],
             key_pair_type=content["key_pair_type"],
+            client_secret=content["client_secret"],
             user_list=request.app.user_list,
             apps_list=request.app.app_list,
             base_url=request.app.base_url,

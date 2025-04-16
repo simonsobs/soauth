@@ -59,6 +59,7 @@ def SETTINGS():
                 key_pair_type=settings.key_pair_type,
                 public_key=public,
                 private_key=private,
+                redirect_url="http://localhost:8001/redirect",
             )
 
             conn.add_all([user, group, app])
@@ -84,6 +85,7 @@ def SETTINGS():
                 key_pair_type=settings.key_pair_type,
                 public_key=public,
                 private_key=private,
+                redirect_url="http://simonsobs.org/redirect",
             )
 
             conn.add(second_demo_app)
@@ -92,6 +94,7 @@ def SETTINGS():
             print(f"Created example, app_id: {app.app_id}")
             settings.created_app_id = app.app_id
             settings.created_app_public_key = app.public_key
+            settings.created_app_client_secret = app.client_secret
 
     return settings
 

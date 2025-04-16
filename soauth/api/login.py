@@ -13,6 +13,7 @@ from soauth.service import flow as flow_service
 from soauth.service import github as github_service
 from soauth.service import login as login_service
 from soauth.service import refresh as refresh_service
+from soauth.service import user as user_service
 
 from .dependencies import (
     SETTINGS,
@@ -94,9 +95,71 @@ async def github(
         user = await github_service.github_login(
             code=code, settings=settings, conn=conn, log=log
         )
+        login_request.user_id = user.user_id
+        conn.add(user)
     except github_service.GitHubLoginError:
         await log.aerror("api.login.github.github_error")
         raise unauthorized
+
+    await log.ainfo("api.login.github.success")
+
+    app = await app_service.read_by_id(app_id=login_request.app_id, conn=conn)
+
+    # TODO: Parameterize this redirect process through a service layer.
+
+    response = RedirectResponse(
+        url=f"{app.redirect_url}?code={login_request.secret_code}&state={state}",
+        status_code=302,
+    )
+
+    return response
+
+
+@login_app.post("/code/{app_id}")
+async def code(
+    code: str,
+    secret: str,
+    app_id: UUID,
+    request: Request,
+    settings: SettingsDependency,
+    conn: DatabaseDependency,
+    log: LoggerDependency,
+) -> dict[str, str]:
+    """
+    Exchange a code and client secret for keys.
+
+    Returns a dictionary with access_token, refresh_token, and redirect - which is where
+    you should redirect the user to after completing the exchange.
+    """
+
+    # All of this can be surely balled up into a service layer function?
+
+    unauthorized = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication failed"
+    )
+
+    try:
+        login_request = await login_service.read_by_code(
+            code=code, secret=secret, conn=conn
+        )
+    except login_service.StaleRequestError as e:
+        log = log.bind(error=e)
+        await log.ainfo("api.login.code.read_failed")
+        raise unauthorized
+
+    try:
+        user = await user_service.read_by_id(user_id=login_request.user_id, conn=conn)
+    except user_service.UserNotFound as e:
+        log = log.bind(error=e)
+        await log.ainfo("api.login.code.user_failed")
+        raise unauthorized
+
+    if app_id != login_request.app_id:
+        log = log.bind(
+            requested_app_id=app_id,
+            recovered_app_id=login_request.app_id,
+        )
+        await log.ainfo("api.login.code.app_failed")
 
     # Create the codes!
     app = await app_service.read_by_id(app_id=login_request.app_id, conn=conn)
@@ -111,75 +174,67 @@ async def github(
         )
     except (login_service.StaleRequestError, login_service.RedirectInvalidError) as e:
         log = log.bind(error=e)
-        await log.aerror("api.login.github.redirect_error")
+        await log.aerror("api.login.code.redirect_error")
         raise unauthorized
 
     log = log.bind(
         redirect_to=redirect, login_request_id=login_request.login_request_id
     )
 
-    response = RedirectResponse(url=redirect, status_code=302)
-
-    log = log.bind(
-        access_token_name=app.access_token_name,
-        refresh_token_name=app.refresh_token_name,
-    )
-
-    response.set_cookie(app.access_token_name, auth_key, httponly=True, max_age=settings.cookie_max_age.total_seconds() )
-    response.set_cookie(app.refresh_token_name, refresh_key, httponly=True, max_age=settings.cookie_max_age.total_seconds() )
-
-    await log.ainfo("api.login.github.success")
-
-    return response
+    return {
+        "access_token": auth_key,
+        "refresh_token": refresh_key,
+        "redirect": redirect,
+    }
 
 
-@login_app.get("/exchange/{app_id}")
-async def exchange(
-    app_id: UUID,
-    request: Request,
-    settings: SettingsDependency,
-    conn: DatabaseDependency,
-    log: LoggerDependency,
-) -> RedirectResponse:
-    """
-    Exchange your refresh key for a new refresh key and a new auth key.
+# @login_app.get("/exchange/{app_id}")
+# async def exchange(
+#     app_id: UUID,
+#     request: Request,
+#     settings: SettingsDependency,
+#     conn: DatabaseDependency,
+#     log: LoggerDependency,
+# ) -> RedirectResponse:
+#     """
+#     Exchange your refresh key for a new refresh key and a new auth key.
 
-    You will be redirected back to the URL in your requests "Referer" header.
-    """
+#     You will be redirected back to the URL in your requests "Referer" header.
+#     """
 
-    redirect = request.headers.get("Referer", None)
+#     redirect = request.headers.get("Referer", None)
 
-    if redirect is None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Your request must include a 'Referer' header",
-        )
+#     if redirect is None:
+#         raise HTTPException(
+#             status_code=status.HTTP_400_BAD_REQUEST,
+#             detail="Your request must include a 'Referer' header",
+#         )
 
-    try:
-        app = await app_service.read_by_id(app_id=app_id, conn=conn)
-    except app_service.AppNotFound:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=f"App {app_id} not found"
-        )
+#     try:
+#         app = await app_service.read_by_id(app_id=app_id, conn=conn)
+#     except app_service.AppNotFound:
+#         raise HTTPException(
+#             status_code=status.HTTP_404_NOT_FOUND, detail=f"App {app_id} not found"
+#         )
 
-    try:
-        auth_key, refresh_key = await flow_service.secondary(
-            encoded_refresh_key=request.cookies.get(app.refresh_token_name, ""),
-            settings=settings,
-            conn=conn,
-            log=log,
-        )
-    except refresh_service.AuthorizationError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Bad refresh token"
-        )
+#     try:
+#         auth_key, refresh_key = await flow_service.secondary(
+#             encoded_refresh_key=request.cookies.get(app.refresh_token_name, ""),
+#             settings=settings,
+#             conn=conn,
+#             log=log,
+#         )
+#     except refresh_service.AuthorizationError:
+#         raise HTTPException(
+#             status_code=status.HTTP_401_UNAUTHORIZED, detail="Bad refresh token"
+#         )
 
-    response = RedirectResponse(url=redirect, status_code=302)
+#     response = RedirectResponse(url=redirect, status_code=302)
 
-    response.set_cookie(app.access_token_name, auth_key, httponly=True, max_age=settings.cookie_max_age.total_seconds() )
-    response.set_cookie(app.refresh_token_name, refresh_key, httponly=True, max_age=settings.cookie_max_age.total_seconds() )
+#     response.set_cookie(app.access_token_name, auth_key, httponly=True, max_age=settings.cookie_max_age.total_seconds() )
+#     response.set_cookie(app.refresh_token_name, refresh_key, httponly=True, max_age=settings.cookie_max_age.total_seconds() )
 
-    return response
+#     return response
 
 
 class Content(BaseModel):
@@ -194,7 +249,7 @@ async def exchange_post(
     settings: SettingsDependency,
     conn: DatabaseDependency,
     log: LoggerDependency,
-) -> RedirectResponse:
+) -> dict[str, str]:
     """
     Exchange your refresh key for a new refresh key and a new auth key.
 
@@ -226,39 +281,22 @@ async def exchange_post(
     return {"access_token": auth_key, "refresh_token": refresh_key}
 
 
-@login_app.get("/logout/{app_id}")
-async def logout(
+@login_app.post("/expire/{app_id}")
+async def expire(
     app_id: UUID,
+    content: Content,
     request: Request,
     settings: SettingsDependency,
     conn: DatabaseDependency,
     log: LoggerDependency,
 ):
     """
-    Log a user out and revoke the refresh key they are using. The user will be redirected
-    back to the "Referer" header.
+    Expires a key.
     """
-
-    redirect = request.headers.get("Referer", None)
-
-    try:
-        app = await app_service.read_by_id(app_id=app_id, conn=conn)
-        access_token_name = app.access_token_name
-        refresh_token_name = app.refresh_token_name
-    except app_service.AppNotFound:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=f"App {app_id} not found"
-        )
-
-    if redirect is None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Your request must include a 'Referer' header",
-        )
 
     try:
         await flow_service.logout(
-            encoded_refresh_key=request.cookies.get(refresh_token_name, ""),
+            encoded_refresh_key=content.refresh_token,
             settings=settings,
             conn=conn,
             log=log,
@@ -266,12 +304,6 @@ async def logout(
     except (refresh_service.AuthorizationError, KeyExpiredError):
         # I mean, we can't decode it so it's not valid, I don't care.
         pass
-
-    response = RedirectResponse(url=redirect, status_code=302)
-    response.delete_cookie(access_token_name)
-    response.delete_cookie(refresh_token_name)
-
-    return response
 
 
 if SETTINGS().host_development_only_endpoint:
@@ -284,6 +316,7 @@ if SETTINGS().host_development_only_endpoint:
         """
 
         return {
+            "authentication_client_secret": settings.created_app_client_secret,
             "authentication_app_id": settings.created_app_id,
             "authentication_public_key": settings.created_app_public_key,
             "authentication_key_type": settings.key_pair_type,

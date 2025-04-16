@@ -125,8 +125,8 @@ async def github(
         refresh_token_name=app.refresh_token_name,
     )
 
-    response.set_cookie(app.access_token_name, auth_key, httponly=True)
-    response.set_cookie(app.refresh_token_name, refresh_key, httponly=True)
+    response.set_cookie(app.access_token_name, auth_key, httponly=True, max_age=settings.cookie_max_age.total_seconds() )
+    response.set_cookie(app.refresh_token_name, refresh_key, httponly=True, max_age=settings.cookie_max_age.total_seconds() )
 
     await log.ainfo("api.login.github.success")
 
@@ -176,8 +176,8 @@ async def exchange(
 
     response = RedirectResponse(url=redirect, status_code=302)
 
-    response.set_cookie(app.access_token_name, auth_key, httponly=True)
-    response.set_cookie(app.refresh_token_name, refresh_key, httponly=True)
+    response.set_cookie(app.access_token_name, auth_key, httponly=True, max_age=settings.cookie_max_age.total_seconds() )
+    response.set_cookie(app.refresh_token_name, refresh_key, httponly=True, max_age=settings.cookie_max_age.total_seconds() )
 
     return response
 

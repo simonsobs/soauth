@@ -13,6 +13,7 @@ from fastapi.templating import Jinja2Templates
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from starlette.authentication import requires
 from starlette.middleware.authentication import AuthenticationMiddleware
+from datetime import timedelta
 
 from soauth.core.uuid import UUID
 from soauth.toolkit.starlette import SOAuthCookieBackend, on_auth_error
@@ -65,6 +66,7 @@ async def lifespan(app: FastAPI):
     app.user_detail_url = f"{AUTHENTICATION_SERVICE_URL}/admin/user"
     app.app_list_url = f"{AUTHENTICATION_SERVICE_URL}/apps/apps"
     app.app_detail_url = f"{AUTHENTICATION_SERVICE_URL}/apps/app"
+    app.cookie_max_age = timedelta(days=7)
 
     app.base_url = MANAGEMENT_SERVICE_URL
     app.user_list = f"{MANAGEMENT_SERVICE_URL}/users"
@@ -195,7 +197,7 @@ def user_delete(user_id: UUID, request: Request, log: LoggerDependency):
     except httpx.HTTPStatusError:
         raise HTTPException(status_code=401, detail="Error from downstream API")
 
-    return RedirectResponse(url="/users")
+    return RedirectResponse(url=f"{app.base_url}/users")
 
 
 @app.post("/users/{user_id}/grant_add")
@@ -223,7 +225,7 @@ def add_grant(
     except httpx.HTTPStatusError:
         raise HTTPException(status_code=401, detail="Error from downstream API")
 
-    return RedirectResponse(url=f"/users/{user_id}", status_code=303)
+    return RedirectResponse(url=f"{app.base_url}/users/{user_id}", status_code=303)
 
 
 @app.post("/users/{user_id}/grant_remove")
@@ -238,7 +240,7 @@ def remove_grant(
     log.debug("app.admin.grant_remove_field")
 
     if " " in grant or grant == "":
-        return RedirectResponse(url=f"/users/{user_id}", status_code=303)
+        return RedirectResponse(url=f"{app.base_url}/users/{user_id}", status_code=303)
 
     response = httpx.post(
         url=f"{app.user_detail_url}/{user_id}",
@@ -251,7 +253,7 @@ def remove_grant(
     except httpx.HTTPStatusError:
         raise HTTPException(status_code=401, detail="Error from downstream API")
 
-    return RedirectResponse(url=f"/users/{user_id}", status_code=303)
+    return RedirectResponse(url=f"{app.base_url}/users/{user_id}", status_code=303)
 
 
 @app.get("/apps")
@@ -450,4 +452,4 @@ def delete_app(
     except httpx.HTTPStatusError:
         raise HTTPException(status_code=401, detail="Error from downstream API")
 
-    return RedirectResponse(url="/apps", status_code=302)
+    return RedirectResponse(url=f"{app.base_url}/apps", status_code=302)

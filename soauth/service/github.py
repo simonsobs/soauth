@@ -127,14 +127,15 @@ async def github_login(
                 "client_id": settings.github_client_id,
                 "client_secret": settings.github_client_secret,
                 "redirect_uri": settings.github_redirect_uri,
-                "code": code,
+                "code": code
             },
             headers={"Accept": "application/json"},
         )
 
-    log = log.bind(status_code=response.status_code, content=response.json())
+    log = log.bind(status_code=response.status_code)
 
     if response.status_code != 200:
+        log = log.bind(content=response.json())
         await log.aerror("github.login.code_exchange_failed")
         raise login_error
 
@@ -163,15 +164,32 @@ async def github_login(
         user_name=username, email=user_info["email"], full_name=user_info["name"]
     )
 
+    # TODO: call the /email endpoint if email is null using     access token: https://stackoverflow.com/questions/35373995/github-user-email-is-null-despite-useremail-scope
+    # TODO: handle no name better? They might not have ever s   za  et one.
+    user_email = user_info["email"]
+
+    if user_email is None:
+        try:
+            user_email_info = await github_api_call(
+                github_api_access_token=gh_access_token, url="https://api.github.com/user/emails"
+            )
+            for email in user_email_info:
+                if email["primary"]:
+                    user_email = email["email"]
+                    break
+        except GitHubLoginError:
+            # I give up...
+            user_email = None
+
     try:
         user = await read_by_name(user_name=username, conn=conn)
-        user.email = user_info["email"]
+        user.email = user_email
         user.full_name = user_info["name"]
         log = log.bind(user_read=True, user_created=False)
     except UserNotFound:
         user = await create_user(
             user_name=username,
-            email=user_info["email"],
+            email=user_email,
             full_name=user_info["name"],
             grants="",
             conn=conn,
@@ -210,6 +228,7 @@ async def github_login_redirect(login_request: LoginRequest, settings: Settings)
     query = {
         "client_id": settings.github_client_id,
         "state": str(login_request.login_request_id),
+        "scope": "read:user user:email"
     }
 
     url = urllib.parse.urlunparse(

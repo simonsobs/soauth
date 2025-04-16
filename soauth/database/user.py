@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 class User(SQLModel, table=True):
     user_id: UUID = Field(primary_key=True, default_factory=uuid7)
 
-    full_name: str = Field()
+    full_name: str | None = None
     user_name: str = Field(unique=True)
     email: str | None = None
 

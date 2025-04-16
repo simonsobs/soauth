@@ -5,7 +5,7 @@
   <p class="title">Create Application</p>
   {% if "admin" in scopes or "appmanager" in scopes %}
   <p>Once you click <span class="nes-text is-primary">create</span>, you will be redirected to a page where you will see the <span class="nes-text is-error">public key</span> for your service, <span class="nes-text is-error">once and only once</span>.</p>
-  <form method="POST" action="/apps/create">
+  <form method="POST" action="{{base_url}}/apps/create">
     <div class="nes-field">
         <label for="domain_field">Domain</label>
         <input type="url" id="domain_field" class="nes-input" placeholder="..." style="margin-bottom: 1em" required name="domain" />

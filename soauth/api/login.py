@@ -2,7 +2,6 @@
 Main login flow - redirection to GitHub and handling of responses.
 """
 
-
 from fastapi import APIRouter, HTTPException, Request, status
 from fastapi.responses import RedirectResponse
 
@@ -196,9 +195,8 @@ async def code(
     )
 
 
-@login_app.post("/exchange/{app_id}")
+@login_app.post("/exchange")
 async def exchange_post(
-    app_id: UUID,
     content: RefreshTokenModel,
     request: Request,
     settings: SettingsDependency,

@@ -34,12 +34,22 @@ from typing import Annotated
 
 from fastapi import Depends, FastAPI, HTTPException, Request, status
 from pydantic import Field
+from starlette.middleware.authentication import AuthenticationMiddleware
 from structlog import get_logger
 
 from soauth.core.auth import KeyDecodeError, decode_access_token
 from soauth.core.tokens import KeyExpiredError
+from soauth.core.uuid import UUID
 
-from .starlette import SOUser, key_decode_handler, key_expired_handler
+from .starlette import (
+    SOAuthCookieBackend,
+    SOUser,
+    handle_redirect,
+    key_decode_handler,
+    key_expired_handler,
+    logout,
+    on_auth_error,
+)
 
 
 class SOUserWithGrants(SOUser):
@@ -48,7 +58,17 @@ class SOUserWithGrants(SOUser):
 
 def add_exception_handlers(app: FastAPI) -> FastAPI:
     """
-    Adds exception handlers for authentication
+    Adds exception handlers for authentication. To use these, you must:
+
+    - Set app.login_url to the GET URL for your application on the main authentication
+      service. This will look like {auth_service_domain}/login/{your_app_id}
+    - Set app.refresh_url to the POST URL for the main authentication service for
+      refreshing keys. This will look like {auth_service_domain}/exchange
+
+    Optionally, you can:
+
+    - Set app.refresh_token_name to change the cookie name for the refresh token
+    - Set app.access_token_name to change the cookie name for the access token
     """
     app.add_exception_handler(KeyDecodeError, key_decode_handler)
     app.add_exception_handler(KeyExpiredError, key_expired_handler)
@@ -65,6 +85,11 @@ async def handle_user(request: Request) -> SOUserWithGrants:
     whether or not it `is_authenticated`. Unlike the starlette implementation,
     grants (or 'credentials' as they are known there) are included in the user
     model to keep everything self-contained.
+
+    To use this, and all others, you will need to set:
+
+    - request.app.public_key to the public key for your application.
+    - request.app.key_pair_type to the public key type for your application.
     """
 
     refresh_token_name = getattr(request.app, "refresh_token_name", "refresh_token")
@@ -77,8 +102,6 @@ async def handle_user(request: Request) -> SOUserWithGrants:
         refresh_token_name=refresh_token_name,
         access_token_name=access_token_name,
     )
-
-    # TODO: What if they have refresh token but not access token?
 
     if access_token_name not in request.cookies:
         log.debug("tk.fastapi.auth.no_cookies")
@@ -123,7 +146,7 @@ async def handle_user(request: Request) -> SOUserWithGrants:
 async def handle_authenticated_user(request: Request) -> SOUserWithGrants:
     """
     The same as `handle_user` but raises a 401 if the user is not
-    authenticated.
+    authenticated. Check `handle_user` for requirements.
     """
     user = await handle_user(request=request)
 
@@ -133,6 +156,119 @@ async def handle_authenticated_user(request: Request) -> SOUserWithGrants:
         )
 
     return user
+
+
+def global_setup(
+    app: FastAPI,
+    app_base_url: str,
+    authentication_base_url: str,
+    app_id: str | UUID,
+    client_secret: str,
+    public_key: str,
+    key_pair_type: str,
+    add_middleware: bool = True,
+) -> FastAPI:
+    """
+    Transform the app such that it is ready for authentication. Can either add middleware
+    (the default) or simply set up the application such that it is ready for use with the
+    dependencies defined in this file (e.g. `UserDependency` and `AuthenticatedUserDependency`)
+
+    Parameters
+    ----------
+    app: FastAPI
+        The FastAPI app to hook into.
+    app_base_url: str
+        The base URL for your application. Example: https://www.simonsobs.org, or
+        https://nersc.simonsobs.org/beta/simple.
+    authentication_base_url: str
+        The base URL for the authentication service to use.
+    app_id: str | UUID
+        The UUID of your app as registered with the authentication service.
+    client_secret: str
+        The client secret provided by the authentication service.
+    public_key: str
+        The public key provided by the authentication service.
+    key_pair_type: str
+        The key pair type used for the keys, given by the authentication service.
+    add_middleware: bool = True
+        Add middleare to your application to automatically authenticate each request.
+        This allows for the use of starlette's `@requries()` (against user grants), and
+        access to `request.user` and `request.auth.scopes`. Alternatively, you can use
+        the dependencies defined in this file.
+
+    Example
+    -------
+
+    Your `.env` file or set of environment variables:
+
+    ```
+    APP_BASE_URL=https://nersc.simonsobs.org/beta/simple
+    AUTHENTICATION_BASE_URL=https://identity.simonsobservatory.url
+    APP_ID=0680039d-0774-75f1-8000-317277b414eb
+    CLIENT_SECRET=w2URATShbumYOoBuiK9VBMsT8tahjVAAuDdJWTdZ5K2TN8h0iWLdi72XFOnk81vJDdDzCI6jHtHTHXA6snyfkA
+    PUBLIC_KEY_FILE=/secrets/local_key.pem
+    KEY_PAIR_TYPE=Ed25519
+    ```
+
+    ```python
+    from pydantic_settings import BaseSettings
+    from fastapi import FastAPI
+    from soauth.toolkit.fastapi import global_setup
+
+    class AppSettings(BaseSettings):
+        app_base_url: str
+        authentication_base_url: str
+        app_id: str
+        client_secret: str
+        public_key_file: str
+        key_pair_type: str
+        public_key: str | None = None
+
+        def model_post_init(context):
+            with open(self.public_key_file, "r") as handle:
+                self.public_key = handle.read()
+
+    settings = AppSettings()
+
+    app = global_setup(
+        app=FastAPI(),
+        app_base_url=settings.app_base_url,
+        authentication_base_url=settings.authentication_base_url,
+        app_id=settings.app_id,
+        client_secret=settings.client_secret,
+        key_pair_type=settings.key_pair_type,
+        public_key=settings.public_key,
+    )
+    ```
+    """
+
+    app.base_url = app_base_url
+    app.authentication_url = authentication_base_url
+    app.client_secret = client_secret
+    app.app_id = app_id
+
+    app.public_key = public_key.encode("utf-8")
+    app.key_pair_type = key_pair_type
+
+    # Derived URLs (set as defaults based on bundled OAuth provider).
+    app.login_url = f"{authentication_base_url}/login/{app_id}"
+    app.code_url = f"{authentication_base_url}/code/{app_id}"
+    app.refresh_url = f"{authentication_base_url}/exchange"
+    app.expire_url = f"{authentication_base_url}/expire/{app_id}"
+
+    if add_middleware:
+        app.add_middleware(
+            AuthenticationMiddleware,
+            backend=SOAuthCookieBackend(
+                public_key=app.public_key, key_pair_type=app.key_pair_type
+            ),
+            on_error=on_auth_error,
+        )
+
+    app.add_api_route(path="/logout", endpoint=logout)
+    app.add_api_route(path="/redirect", endpoint=handle_redirect)
+
+    return app
 
 
 UserDependency = Annotated[SOUserWithGrants, Depends(handle_user)]

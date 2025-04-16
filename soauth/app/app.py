@@ -4,20 +4,18 @@ This does not require any access to the database, and purely uses the
 soauth authentication scheme. It is packed purely for simplicity.
 """
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 from typing import Annotated
 
 import httpx
 from fastapi import FastAPI, Form, HTTPException, Request
 from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
-from pydantic import BaseModel
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from starlette.authentication import requires
-from starlette.middleware.authentication import AuthenticationMiddleware
 
 from soauth.core.uuid import UUID
-from soauth.toolkit.starlette import SOAuthCookieBackend, on_auth_error
+from soauth.toolkit.fastapi import global_setup
 
 from .dependencies import LoggerDependency
 
@@ -44,7 +42,9 @@ templates = Jinja2Templates(directory=__file__.replace("app.py", "templates"))
 favicon = FileResponse(
     __file__.replace("app.py", "favicon.ico"), media_type="image/x-icon"
 )
-apple_touch = FileResponse(__file__.replace("app.py", "apple-touch-icon.png"), media_type="image/png")
+apple_touch = FileResponse(
+    __file__.replace("app.py", "apple-touch-icon.png"), media_type="image/png"
+)
 
 # Grab the details
 if settings.app_id is None:
@@ -65,11 +65,6 @@ else:
 
 
 async def lifespan(app: FastAPI):
-    app.login_url = f"{AUTHENTICATION_SERVICE_URL}/login/{app_id}"
-    app.code_url = f"{AUTHENTICATION_SERVICE_URL}/code/{app_id}"
-    app.client_secret = client_secret
-    app.expire_url = f"{AUTHENTICATION_SERVICE_URL}/expire/{app_id}"
-    app.refresh_url = f"{AUTHENTICATION_SERVICE_URL}/exchange"
     app.user_list_url = f"{AUTHENTICATION_SERVICE_URL}/admin/users"
     app.user_detail_url = f"{AUTHENTICATION_SERVICE_URL}/admin/user"
     app.key_revoke_url = f"{AUTHENTICATION_SERVICE_URL}/admin/keys"
@@ -77,7 +72,6 @@ async def lifespan(app: FastAPI):
     app.app_detail_url = f"{AUTHENTICATION_SERVICE_URL}/apps/app"
     app.cookie_max_age = timedelta(days=7)
 
-    app.base_url = MANAGEMENT_SERVICE_URL
     app.user_list = f"{MANAGEMENT_SERVICE_URL}/users"
     app.app_list = f"{MANAGEMENT_SERVICE_URL}/apps"
     app.logout_url = f"{MANAGEMENT_SERVICE_URL}/logout"
@@ -87,13 +81,14 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan, root_path=ROOT_PATH)
 
-app.add_middleware(
-    AuthenticationMiddleware,
-    backend=SOAuthCookieBackend(
-        public_key=public_key.encode("utf-8"),
-        key_pair_type=key_type,
-    ),
-    on_error=on_auth_error,
+app = global_setup(
+    app=app,
+    app_base_url=MANAGEMENT_SERVICE_URL,
+    authentication_base_url=AUTHENTICATION_SERVICE_URL,
+    app_id=app_id,
+    client_secret=client_secret,
+    public_key=public_key,
+    key_pair_type=key_type,
 )
 
 
@@ -127,63 +122,6 @@ def home(
             base_url=request.app.base_url,
         ),
     )
-
-
-@app.get("/logout")
-def logout(request: Request, log: LoggerDependency) -> RedirectResponse:
-    response = RedirectResponse(url=request.app.base_url)
-
-    if cookie := request.cookies.get("refresh_token", None):
-        httpx.post(request.app.expire_url, json={"refresh_token": cookie})
-
-    response.delete_cookie("refresh_token")
-    response.delete_cookie("access_token")
-
-    return response
-
-
-class KeyRefreshResponse(BaseModel):
-    access_token: str
-    refresh_token: str
-    redirect: str
-    access_token_expires: datetime
-    refresh_token_expires: datetime
-
-
-@app.get("/redirect")
-def redirect_login(
-    code: str, state: str, request: Request, log: LoggerDependency
-) -> RedirectResponse:
-    log.debug("app.redirect_login")
-
-    try:
-        response = httpx.post(
-            request.app.code_url,
-            params=dict(code=code, secret=request.app.client_secret),
-        )
-
-        response.raise_for_status()
-    except httpx.HTTPStatusError:
-        raise HTTPException(status_code=401)
-
-    content = KeyRefreshResponse.model_validate_json(response.content)
-
-    response = RedirectResponse(url=content.redirect, status_code=302)
-
-    response.set_cookie(
-        key="access_token",
-        value=content.access_token,
-        expires=content.access_token_expires,
-        httponly=True,
-    )
-    response.set_cookie(
-        key="refresh_token",
-        value=content.refresh_token,
-        expires=content.refresh_token_expires,
-        httponly=True,
-    )
-
-    return response
 
 
 @app.get("/users")
@@ -249,6 +187,7 @@ def user_detail(user_id: UUID, request: Request, log: LoggerDependency):
     )
 
 
+# Not working
 @app.get("/users/{user_id}/delete")
 @requires("admin")
 def user_delete(user_id: UUID, request: Request, log: LoggerDependency):

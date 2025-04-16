@@ -26,15 +26,25 @@ app.add_middleware(
     ),
     on_error=on_auth_error
 )
+
+You may also need to add appropriate endpoints for the `handle_redirect` and
+`logout` functions defined in this file. The `handle_redirect` handles the case
+where the authentication service comes back to you with the keys to set as
+cookies, and `logout` handles the case of revoking a user's access token.
+
+There is a global setup function that can be used defined in the `fastapi.py`
+file, for FastAPI services.
 """
 
 import httpx
 from pydantic import BaseModel, Field
+from starlette import status
 from starlette.authentication import (
     AuthCredentials,
     AuthenticationBackend,
     AuthenticationError,
 )
+from starlette.exceptions import HTTPException
 from starlette.requests import Request
 from starlette.responses import RedirectResponse
 from structlog import get_logger
@@ -276,3 +286,92 @@ def on_auth_error(request: Request, exc: Exception):
     else:
         # By default, let's just redirect them and delete their cookies.
         return key_expired_handler(request=request, exc=exc)
+
+
+async def handle_redirect(code: str, state: str, request: Request) -> RedirectResponse:
+    """
+    Handle the code exchange from the main authentication service. You
+    will need to provide an endpoint that takes both `code` and `state`
+    GET parameters.
+
+    You must set `request.app.code_url` as the URL to request the code
+    exchange for, and also the value `request.app.client_secret` which is
+    used in the code exchange.
+
+    Parameters
+    ----------
+    code: str
+        The code recieved as a GET parameter (called code).
+    state: str
+        The state recieved as a GET parameter (called state), not used.
+    request: Request
+        The underlying request.
+
+    Raises
+    ------
+    HTTPException
+        With status 401 if the code exchange fails.
+    """
+
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                request.app.code_url,
+                params=dict(code=code, secret=request.app.client_secret),
+            )
+
+            response.raise_for_status()
+    except httpx.HTTPStatusError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Code exchange failed"
+        )
+
+    content = KeyRefreshResponse.model_validate_json(response.content)
+
+    response = RedirectResponse(url=content.redirect, status_code=302)
+
+    refresh_token_name = getattr(request.app, "refresh_token_name", "refresh_token")
+    access_token_name = getattr(request.app, "access_token_name", "access_token")
+
+    response.set_cookie(
+        key=access_token_name,
+        value=content.access_token,
+        expires=content.access_token_expires,
+        httponly=True,
+    )
+    response.set_cookie(
+        key=refresh_token_name,
+        value=content.refresh_token,
+        expires=content.refresh_token_expires,
+        httponly=True,
+    )
+
+    return response
+
+
+async def logout(request: Request) -> RedirectResponse:
+    """
+    Handle the case where a user wants to log out. Uses their own
+    cookie to call up the authentication server to expire the token.
+
+    Requires you to set `request.app.base_url` (users are redirected to
+    the root once they are logged out) and `request.app.expire_url`, which
+    is the main authentication service's expiration endpoint.
+
+    Parameters
+    ----------
+    request: Request
+        The request to the logout endpoint you define.
+    """
+    response = RedirectResponse(url=request.app.base_url)
+
+    refresh_token_name = getattr(request.app, "refresh_token_name", "refresh_token")
+    access_token_name = getattr(request.app, "access_token_name", "access_token")
+
+    if cookie := request.cookies.get(refresh_token_name, None):
+        httpx.post(request.app.expire_url, json={"refresh_token": cookie})
+
+    response.delete_cookie(refresh_token_name)
+    response.delete_cookie(access_token_name)
+
+    return response

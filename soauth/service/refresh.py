@@ -206,7 +206,7 @@ async def refresh_refresh_key(
         previous=res.refresh_key_id,
         created_by=res.user_id,
         created_at=create_time,
-        expires_at=expiry_time,
+        expires_at=res.expires_at,
     )
 
     res.revoked = True
@@ -256,9 +256,6 @@ async def expire_refresh_key_by_id(key_id: UUID, conn: AsyncSession):
     await conn.commit()
 
     return
-
-
-# TODO: function to get refresh keys associated with an app
 
 
 async def get_all_logins_for_user(

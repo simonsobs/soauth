@@ -52,6 +52,7 @@ async def app(session_manager, logger, user, server_settings):
         async with conn.begin():
             app = await app_service.create(
                 domain="https://simonsobs.org",
+                redirect_url="https://simonsobs.org/redirect",
                 user=await user_service.read_by_id(user_id=user, conn=conn),
                 settings=server_settings,
                 conn=conn,

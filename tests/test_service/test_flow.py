@@ -18,7 +18,7 @@ async def test_primary_then_secondary(
         async with conn.begin():
             application = await app_service.read_by_id(app_id=app, conn=conn)
             user_obj = await user_service.read_by_id(user_id=user, conn=conn)
-            auth, refresh = await flow_service.primary(
+            auth, refresh, ake, rke = await flow_service.primary(
                 user=user_obj,
                 app=application,
                 settings=server_settings,
@@ -40,12 +40,16 @@ async def test_primary_then_secondary(
     # Ok, now let's refresh it!
     async with session_manager.session() as conn:
         async with conn.begin():
-            auth, refresh = await flow_service.secondary(
+            auth, refresh, nake, nrke = await flow_service.secondary(
                 encoded_refresh_key=refresh,
                 settings=server_settings,
                 conn=conn,
                 log=logger,
             )
+
+            # Refresh key expiry doesnt change, auth key does.
+            assert nake > ake
+            assert nrke == rke
 
     # Check we can decode it ok!
     decoded_authentication = reconstruct_payload(

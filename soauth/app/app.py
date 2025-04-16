@@ -4,13 +4,14 @@ This does not require any access to the database, and purely uses the
 soauth authentication scheme. It is packed purely for simplicity.
 """
 
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import Annotated
 
 import httpx
 from fastapi import FastAPI, Form, HTTPException, Request
 from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
+from pydantic import BaseModel
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from starlette.authentication import requires
 from starlette.middleware.authentication import AuthenticationMiddleware
@@ -139,6 +140,14 @@ def logout(request: Request, log: LoggerDependency) -> RedirectResponse:
     return response
 
 
+class KeyRefreshResponse(BaseModel):
+    access_token: str
+    refresh_token: str
+    redirect: str
+    access_token_expires: datetime
+    refresh_token_expires: datetime
+
+
 @app.get("/redirect")
 def redirect_login(
     code: str, state: str, request: Request, log: LoggerDependency
@@ -155,13 +164,22 @@ def redirect_login(
     except httpx.HTTPStatusError:
         raise HTTPException(status_code=401)
 
-    content = response.json()
+    content = KeyRefreshResponse.model_validate_json(response.content)
 
-    response = RedirectResponse(url=content["redirect"], status_code=302)
+    response = RedirectResponse(url=content.redirect, status_code=302)
 
-    response.set_cookie(key="access_token", value=content["access_token"])
-
-    response.set_cookie(key="refresh_token", value=content["refresh_token"])
+    response.set_cookie(
+        key="access_token",
+        value=content.access_token,
+        expires=content.access_token_expires,
+        httponly=True,
+    )
+    response.set_cookie(
+        key="refresh_token",
+        value=content.refresh_token,
+        expires=content.refresh_token_expires,
+        httponly=True,
+    )
 
     return response
 

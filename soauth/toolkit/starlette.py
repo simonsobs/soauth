@@ -221,13 +221,13 @@ def key_expired_handler(request: Request, exc: KeyExpiredError) -> RedirectRespo
         access_token_name,
         content["access_token"],
         httponly=True,
-        max_age=request.app.cookie_max_age.total_seconds(),
+        expires=content["access_token_expires"],
     )
     response.set_cookie(
         refresh_token_name,
         content["refresh_token"],
         httponly=True,
-        max_age=request.app.cookie_max_age.total_seconds(),
+        expires=content["refresh_token_expires"],
     )
 
     log.info("tk.starlette.expired.refreshed")

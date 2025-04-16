@@ -15,7 +15,7 @@ from soauth.database.user import User
 
 async def create_auth_key(
     refresh_key: RefreshKey, settings: Settings, conn: AsyncSession
-) -> str:
+) -> tuple[str, datetime]:
     """
     This function **assumes it is being passed a valid refresh key** and
     creates an authentication key for the user associated with it.
@@ -58,4 +58,4 @@ async def create_auth_key(
 
     conn.add_all([refresh_key, user])
 
-    return signed_payload
+    return signed_payload, expiration_time

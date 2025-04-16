@@ -4,6 +4,8 @@ Secondary authentication flow - exchange a refresh token for a new one and
 a new access token.
 """
 
+from datetime import datetime
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from structlog.typing import FilteringBoundLogger
 
@@ -29,7 +31,7 @@ async def primary(
     settings: Settings,
     conn: AsyncSession,
     log: FilteringBoundLogger,
-) -> tuple[str]:
+) -> tuple[str, str, datetime, datetime]:
     """
     Primary authentication flow - assumes that you just created the 'user'
     and that the 'user' has _all required credentials, grants and groups_.
@@ -57,6 +59,10 @@ async def primary(
         Encoded authentication key for use by the client.
     encoded_refresh_key
         The new refresh key.
+    auth_key_expires
+        Datetime at which the authentication key/token expires
+    refresh_key_expires
+        Datetime at which the refresh key/token expires
     """
     log = log.bind(user_id=user.user_id, app_id=app.app_id)
     encoded_refresh_key, refresh_key = await create_refresh_key(
@@ -71,12 +77,17 @@ async def primary(
         refresh_key_id=refresh_key.refresh_key_id,
     )
 
-    encoded_auth_key = await create_auth_key(
+    encoded_auth_key, auth_key_expires = await create_auth_key(
         refresh_key=refresh_key, settings=settings, conn=conn
     )
     await log.ainfo("primary.auth_key_created")
 
-    return encoded_auth_key, encoded_refresh_key
+    return (
+        encoded_auth_key,
+        encoded_refresh_key,
+        auth_key_expires,
+        refresh_key.expires_at,
+    )
 
 
 async def secondary(
@@ -84,7 +95,7 @@ async def secondary(
     settings: Settings,
     conn: AsyncSession,
     log: FilteringBoundLogger,
-) -> tuple[str, str]:
+) -> tuple[str, str, datetime, datetime]:
     """
     Secondary authentication flow - turn in your encoded refresh key
     for a new one and an authentication key. This checks against
@@ -105,6 +116,10 @@ async def secondary(
         Encoded authentication key for use by the client.
     encoded_refresh_key
         The new refresh key.
+    auth_key_expires
+        Datetime at which the authentication key/token expires
+    refresh_key_expires
+        Datetime at which the refresh key/token expires
     """
     log.debug("secondary.decoding_key")
     decoded_payload = await decode_refresh_key(
@@ -129,7 +144,7 @@ async def secondary(
 
     await log.ainfo("secondary.refresh_key_exchanged")
 
-    encoded_auth_key = await create_auth_key(
+    encoded_auth_key, auth_key_expires = await create_auth_key(
         refresh_key=refresh_key, settings=settings, conn=conn
     )
 
@@ -141,7 +156,12 @@ async def secondary(
 
     await log.ainfo("secondary.auth_key_created")
 
-    return encoded_auth_key, encoded_refresh_key
+    return (
+        encoded_auth_key,
+        encoded_refresh_key,
+        auth_key_expires,
+        refresh_key.expires_at,
+    )
 
 
 async def logout(

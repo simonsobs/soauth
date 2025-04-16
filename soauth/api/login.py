@@ -2,6 +2,8 @@
 Main login flow - redirection to GitHub and handling of responses.
 """
 
+from datetime import datetime
+
 from fastapi import APIRouter, HTTPException, Request, status
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
@@ -124,7 +126,7 @@ async def code(
     settings: SettingsDependency,
     conn: DatabaseDependency,
     log: LoggerDependency,
-) -> dict[str, str]:
+) -> dict[str, str | datetime]:
     """
     Exchange a code and client secret for keys.
 
@@ -163,7 +165,12 @@ async def code(
 
     # Create the codes!
     app = await app_service.read_by_id(app_id=login_request.app_id, conn=conn)
-    auth_key, refresh_key = await flow_service.primary(
+    (
+        auth_key,
+        refresh_key,
+        auth_key_expires,
+        refresh_key_expires,
+    ) = await flow_service.primary(
         user=user, app=app, settings=settings, conn=conn, log=log
     )
 
@@ -184,57 +191,10 @@ async def code(
     return {
         "access_token": auth_key,
         "refresh_token": refresh_key,
+        "access_token_expires": auth_key_expires,
+        "refresh_token_expires": refresh_key_expires,
         "redirect": redirect,
     }
-
-
-# @login_app.get("/exchange/{app_id}")
-# async def exchange(
-#     app_id: UUID,
-#     request: Request,
-#     settings: SettingsDependency,
-#     conn: DatabaseDependency,
-#     log: LoggerDependency,
-# ) -> RedirectResponse:
-#     """
-#     Exchange your refresh key for a new refresh key and a new auth key.
-
-#     You will be redirected back to the URL in your requests "Referer" header.
-#     """
-
-#     redirect = request.headers.get("Referer", None)
-
-#     if redirect is None:
-#         raise HTTPException(
-#             status_code=status.HTTP_400_BAD_REQUEST,
-#             detail="Your request must include a 'Referer' header",
-#         )
-
-#     try:
-#         app = await app_service.read_by_id(app_id=app_id, conn=conn)
-#     except app_service.AppNotFound:
-#         raise HTTPException(
-#             status_code=status.HTTP_404_NOT_FOUND, detail=f"App {app_id} not found"
-#         )
-
-#     try:
-#         auth_key, refresh_key = await flow_service.secondary(
-#             encoded_refresh_key=request.cookies.get(app.refresh_token_name, ""),
-#             settings=settings,
-#             conn=conn,
-#             log=log,
-#         )
-#     except refresh_service.AuthorizationError:
-#         raise HTTPException(
-#             status_code=status.HTTP_401_UNAUTHORIZED, detail="Bad refresh token"
-#         )
-
-#     response = RedirectResponse(url=redirect, status_code=302)
-
-#     response.set_cookie(app.access_token_name, auth_key, httponly=True, max_age=settings.cookie_max_age.total_seconds() )
-#     response.set_cookie(app.refresh_token_name, refresh_key, httponly=True, max_age=settings.cookie_max_age.total_seconds() )
-
-#     return response
 
 
 class Content(BaseModel):
@@ -249,7 +209,7 @@ async def exchange_post(
     settings: SettingsDependency,
     conn: DatabaseDependency,
     log: LoggerDependency,
-) -> dict[str, str]:
+) -> dict[str, str | datetime]:
     """
     Exchange your refresh key for a new refresh key and a new auth key.
 
@@ -262,7 +222,12 @@ async def exchange_post(
     refresh_token = content.refresh_token
 
     try:
-        auth_key, refresh_key = await flow_service.secondary(
+        (
+            auth_key,
+            refresh_key,
+            auth_key_expires,
+            refresh_key_expires,
+        ) = await flow_service.secondary(
             encoded_refresh_key=refresh_token, settings=settings, conn=conn, log=log
         )
     except refresh_service.AuthorizationError as e:
@@ -278,7 +243,12 @@ async def exchange_post(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token expired"
         )
 
-    return {"access_token": auth_key, "refresh_token": refresh_key}
+    return {
+        "access_token": auth_key,
+        "refresh_token": refresh_key,
+        "access_token_expires": auth_key_expires,
+        "refresh_token_expires": refresh_key_expires,
+    }
 
 
 @login_app.post("/expire/{app_id}")

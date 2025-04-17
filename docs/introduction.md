@@ -96,6 +96,7 @@ In practice:
 When this process takes place, the old refresh token is expired on the server-side, meaning
 it can never be used again. This helps protect against stolen credential attacks.
 
+**Next**: [setup an app](create.md)
 
 [^1]: Note the use here of `referrerpolicy="no-referrer-when-downgrade"`; if this is not used
       the full path of your client is not sent to the authentication server, and the eventual

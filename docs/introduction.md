@@ -78,7 +78,23 @@ Nothing Ever Lasts
 ------------------
 
 Because of their almighty power, `access_token`s usually have a very short expiry time,
-of order a few hours.
+of order a few hours. Enter the `refresh_token`. `refresh_token`s are used to exchange
+with the main authentication server for a new `access_token`, after performing server-
+side validation of user credentials. By doing this, the contents of a user's `access_token` are
+kept up to date - if grants are removed or added, or an e-mail address changes, they are
+updated when this exchange takes place.
+
+In practice:
+
+- A user makes a request to a page on your site, such as `myapp.org/private`. The server
+  tries to decode their access token, and finds that it is expired!
+- In the background, your server then makes a request to `soauth.org/exchange/{app_id}` with the
+  user's refresh token.
+- The authentication server responds with a new `access_token` _and_ a new `refresh_token`.
+- Your server can then set these as new cookies, and send your user on their way.
+
+When this process takes place, the old refresh token is expired on the server-side, meaning
+it can never be used again. This helps protect against stolen credential attacks.
 
 
 [^1]: Note the use here of `referrerpolicy="no-referrer-when-downgrade"`; if this is not used

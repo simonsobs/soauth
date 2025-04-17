@@ -14,8 +14,11 @@ on your application through the lifecycle handler.
 You should also call `add_exception_handlers` on your app at startup,
 lest you return a bunch of 500s when access tokens are invalid.
 
+If you are looking for a one-stop-shop, check out `global_setup`.
+
 To use the dependency:
 
+```
 from soauth.toolkit.fastapi import UserDependency
 
 @app.get("/endpoint")
@@ -27,7 +30,7 @@ async def endpoint(user: UserDependency):
 @app.get("/completely_secure")
 async def secure_endpoint(user: AuthenticatedUserDependency):
     assert user.is_authenticated
-
+```
 """
 
 from typing import Annotated
@@ -60,15 +63,15 @@ def add_exception_handlers(app: FastAPI) -> FastAPI:
     """
     Adds exception handlers for authentication. To use these, you must:
 
-    - Set app.login_url to the GET URL for your application on the main authentication
-      service. This will look like {auth_service_domain}/login/{your_app_id}
-    - Set app.refresh_url to the POST URL for the main authentication service for
-      refreshing keys. This will look like {auth_service_domain}/exchange
+    - Set `app.login_url` to the GET URL for your application on the main authentication
+      service. This will look like `{auth_service_domain}/login/{your_app_id}`
+    - Set `app.refresh_url` to the POST URL for the main authentication service for
+      refreshing keys. This will look like `{auth_service_domain}/exchange`
 
     Optionally, you can:
 
-    - Set app.refresh_token_name to change the cookie name for the refresh token
-    - Set app.access_token_name to change the cookie name for the access token
+    - Set `app.refresh_token_name` to change the cookie name for the refresh token
+    - Set `app.access_token_name` to change the cookie name for the access token
     """
     app.add_exception_handler(KeyDecodeError, key_decode_handler)
     app.add_exception_handler(KeyExpiredError, key_expired_handler)
@@ -88,8 +91,8 @@ async def handle_user(request: Request) -> SOUserWithGrants:
 
     To use this, and all others, you will need to set:
 
-    - request.app.public_key to the public key for your application.
-    - request.app.key_pair_type to the public key type for your application.
+    - `request.app.public_key` to the public key for your application.
+    - `request.app.key_pair_type` to the public key type for your application.
     """
 
     refresh_token_name = getattr(request.app, "refresh_token_name", "refresh_token")
@@ -205,10 +208,12 @@ def global_setup(
     APP_BASE_URL=https://nersc.simonsobs.org/beta/simple
     AUTHENTICATION_BASE_URL=https://identity.simonsobservatory.url
     APP_ID=0680039d-0774-75f1-8000-317277b414eb
-    CLIENT_SECRET=w2URATShbumYOoBuiK9VBMsT8tahjVAAuDdJWTdZ5K2TN8h0iWLdi72XFOnk81vJDdDzCI6jHtHTHXA6snyfkA
+    CLIENT_SECRET=w2URATShbumYOoBuiK9VBMsT8tahjVAAuDdJWTdZ5K2TN8h
     PUBLIC_KEY_FILE=/secrets/local_key.pem
     KEY_PAIR_TYPE=Ed25519
     ```
+    
+    Then, in the code (using `pydantic_settings` to read these):
 
     ```python
     from pydantic_settings import BaseSettings
@@ -239,6 +244,20 @@ def global_setup(
         key_pair_type=settings.key_pair_type,
         public_key=settings.public_key,
     )
+    ```
+
+    Your app is now fully authenticated and endpoints can be protected against individual
+    scopes using:
+
+    ```python
+    from starlette.authentication import requires
+
+    @app.get("/test")
+    @requires("admin")
+    async def test(request: Request):
+        user = request.user
+        scopes = request.auth.scopes
+        return {"user": user, "scopes": scopes}
     ```
     """
 

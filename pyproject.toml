@@ -35,7 +35,8 @@ dev = [
     "coverage",
     "pytest-cov",
     "pre-commit",
-    "testcontainers[postgres]"
+    "testcontainers[postgres]",
+    "pdoc"
 ]
 
 [tool.setuptools]

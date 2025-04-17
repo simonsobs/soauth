@@ -40,8 +40,8 @@
 <section class="section">
   <div class="nes-container with-title">
     <p class="title">Active Users</p>
-    {% if logged_in_users %}
-    {% for user in logged_in_users %}
+    {% if users %}
+    {% for user in users %}
     <section class="section">
       <div class="nes-container with-title display:flex">
         <p class="title">{% if "admin" in scopes %}<a href="{{base_url}}/users/{{user.user_id}}">{{ user.user_name

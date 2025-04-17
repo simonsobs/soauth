@@ -4,7 +4,6 @@ This does not require any access to the database, and purely uses the
 soauth authentication scheme. It is packed purely for simplicity.
 """
 
-from datetime import timedelta
 from typing import Annotated
 
 import httpx
@@ -46,7 +45,24 @@ else:
     key_type = settings.key_pair_type
 
 
-templates = Jinja2Templates(directory=__file__.replace("app.py", "templates"))
+def internal_urls(request: Request):
+    return dict(
+        base_url=f"{settings.management_hostname}{settings.management_path}",
+        user_list=f"{settings.management_hostname}{settings.management_path}/users",
+        app_list=f"{settings.management_hostname}{settings.management_path}/apps",
+        logout_url=f"{settings.management_hostname}{settings.management_path}/logout",
+        login_url=f"{settings.hostname}/login/{app_id}",
+    )
+
+
+def user_and_scope(request: Request):
+    return dict(user=request.user, scopes=request.auth.scopes)
+
+
+templates = Jinja2Templates(
+    directory=__file__.replace("app.py", "templates"),
+    context_processors=[internal_urls, user_and_scope],
+)
 favicon = FileResponse(
     __file__.replace("app.py", "favicon.ico"), media_type="image/x-icon"
 )
@@ -61,12 +77,6 @@ async def lifespan(app: FastAPI):
     app.key_revoke_url = f"{settings.hostname}/admin/keys"
     app.app_list_url = f"{settings.hostname}/apps/apps"
     app.app_detail_url = f"{settings.hostname}/apps/app"
-    app.cookie_max_age = timedelta(days=7)
-
-    app.user_list = f"{settings.management_hostname}{settings.management_path}/users"
-    app.app_list = f"{settings.management_hostname}{settings.management_path}/apps"
-    app.logout_url = f"{settings.management_hostname}{settings.management_path}/logout"
-
     yield
 
 
@@ -103,15 +113,6 @@ def home(
     return templates.TemplateResponse(
         request=request,
         name="index.html",
-        context=dict(
-            user=request.user,
-            scopes=request.auth.scopes,
-            login=request.app.login_url,
-            logout=request.app.logout_url,
-            user_list=request.app.user_list,
-            apps_list=request.app.app_list,
-            base_url=request.app.base_url,
-        ),
     )
 
 
@@ -133,13 +134,6 @@ def users(request: Request, log: LoggerDependency):
         request=request,
         name="users.html",
         context=dict(
-            user=request.user,
-            scopes=request.auth.scopes,
-            login=request.app.login_url,
-            logout=request.app.logout_url,
-            user_list=request.app.user_list,
-            apps_list=request.app.app_list,
-            base_url=request.app.base_url,
             users=users,
         ),
     )
@@ -165,15 +159,8 @@ def user_detail(user_id: UUID, request: Request, log: LoggerDependency):
         request=request,
         name="user_detail.html",
         context=dict(
-            user=request.user,
-            scopes=request.auth.scopes,
             other_user=other_user["user"],
             other_user_logins=other_user["logins"],
-            login=request.app.login_url,
-            logout=request.app.logout_url,
-            user_list=request.app.user_list,
-            apps_list=request.app.app_list,
-            base_url=request.app.base_url,
         ),
     )
 
@@ -272,14 +259,7 @@ def list_apps(request: Request, log: LoggerDependency):
         request=request,
         name="apps.html",
         context=dict(
-            user=request.user,
-            scopes=request.auth.scopes,
-            login=request.app.login_url,
-            logout=request.app.logout_url,
             apps=content,
-            user_list=request.app.user_list,
-            apps_list=request.app.app_list,
-            base_url=request.app.base_url,
         ),
     )
 
@@ -294,15 +274,6 @@ def app_create_form(request: Request, log: LoggerDependency):
     return templates.TemplateResponse(
         request=request,
         name="app_creation.html",
-        context=dict(
-            user=request.user,
-            scopes=request.auth.scopes,
-            login=request.app.login_url,
-            logout=request.app.logout_url,
-            user_list=request.app.user_list,
-            apps_list=request.app.app_list,
-            base_url=request.app.base_url,
-        ),
     )
 
 
@@ -337,17 +308,10 @@ def app_create_post(
         request=request,
         name="app_detail.html",
         context=dict(
-            user=request.user,
-            scopes=request.auth.scopes,
-            login=request.app.login_url,
-            logout=request.app.logout_url,
             public_key=content["public_key"],
             key_pair_type=content["key_pair_type"],
             app=content["app"],
             client_secret=content["client_secret"],
-            user_list=request.app.user_list,
-            apps_list=request.app.app_list,
-            base_url=request.app.base_url,
         ),
     )
 
@@ -375,15 +339,8 @@ def app_detail(
         request=request,
         name="app_detail.html",
         context=dict(
-            user=request.user,
-            scopes=request.auth.scopes,
-            login=request.app.login_url,
-            logout=request.app.logout_url,
             app=content["app"],
             logged_in_users=content["users"],
-            user_list=request.app.user_list,
-            apps_list=request.app.app_list,
-            base_url=request.app.base_url,
         ),
     )
 
@@ -434,17 +391,10 @@ def refresh_app_keys(
         request=request,
         name="app_detail.html",
         context=dict(
-            user=request.user,
-            scopes=request.auth.scopes,
-            login=request.app.login_url,
-            logout=request.app.logout_url,
             app=content["app"],
             public_key=content["public_key"],
             key_pair_type=content["key_pair_type"],
             client_secret=content["client_secret"],
-            user_list=request.app.user_list,
-            apps_list=request.app.app_list,
-            base_url=request.app.base_url,
         ),
     )
 

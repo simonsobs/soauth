@@ -10,6 +10,9 @@ from soauth.core.cryptography import generate_key_pair
 
 
 def initial_setup(settings: Settings):
+    """
+    Performs the initial setup of our 'own' app to authenticate against the auth service.
+    """
     if settings.app_id_filename.exists():
         return
 

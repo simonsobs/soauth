@@ -44,9 +44,6 @@ admin_routes = APIRouter(tags=["Administration"])
 async def users(
     admin_user: AdminUser, conn: DatabaseDependency, log: LoggerDependency
 ) -> list[user_service.UserData]:
-    """
-    Get the list of users.
-    """
     log = log.bind(admin_user=admin_user)
     result = await user_service.get_user_list(conn=conn)
     log = log.bind(number_of_users=len(result))
@@ -72,19 +69,6 @@ async def user(
     conn: DatabaseDependency,
     log: LoggerDependency,
 ) -> UserDetailResponse:
-    """
-    Get details about a user, including their currently active sessions.
-
-    Parameters
-    ----------
-    user_id: UUID
-        The ID of the user to get details about.
-
-    Returns
-    -------
-    UserDetailResponse
-        Detail about the user (`.user`) and thier logins (`.logins`)
-    """
     log = log.bind(admin_user=admin_user, requested_user_id=user_id)
     result = (await user_service.read_by_id(user_id=user_id, conn=conn)).to_core()
     login_details = await refresh_service.get_all_logins_for_user(
@@ -114,7 +98,6 @@ async def modify_user(
     conn: DatabaseDependency,
     log: LoggerDependency,
 ) -> user_service.UserData:
-    """ """
     log = log.bind(admin_user=admin_user, requested_user_id=user_id)
 
     user = await user_service.read_by_id(user_id=user_id, conn=conn)
@@ -173,9 +156,6 @@ async def delete(
     conn: DatabaseDependency,
     log: LoggerDependency,
 ):
-    """
-    Delete a user!
-    """
     log = log.bind(admin_user=admin_user, requested_user_id=user_id)
     user = await user_service.read_by_id(user_id=user_id, conn=conn)
     log = log.bind(user=user)
@@ -201,9 +181,6 @@ async def revoke_key(
     conn: DatabaseDependency,
     log: LoggerDependency,
 ):
-    """
-    Revoke a key!
-    """
     log = log.bind(admin_user=admin_user, requested_key_id=key_id)
     await refresh_service.expire_refresh_key_by_id(key_id=key_id, conn=conn)
     await log.ainfo("api.admin.key_revoked")

@@ -4,7 +4,8 @@ SOAuth
 <img src="../soauth/app/apple-touch-icon.png" width="128px" />
 
 Looking for API Docs? Run `pdoc --docformat=numpy soauth` on the command line. We do not
-maintain a hosted copy of the documentation at this time.
+maintain a hosted copy of the documentation at this time. Full developer documentation for
+the API is available at `/docs` on the main server.
 
 Statement of Need
 -----------------

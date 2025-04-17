@@ -16,10 +16,23 @@ settings = SETTINGS()
 
 async def lifespan(app: FastAPI):
     app.settings = settings
-    app.login_url = f"http://localhost:8000/login/{settings.created_app_id}"
-    app.refresh_url = "http://localhost:8000/exchange"
+
+    if settings.app_id_filename:
+        with open(settings.app_id_filename, "r") as handle:
+            app_id = handle.read()
+    else:
+        app_id = settings.created_app_id
+
+    if settings.public_key_filename:
+        with open(settings.public_key_filename, "r") as handle:
+            public_key = handle.read()
+    else:
+        public_key = settings.created_app_public_key
+
+    app.login_url = f"{settings.hostname}/login/{app_id}"
+    app.refresh_url = f"{settings.hostname}/exchange"
     app.key_pair_type = settings.key_pair_type
-    app.public_key = settings.created_app_public_key
+    app.public_key = public_key
 
     if isinstance(app.public_key, str):
         app.public_key = app.public_key.encode("utf-8")

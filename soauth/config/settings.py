@@ -3,6 +3,7 @@ Main settings object.
 """
 
 from datetime import timedelta
+from pathlib import Path
 from typing import Literal
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -23,6 +24,7 @@ class Settings(BaseSettings):
 
     database_echo: bool = False
 
+    # Example/testing setup
     create_example_app_and_user: bool = False
     created_app_public_key: str | bytes | None = None
     created_app_client_secret: str | None = None
@@ -46,7 +48,20 @@ class Settings(BaseSettings):
     github_redirect_uri: str
     github_organization_checks: list[str]
 
+    # Production setup
     hostname: str = "http://localhost:8000"
+    management_hostname: str = "http://localhost:8001"
+    management_path: str = "/management"
+
+    # If create_files is set, we automatically create the 'default' app and
+    # write out that data if the files do not already exist.
+    create_files: bool = False  # Create the files if they don't exist
+    initial_admin: str | None = (
+        None  # Create an initial adiminstrator account (github username)
+    )
+    app_id_filename: Path | None = None  # Suggest /data/app_id
+    client_secret_filename: Path | None = None  # Suggest /data/client_secret
+    public_key_filename: Path | None = None  # Suggest /data/public_key.pem
 
     model_config = SettingsConfigDict(env_prefix="SOAUTH_", env_file=".env")
 

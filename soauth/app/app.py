@@ -11,32 +11,40 @@ import httpx
 from fastapi import FastAPI, Form, HTTPException, Request
 from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
-from pydantic_settings import BaseSettings, SettingsConfigDict
 from starlette.authentication import requires
 
+from soauth.config.settings import Settings
 from soauth.core.uuid import UUID
 from soauth.toolkit.fastapi import global_setup
 
 from .dependencies import LoggerDependency
 
+settings = Settings()
 
-class ManagementSettings(BaseSettings):
-    authentication_service_url: str = "http://localhost:8000"
-    management_service_url: str = "http://localhost:8001/management"
-    root_path: str = "/management"
-    app_id: str | None = None
-    public_key: str | None = None
-    key_type: str | None = None
-    client_secret: str | None = None
+if (not settings.create_files) and settings.create_example_app_and_user:
+    # Running in example mode; grab data
+    with httpx.Client() as client:
+        response = client.get(f"{settings.hostname}/developer_details")
 
-    model_config = SettingsConfigDict(env_prefix="SOAUTH_MANAGEMENT_")
+        content = response.json()
 
+        app_id = content["authentication_app_id"]
+        public_key = content["authentication_public_key"]
+        key_type = content["authentication_key_type"]
+        client_secret = content["authentication_client_secret"]
+else:
+    # Read from files.
+    with open(settings.app_id_filename, "r") as handle:
+        app_id = handle.read()
 
-settings = ManagementSettings()
+    with open(settings.public_key_filename, "r") as handle:
+        public_key = handle.read()
 
-AUTHENTICATION_SERVICE_URL = settings.authentication_service_url
-MANAGEMENT_SERVICE_URL = settings.management_service_url
-ROOT_PATH = settings.root_path
+    with open(settings.client_secret_filename, "r") as handle:
+        client_secret = handle.read()
+
+    key_type = settings.key_pair_type
+
 
 templates = Jinja2Templates(directory=__file__.replace("app.py", "templates"))
 favicon = FileResponse(
@@ -46,45 +54,28 @@ apple_touch = FileResponse(
     __file__.replace("app.py", "apple-touch-icon.png"), media_type="image/png"
 )
 
-# Grab the details
-if settings.app_id is None:
-    with httpx.Client() as client:
-        response = client.get(f"{AUTHENTICATION_SERVICE_URL}/developer_details")
-
-        content = response.json()
-
-        app_id = content["authentication_app_id"]
-        public_key = content["authentication_public_key"]
-        key_type = content["authentication_key_type"]
-        client_secret = content["authentication_client_secret"]
-else:
-    app_id = settings.app_id
-    public_key = settings.public_key
-    key_type = settings.key_type
-    client_secret = settings.client_secret
-
 
 async def lifespan(app: FastAPI):
-    app.user_list_url = f"{AUTHENTICATION_SERVICE_URL}/admin/users"
-    app.user_detail_url = f"{AUTHENTICATION_SERVICE_URL}/admin/user"
-    app.key_revoke_url = f"{AUTHENTICATION_SERVICE_URL}/admin/keys"
-    app.app_list_url = f"{AUTHENTICATION_SERVICE_URL}/apps/apps"
-    app.app_detail_url = f"{AUTHENTICATION_SERVICE_URL}/apps/app"
+    app.user_list_url = f"{settings.hostname}/admin/users"
+    app.user_detail_url = f"{settings.hostname}/admin/user"
+    app.key_revoke_url = f"{settings.hostname}/admin/keys"
+    app.app_list_url = f"{settings.hostname}/apps/apps"
+    app.app_detail_url = f"{settings.hostname}/apps/app"
     app.cookie_max_age = timedelta(days=7)
 
-    app.user_list = f"{MANAGEMENT_SERVICE_URL}/users"
-    app.app_list = f"{MANAGEMENT_SERVICE_URL}/apps"
-    app.logout_url = f"{MANAGEMENT_SERVICE_URL}/logout"
+    app.user_list = f"{settings.management_hostname}{settings.management_path}/users"
+    app.app_list = f"{settings.management_hostname}{settings.management_path}/apps"
+    app.logout_url = f"{settings.management_hostname}{settings.management_path}/logout"
 
     yield
 
 
-app = FastAPI(lifespan=lifespan, root_path=ROOT_PATH)
+app = FastAPI(lifespan=lifespan, root_path=settings.management_path)
 
 app = global_setup(
     app=app,
-    app_base_url=MANAGEMENT_SERVICE_URL,
-    authentication_base_url=AUTHENTICATION_SERVICE_URL,
+    app_base_url=f"{settings.management_hostname}{settings.management_path}",
+    authentication_base_url=settings.hostname,
     app_id=app_id,
     client_secret=client_secret,
     public_key=public_key,

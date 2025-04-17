@@ -11,3 +11,10 @@ occurrs through a series of steps:
    to the service. This token can be transformed into one providing access to the app.
 4. The frontend for the app stores this token and passes it with each request for
    re-validation.
+
+Authentication in Practice
+--------------------------
+
+![soauth_app_flow.svg](SOAuth's app flow invovles communication by SOAuth with GitHub.)
+
+

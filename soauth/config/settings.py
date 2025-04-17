@@ -38,7 +38,6 @@ class Settings(BaseSettings):
 
     refresh_key_expiry: timedelta = timedelta(weeks=26)
     access_key_expiry: timedelta = timedelta(hours=8)
-    cookie_max_age: timedelta = timedelta(days=7)
 
     stale_login_expiry: timedelta = timedelta(minutes=30)
     login_record_length: timedelta = timedelta(weeks=2)

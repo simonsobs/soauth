@@ -1,7 +1,7 @@
 SOAuth
 ======
 
-<img src="../soath/app/apple-touch-icon.png" width="128px" />
+<img src="../soauth/app/apple-touch-icon.png" width="128px" />
 
 Looking for API Docs? Run `pdoc --docformat=numpy soauth` on the command line. We do not
 maintain a hosted copy of the documentation at this time.

@@ -37,15 +37,15 @@
     {% if other_user_logins %}
     {% for app in other_user_logins %}
     <section class="section">
-    <div class="nes-container with-title">
-      <p class="title"><a href="{{base_url}}/apps/{{app.app_id}}">{{ app.app_id }}</a></p>
-      <ul class="nes-list is-disc">
+      <div class="nes-container with-title">
+        <p class="title"><a href="{{base_url}}/apps/{{app.app_id}}">{{ app.app_id }}</a></p>
+        <ul class="nes-list is-disc">
           <li><span class="nes-text is-primary">Key ID</span> {{app.refresh_key_id}}</li>
           <li><span class="nes-text is-primary">Created at</span> {{app.first_authenticated}}</li>
           <li><span class="nes-text is-primary">Last Used</span> {{app.last_authenticated}}</li>
           <li><span class="nes-text is-primary">Expires</span> {{app.login_expires}}</li>
-      </ul>
-    </div>
+        </ul>
+      </div>
     </section>
     {% endfor %}
     {% else %}
@@ -69,7 +69,8 @@
                 class="nes-text is-error">{{other_user.user_name}}</span>.</p>
             <menu class="dialog-menu" style="padding-left:0">
               <button class="nes-btn">Cancel</button>
-              <button class="nes-btn is-error" onclick="location.href='{{base_url}}/{{other_user.user_id}}/delete'">Confirm</button>
+              <button class="nes-btn is-error"
+                onclick="location.href='{{base_url}}/{{other_user.user_id}}/delete'">Confirm</button>
             </menu>
           </form>
         </dialog>

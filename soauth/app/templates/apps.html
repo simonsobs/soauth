@@ -5,54 +5,64 @@
     <p class="title">Apps</p>
     {% for app in apps %}
     <section class="section">
-    <div class="nes-container with-title">
-        <p class="title">{{app.app_id}}</p>
-        <ul class="nes-list is-disc">
-            <li><span class="nes-text is-primary">Created by</span> {{app.created_by_user_name}}</li>
-            <li><span class="nes-text is-primary">Created at</span> {{app.created_at}}</li>
-            <li><span class="nes-text is-primary">Domain</span> {{app.domain}}</li>
-        </ul>
-        <div style="display:flex;">
-        <section class="buttonholder">
-            <button class="nes-btn is-primary" onclick="location.href='{{base_url}}/apps/{{app.app_id}}'">Detail</button>
-        </section>
-        <section class="buttonholder">
-            <button type="button" class="nes-btn is-warning" onclick="document.getElementById('refresh-keys-dialog-{{app.app_id}}').showModal();">
-            Refresh Keys
-            </button>
-            <dialog class="nes-dialog is-rounded" id="refresh-keys-dialog-{{app.app_id}}">
-            <form method="dialog">
-                <h3 class="title">Are you sure?</h3>
-                <p>Proceeding will <span class="nes-text is-primary">(in an un-recoverable way)</span> refresh the keys for <span class="nes-text is-error">{{app.domain}}</span>.</p>
-                <menu class="dialog-menu" style="padding-left:0">
-                <button class="nes-btn">Cancel</button>
-                <button class="nes-btn is-warning" onclick="location.href='{{base_url}}/apps/{{app.app_id}}/refresh'">Refresh</button>
-                </menu>
-            </form>
-            </dialog>
-        </section>
-        <section class="buttonholder">
-            <button type="button" class="nes-btn is-error" onclick="document.getElementById('delete-app-dialog-{{app.app_id}}').showModal();">
-            Delete
-            </button>
-            <dialog class="nes-dialog is-rounded" id="delete-app-dialog-{{app.app_id}}">
-            <form method="dialog">
-                <h3 class="title">Are you sure?</h3>
-                <p>Proceeding will <span class="nes-text is-primary">(in an un-recoverable way)</span> delete the application <span class="nes-text is-error">{{app.domain}} ({{app.app_id}})</span>.</p>
-                <menu class="dialog-menu" style="padding-left:0">
-                <button class="nes-btn">Cancel</button>
-                <button class="nes-btn is-error" onclick="location.href='{{base_url}}/apps/{{app.app_id}}/delete'">Delete</button>
-                </menu>
-            </form>
-            </dialog>
-        </section>
-    </div>
-    </div>
+        <div class="nes-container with-title">
+            <p class="title">{{app.app_id}}</p>
+            <ul class="nes-list is-disc">
+                <li><span class="nes-text is-primary">Created by</span> {{app.created_by_user_name}}</li>
+                <li><span class="nes-text is-primary">Created at</span> {{app.created_at}}</li>
+                <li><span class="nes-text is-primary">Domain</span> {{app.domain}}</li>
+            </ul>
+            <div style="display:flex;">
+                <section class="buttonholder">
+                    <button class="nes-btn is-primary"
+                        onclick="location.href='{{base_url}}/apps/{{app.app_id}}'">Detail</button>
+                </section>
+                <section class="buttonholder">
+                    <button type="button" class="nes-btn is-warning"
+                        onclick="document.getElementById('refresh-keys-dialog-{{app.app_id}}').showModal();">
+                        Refresh Keys
+                    </button>
+                    <dialog class="nes-dialog is-rounded" id="refresh-keys-dialog-{{app.app_id}}">
+                        <form method="dialog">
+                            <h3 class="title">Are you sure?</h3>
+                            <p>Proceeding will <span class="nes-text is-primary">(in an un-recoverable way)</span>
+                                refresh the keys for <span class="nes-text is-error">{{app.domain}}</span>.</p>
+                            <menu class="dialog-menu" style="padding-left:0">
+                                <button class="nes-btn">Cancel</button>
+                                <button class="nes-btn is-warning"
+                                    onclick="location.href='{{base_url}}/apps/{{app.app_id}}/refresh'">Refresh</button>
+                            </menu>
+                        </form>
+                    </dialog>
+                </section>
+                <section class="buttonholder">
+                    <button type="button" class="nes-btn is-error"
+                        onclick="document.getElementById('delete-app-dialog-{{app.app_id}}').showModal();">
+                        Delete
+                    </button>
+                    <dialog class="nes-dialog is-rounded" id="delete-app-dialog-{{app.app_id}}">
+                        <form method="dialog">
+                            <h3 class="title">Are you sure?</h3>
+                            <p>Proceeding will <span class="nes-text is-primary">(in an un-recoverable way)</span>
+                                delete the application <span class="nes-text is-error">{{app.domain}}
+                                    ({{app.app_id}})</span>.</p>
+                            <menu class="dialog-menu" style="padding-left:0">
+                                <button class="nes-btn">Cancel</button>
+                                <button class="nes-btn is-error"
+                                    onclick="location.href='{{base_url}}/apps/{{app.app_id}}/delete'">Delete</button>
+                            </menu>
+                        </form>
+                    </dialog>
+                </section>
+            </div>
+        </div>
     </section>
     {% endfor %}
 </div>
 {% endif %}
 {% endblock %}
 {% block extrafooter %}
-<button class="nes-btn is-success" onclick="location.href='{{base_url}}/apps/create'" style="margin:1em"><h3 style="padding:0;margin:0">+</h3></button>
+<button class="nes-btn is-success" onclick="location.href='{{base_url}}/apps/create'" style="margin:1em">
+    <h3 style="padding:0;margin:0">+</h3>
+</button>
 {% endblock %}

@@ -16,49 +16,49 @@
     }
 
     .buttonholder {
-        margin-right: 1em;
-        margin-bottom: 0em;
+      margin-right: 1em;
+      margin-bottom: 0em;
     }
   </style>
 </head>
 
 <body>
   <main style="padding-bottom:8em">
-  <div class="nes-container">
-    <h1 style="color:#F15A29">Simons Observatory</h1>
-    <h3>User Identity Service</h3>
-    {% block content %}
-    <p>If you are seeing this, there is a rendering error.</p>
-    {% endblock %}
-  </div>
+    <div class="nes-container">
+      <h1 style="color:#F15A29">Simons Observatory</h1>
+      <h3>User Identity Service</h3>
+      {% block content %}
+      <p>If you are seeing this, there is a rendering error.</p>
+      {% endblock %}
+    </div>
   </main>
   <footer class="page-footer" style="position:fixed;bottom:0;width:100%">
     {% block extrafooter %}{% endblock %}
     <div class="nes-container with-title is-dark">
       <p class="title">{{user.display_name if user.display_name else "Login Here" }}</p>
       <div style="display:flex;justify-content:flex-start">
-      {% if "admin" in scopes %}
-      <section class="buttonholder">
-      <button type="button" class="nes-btn is-primary" onclick="location.href='{{user_list}}'">User List</button>
-    </section>
-      {% endif %}
-      {% if "admin" in scopes or "appmanager" in scopes %}
-      <section class="buttonholder">
-      <button type="button" class="nes-btn is-primary" onclick="location.href='{{apps_list}}'">App List</button>
-    </section>
-      {% endif %}
-      {% if user.is_authenticated %}
-      <section class="buttonholder" style="order:-1">
-      <button type="button" class="nes-btn is-success" onclick="location.href='{{base_url}}'">Home</button>
-      </section>
-      <section class="buttonholder" style="margin-left:auto">
-      <button type="button" class="nes-btn is-error" onclick="location.href='{{logout}}'">Logout</button>
-    </section>
-      {% else %}
-      <section class="buttonholder">
-      <button type="button" class="nes-btn is-primary" onclick="location.href='{{login}}'">Login</button>
-    </section>
-      {% endif %}
+        {% if "admin" in scopes %}
+        <section class="buttonholder">
+          <button type="button" class="nes-btn is-primary" onclick="location.href='{{user_list}}'">User List</button>
+        </section>
+        {% endif %}
+        {% if "admin" in scopes or "appmanager" in scopes %}
+        <section class="buttonholder">
+          <button type="button" class="nes-btn is-primary" onclick="location.href='{{apps_list}}'">App List</button>
+        </section>
+        {% endif %}
+        {% if user.is_authenticated %}
+        <section class="buttonholder" style="order:-1">
+          <button type="button" class="nes-btn is-success" onclick="location.href='{{base_url}}'">Home</button>
+        </section>
+        <section class="buttonholder" style="margin-left:auto">
+          <button type="button" class="nes-btn is-error" onclick="location.href='{{logout}}'">Logout</button>
+        </section>
+        {% else %}
+        <section class="buttonholder">
+          <button type="button" class="nes-btn is-primary" onclick="location.href='{{login}}'">Login</button>
+        </section>
+        {% endif %}
       </div>
     </div>
   </footer>

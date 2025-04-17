@@ -5,20 +5,21 @@
 <section class="section">
   <div class="nes-container with-title">
     <p class="title">New Credentials</p>
-    <p>Here is your new public key and client secret <span class="nes-text is-error">which will only be shown once and must be used immediately with your application</span>.</p>
+    <p>Here is your new public key and client secret <span class="nes-text is-error">which will only be shown once and
+        must be used immediately with your application</span>.</p>
     <div class="nes-field" style="margin-bottom:1em">
       <label for="key-field">Public Key</label>
       <textarea id="key-field" class="nes-input" readonly rows="4">{{public_key}}</textarea>
     </div>
-    <div class="nes-field"  style="margin-bottom:1em">
+    <div class="nes-field" style="margin-bottom:1em">
       <label for="key-pair-type-field">Client Secret</label>
       <input type="text" class="nes-input" readonly value='{{client_secret}}' />
     </div>
-    <div class="nes-field"  style="margin-bottom:1em">
+    <div class="nes-field" style="margin-bottom:1em">
       <label for="key-pair-type-field">Key Pair Type</label>
       <input type="text" class="nes-input" readonly value='{{key_pair_type}}' />
     </div>
-    <div class="nes-field"  style="margin-bottom:1em">
+    <div class="nes-field" style="margin-bottom:1em">
       <label for="key-pair-type-field">App ID</label>
       <input type="text" class="nes-input" readonly value='{{app.app_id}}' />
     </div>
@@ -29,10 +30,10 @@
   <div class="nes-container with-title">
     <p class="title">App Information</p>
     <ul class="nes-list is-disc">
-        <li><span class="nes-text is-primary">App ID</span> {{app.app_id}}</li>
-        <li><span class="nes-text is-primary">Created by</span> {{app.created_by_user_name}}</li>
-        <li><span class="nes-text is-primary">Created at</span> {{app.created_at}}</li>
-        <li><span class="nes-text is-primary">Domain</span> {{app.domain}}</li>
+      <li><span class="nes-text is-primary">App ID</span> {{app.app_id}}</li>
+      <li><span class="nes-text is-primary">Created by</span> {{app.created_by_user_name}}</li>
+      <li><span class="nes-text is-primary">Created at</span> {{app.created_at}}</li>
+      <li><span class="nes-text is-primary">Domain</span> {{app.domain}}</li>
     </ul>
   </div>
 </section>
@@ -42,20 +43,23 @@
     {% if logged_in_users %}
     {% for user in logged_in_users %}
     <section class="section">
-    <div class="nes-container with-title display:flex">
-      <p class="title">{% if "admin" in scopes %}<a href="{{base_url}}/users/{{user.user_id}}">{{ user.user_name }}</a>{% else %}{{ user.user_name }}{% endif %}</p>
-      <div style="display:flex;align-items:flex-end;justify-content:space-between">
-      <ul class="nes-list is-disc" style="flex-shrink:1">
-          <li><span class="nes-text is-primary">Key ID</span> {{user.refresh_key_id}}</li>
-          <li><span class="nes-text is-primary">Created at</span> {{user.first_authenticated}}</li>
-          <li><span class="nes-text is-primary">Last Used</span> {{user.last_authenticated}}</li>
-          <li><span class="nes-text is-primary">Expires</span> {{user.login_expires}}</li>
-      </ul>
-      {% if "admin" in scopes %}
-      <button class="nes-btn is-error" style="flex-grow:0" onclick="location.href='{{base_url}}/apps/{{app.app_id}}/revoke/{{user.refresh_key_id}}'">Revoke Key</button>
-      {% endif %}
+      <div class="nes-container with-title display:flex">
+        <p class="title">{% if "admin" in scopes %}<a href="{{base_url}}/users/{{user.user_id}}">{{ user.user_name
+            }}</a>{% else %}{{ user.user_name }}{% endif %}</p>
+        <div style="display:flex;align-items:flex-end;justify-content:space-between">
+          <ul class="nes-list is-disc" style="flex-shrink:1">
+            <li><span class="nes-text is-primary">Key ID</span> {{user.refresh_key_id}}</li>
+            <li><span class="nes-text is-primary">Created at</span> {{user.first_authenticated}}</li>
+            <li><span class="nes-text is-primary">Last Used</span> {{user.last_authenticated}}</li>
+            <li><span class="nes-text is-primary">Expires</span> {{user.login_expires}}</li>
+          </ul>
+          {% if "admin" in scopes %}
+          <button class="nes-btn is-error" style="flex-grow:0"
+            onclick="location.href='{{base_url}}/apps/{{app.app_id}}/revoke/{{user.refresh_key_id}}'">Revoke
+            Key</button>
+          {% endif %}
+        </div>
       </div>
-    </div>
     </section>
     {% endfor %}
     {% else %}

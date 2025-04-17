@@ -15,6 +15,6 @@ occurrs through a series of steps:
 Authentication in Practice
 --------------------------
 
-![soauth_app_flow.svg](SOAuth's app flow invovles communication by SOAuth with GitHub.)
+![SOAuth's app flow invovles communication by SOAuth with GitHub.](soauth_app_flow.svg)
 
 

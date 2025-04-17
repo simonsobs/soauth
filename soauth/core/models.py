@@ -6,6 +6,10 @@ from datetime import datetime
 
 from pydantic import BaseModel
 
+from soauth.core.user import UserData
+
+from .app import AppData, LoggedInUserData
+
 
 class KeyRefreshResponse(BaseModel):
     access_token: str
@@ -17,3 +21,25 @@ class KeyRefreshResponse(BaseModel):
 
 class RefreshTokenModel(BaseModel):
     refresh_token: str | bytes
+
+
+class AppRefreshResponse(BaseModel):
+    app: AppData
+    public_key: str
+    key_pair_type: str
+    client_secret: str
+
+
+class AppDetailResponse(BaseModel):
+    app: AppData
+    users: list[LoggedInUserData]
+
+
+class ModifyUserContent(BaseModel):
+    grant_add: str | None = None
+    grant_remove: str | None = None
+
+
+class UserDetailResponse(BaseModel):
+    user: UserData
+    logins: list[LoggedInUserData]

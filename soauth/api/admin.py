@@ -5,9 +5,8 @@ Administration endpoints.
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from pydantic import BaseModel
 
-from soauth.core.app import LoggedInUserData
+from soauth.core.models import ModifyUserContent, UserDetailResponse
 from soauth.core.uuid import UUID
 from soauth.service import refresh as refresh_service
 from soauth.service import user as user_service
@@ -30,13 +29,24 @@ async def handle_admin_user(request: Request) -> SOUserWithGrants:
 
 AdminUser = Annotated[SOUserWithGrants, Depends(handle_admin_user)]
 
-admin_app = APIRouter()
+admin_routes = APIRouter(tags=["Administration"])
 
 
-@admin_app.get("/users")
+@admin_routes.get(
+    "/users",
+    summary="Get the list of users",
+    description="Retrieve a list of all users in the system. Requires `admin` grant.",
+    responses={
+        200: {"description": "A list of users is returned."},
+        401: {"description": "Unauthorized to access this endpoint."},
+    },
+)
 async def users(
     admin_user: AdminUser, conn: DatabaseDependency, log: LoggerDependency
 ) -> list[user_service.UserData]:
+    """
+    Get the list of users.
+    """
     log = log.bind(admin_user=admin_user)
     result = await user_service.get_user_list(conn=conn)
     log = log.bind(number_of_users=len(result))
@@ -44,13 +54,37 @@ async def users(
     return result
 
 
-@admin_app.get("/user/{user_id}")
+@admin_routes.get(
+    "/user/{user_id}",
+    summary="Get user details",
+    description=(
+        "Retrieve detailed information about a user, including their currently active sessions. "
+        "Requires `admin` grant."
+    ),
+    responses={
+        200: {"description": "User details and active sessions are returned."},
+        401: {"description": "Unauthorized to access this endpoint."},
+    },
+)
 async def user(
     user_id: UUID,
     admin_user: AdminUser,
     conn: DatabaseDependency,
     log: LoggerDependency,
-) -> dict[str, user_service.UserData | list[LoggedInUserData]]:
+) -> UserDetailResponse:
+    """
+    Get details about a user, including their currently active sessions.
+
+    Parameters
+    ----------
+    user_id: UUID
+        The ID of the user to get details about.
+
+    Returns
+    -------
+    UserDetailResponse
+        Detail about the user (`.user`) and thier logins (`.logins`)
+    """
     log = log.bind(admin_user=admin_user, requested_user_id=user_id)
     result = (await user_service.read_by_id(user_id=user_id, conn=conn)).to_core()
     login_details = await refresh_service.get_all_logins_for_user(
@@ -58,15 +92,21 @@ async def user(
     )
     log = log.bind(read_user=result)
     await log.ainfo("api.admin.user")
-    return {"user": result, "logins": login_details}
+    return UserDetailResponse(user=result, logins=login_details)
 
 
-class ModifyUserContent(BaseModel):
-    grant_add: str | None = None
-    grant_remove: str | None = None
-
-
-@admin_app.post("/user/{user_id}")
+@admin_routes.post(
+    "/user/{user_id}",
+    summary="Modify user grants",
+    description=(
+        "Add or remove grants for a user. Requires `admin` grant. "
+        "Specify the grant to add or remove in the request body."
+    ),
+    responses={
+        200: {"description": "User grants modified successfully."},
+        401: {"description": "Unauthorized to access this endpoint."},
+    },
+)
 async def modify_user(
     content: ModifyUserContent,
     user_id: UUID,
@@ -74,6 +114,7 @@ async def modify_user(
     conn: DatabaseDependency,
     log: LoggerDependency,
 ) -> user_service.UserData:
+    """ """
     log = log.bind(admin_user=admin_user, requested_user_id=user_id)
 
     user = await user_service.read_by_id(user_id=user_id, conn=conn)
@@ -95,7 +136,19 @@ async def modify_user(
     return user.to_core()
 
 
-@admin_app.post("/user/{user_id}/revoke")
+@admin_routes.post(
+    "/user/{user_id}/revoke",
+    summary="Revoke all user access keys",
+    description=(
+        "Revoke all access keys for a user and refresh their user data. "
+        "Requires `admin` grant."
+    ),
+    responses={
+        200: {"description": "User access keys revoked successfully."},
+        401: {"description": "Unauthorized to access this endpoint."},
+    },
+    include_in_schema=False,  # NOT IMPLEMENTED, DO NOT INCLUDE
+)
 async def revoke(user_id: UUID, admin_user: AdminUser) -> user_service.UserData:
     """
     Revoke all of a user's access keys and refresh their user.
@@ -105,7 +158,15 @@ async def revoke(user_id: UUID, admin_user: AdminUser) -> user_service.UserData:
     return None
 
 
-@admin_app.delete("/user/{user_id}")
+@admin_routes.delete(
+    "/user/{user_id}",
+    summary="Delete a user",
+    description=("Permanently delete a user from the system. Requires `admin` grant."),
+    responses={
+        200: {"description": "User deleted successfully."},
+        401: {"description": "Unauthorized to access this endpoint."},
+    },
+)
 async def delete(
     user_id: UUID,
     admin_user: AdminUser,
@@ -122,7 +183,18 @@ async def delete(
     await log.ainfo("api.admin.user_deleted")
 
 
-@admin_app.delete("/keys/{key_id}")
+@admin_routes.delete(
+    "/keys/{key_id}",
+    summary="Revoke a refresh key",
+    description=(
+        "Revoke a specific refresh key, effectively invalidating it. "
+        "Requires `admin` grant."
+    ),
+    responses={
+        200: {"description": "Refresh key revoked successfully."},
+        401: {"description": "Unauthorized to access this endpoint."},
+    },
+)
 async def revoke_key(
     key_id: UUID,
     admin_user: AdminUser,

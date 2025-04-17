@@ -2,13 +2,16 @@
 FastAPI app
 """
 
+from importlib.metadata import version
+
 from fastapi import FastAPI
 
 from soauth.toolkit.fastapi import add_exception_handlers
 
-from .admin import admin_app
-from .appmanager import app_manager_app
+from .admin import admin_routes
+from .app_manager import app_management_routes
 from .dependencies import SETTINGS
+from .docs import create_protected_docs
 from .login import login_app
 
 settings = SETTINGS()
@@ -40,10 +43,20 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(lifespan=lifespan)
+# Set docs to None because they are added later in create_protected_docs
+app = FastAPI(
+    lifespan=lifespan,
+    openapi_url=None,
+    docs_url=None,
+    redoc_url=None,
+    title="SOAuth API",
+    summary="API endpoints for the SOAuth service, allowing users to generate access and refresh tokens for accesssing Simons Observatory data services.",
+    version=version("soauth"),
+)
 
 app = add_exception_handlers(app)
+app = create_protected_docs(app)
 
 app.include_router(login_app)
-app.include_router(admin_app, prefix="/admin")
-app.include_router(app_manager_app, prefix="/apps")
+app.include_router(admin_routes, prefix="/admin")
+app.include_router(app_management_routes, prefix="/apps")

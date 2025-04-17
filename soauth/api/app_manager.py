@@ -6,7 +6,8 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 
-from soauth.core.app import AppData, LoggedInUserData
+from soauth.core.app import AppData
+from soauth.core.models import AppDetailResponse, AppRefreshResponse
 from soauth.core.uuid import UUID
 from soauth.service import app as app_service
 from soauth.service import refresh as refresh_service
@@ -32,10 +33,21 @@ async def handle_app_manager_user(request: Request) -> SOUserWithGrants:
 
 AppManagerUser = Annotated[SOUserWithGrants, Depends(handle_app_manager_user)]
 
-app_manager_app = APIRouter()
+app_management_routes = APIRouter(tags=["App Management"])
 
 
-@app_manager_app.put("/app")
+@app_management_routes.put(
+    "/app",
+    summary="Create a new application",
+    description=(
+        "Create a new application with a specified domain and redirect URL.\n\n"
+        "The user must have the appropriate grants (`admin` or `appmanager`) to perform this action."
+    ),
+    responses={
+        200: {"description": "The application's details and keys are returned."},
+        401: {"description": "Unauthorized to manage this application."},
+    },
+)
 async def create_app(
     domain: str,
     redirect_url: str,
@@ -43,9 +55,10 @@ async def create_app(
     conn: DatabaseDependency,
     settings: SettingsDependency,
     log: LoggerDependency,
-) -> dict[str, AppData | str]:
+) -> AppRefreshResponse:
     log = log.bind(user=user, domain=domain)
-    # Need to get the 'user' from the 'user'
+    # Note: the 'user' as given by the auth system is not the same as our database
+    # user, it's re-created from the webtoken.
     database_user = await user_service.read_by_id(user_id=user.user_id, conn=conn)
     app = await app_service.create(
         domain=domain,
@@ -57,15 +70,27 @@ async def create_app(
     )
     log = log.bind(app_id=app.app_id)
     await log.ainfo("api.appmanager.app.created")
-    return {
-        "app": app.to_core(),
-        "public_key": app.public_key.decode("utf-8"),
-        "key_pair_type": app.key_pair_type,
-        "client_secret": app.client_secret,
-    }
+
+    return AppRefreshResponse(
+        app=app.to_core(),
+        public_key=app.public_key.decode("utf-8"),
+        key_pair_type=app.key_pair_type,
+        client_secret=app.client_secret,
+    )
 
 
-@app_manager_app.get("/apps")
+@app_management_routes.get(
+    "/apps",
+    summary="Get the list of applications",
+    description=(
+        "Retrieve a list of applications created by the user (if `appmanager`) or all applications "
+        "(if `admin`)."
+    ),
+    responses={
+        200: {"description": "A list of applications is returned."},
+        401: {"description": "Unauthorized to manage applications."},
+    },
+)
 async def apps(
     user: AppManagerUser, conn: DatabaseDependency, log: LoggerDependency
 ) -> list[AppData]:
@@ -77,10 +102,21 @@ async def apps(
     return result
 
 
-@app_manager_app.get("/app/{app_id}")
+@app_management_routes.get(
+    "/app/{app_id}",
+    summary="Get application details",
+    description=(
+        "Retrieve detailed information about an application, including its internal properties "
+        "and a list of logged-in users. Requires the user to be the app's manager or an admin."
+    ),
+    responses={
+        200: {"description": "Application details are returned."},
+        401: {"description": "Unauthorized to access this application."},
+    },
+)
 async def app(
     app_id: UUID, user: AppManagerUser, conn: DatabaseDependency, log: LoggerDependency
-) -> dict[str, AppData | list[LoggedInUserData]]:
+) -> AppDetailResponse:
     log = log.bind(user=user, requested_app_id=app_id)
     result = await app_service.read_by_id(app_id=app_id, conn=conn)
     log.bind(created_by_user_id=result.created_by_user_id)
@@ -94,17 +130,28 @@ async def app(
     )
 
     await log.ainfo("api.appmanager.app")
-    return {"app": result.to_core(), "users": logged_in_users}
+    return AppDetailResponse(app=result.to_core(), users=logged_in_users)
 
 
-@app_manager_app.post("/app/{app_id}/refresh")
+@app_management_routes.post(
+    "/app/{app_id}/refresh",
+    summary="Refresh application keys",
+    description=(
+        "Refresh the keys and client secret for an application. The old keys are immediately expired. "
+        "Requires `appmanager` or `admin` grants."
+    ),
+    responses={
+        200: {"description": "New keys and client secret are returned."},
+        401: {"description": "Unauthorized to refresh this application."},
+    },
+)
 async def refresh(
     app_id: UUID,
     user: AppManagerUser,
     conn: DatabaseDependency,
     settings: SettingsDependency,
     log: LoggerDependency,
-) -> dict[str, AppData | str]:
+) -> AppRefreshResponse:
     log = log.bind(user=user, requested_app_id=app_id)
     result = await app_service.read_by_id(app_id=app_id, conn=conn)
     log.bind(created_by_user_id=result.created_by_user_id)
@@ -118,15 +165,26 @@ async def refresh(
     )
     await log.ainfo("api.appmanager.refresh.success")
 
-    return {
-        "app": app.to_core(),
-        "client_secret": app.client_secret,
-        "public_key": app.public_key.decode("utf-8"),
-        "key_pair_type": app.key_pair_type,
-    }
+    return AppRefreshResponse(
+        app=app.to_core(),
+        public_key=app.public_key.decode("utf-8"),
+        key_pair_type=app.key_pair_type,
+        client_secret=app.client_secret,
+    )
 
 
-@app_manager_app.delete("/app/{app_id}")
+@app_management_routes.delete(
+    "/app/{app_id}",
+    summary="Delete an application",
+    description=(
+        "Delete an application permanently. This action also removes all associated refresh keys, "
+        "making them invalid. Requires `appmanager` or `admin` grants."
+    ),
+    responses={
+        200: {"description": "Application deleted successfully."},
+        401: {"description": "Unauthorized to delete this application."},
+    },
+)
 async def delete(
     app_id: UUID,
     user: AppManagerUser,

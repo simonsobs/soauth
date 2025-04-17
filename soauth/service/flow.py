@@ -142,6 +142,9 @@ async def secondary(
         new_refresh_key_id=refresh_key.refresh_key_id,
     )
 
+    # TODO: Update user information from GitHub in case they have had
+    # grants added OR REMOVED
+
     await log.ainfo("secondary.refresh_key_exchanged")
 
     encoded_auth_key, auth_key_expires = await create_auth_key(

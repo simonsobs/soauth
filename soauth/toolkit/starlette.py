@@ -278,6 +278,14 @@ def key_decode_handler(request: Request, exc: KeyDecodeError) -> RedirectRespons
     return response
 
 
+def unauthorized_handler(request: Request, exc: HTTPException) -> RedirectResponse:
+    """
+    Handles any chosen HTTPException by redirecting users to the login.
+    """
+
+    return RedirectResponse(url=request.app.login_url, status_code=302)
+
+
 def on_auth_error(request: Request, exc: Exception):
     if isinstance(exc, AuthenticationDecodeError):
         return key_decode_handler(request=request, exc=exc)

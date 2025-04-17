@@ -2,7 +2,7 @@
 Main login flow - redirection to GitHub and handling of responses.
 """
 
-from fastapi import APIRouter, HTTPException, Request, status
+from fastapi import APIRouter, HTTPException, Path, Query, Request, status
 from fastapi.responses import RedirectResponse
 
 from soauth.core.models import KeyRefreshResponse, RefreshTokenModel
@@ -22,29 +22,36 @@ from .dependencies import (
     SettingsDependency,
 )
 
-login_app = APIRouter()
+login_app = APIRouter(tags=["Login and Session Management"])
 
 
-@login_app.get("/login/{app_id}")
+@login_app.get(
+    "/login/{app_id}",
+    response_class=RedirectResponse,
+    summary="Redirect user to GitHub for login",
+    description=(
+        "Login flow - use this endpoint to initiate GitHub login and validate the session.\n\n"
+        "The user will be redirected either to the main page of your registered app, or (preferentially) "
+        "to the URL defined in the `Referer` header.\n\n"
+        "If the redirection does not work as expected, consider setting "
+        '`referrerpolicy="no-referrer-when-downgrade"` in your client.'
+    ),
+    responses={
+        302: {"description": "Redirect to GitHub login"},
+        404: {"description": "App not found"},
+    },
+)
 async def login(
-    app_id: UUID,
     request: Request,
     settings: SettingsDependency,
     conn: DatabaseDependency,
     log: LoggerDependency,
+    app_id: UUID = Path(..., description="The app ID to authenticate against."),
 ) -> RedirectResponse:
-    """
-    Login flow - use this to be redirected to GitHub for login, and have
-    your session validated.
-
-    You will be redirected either to the main page of your registered app,
-    or (preferentially) you will be redirected to the URL defined in your
-    `Referer` header.
-    """
     try:
         app = await app_service.read_by_id(app_id=app_id, conn=conn)
     except app_service.AppNotFound:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, f"App {app_id} not found")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail=f"App {app_id} not found")
 
     login_request = await login_service.create(
         app=app, redirect_to=request.headers.get("Referer", None), conn=conn, log=log
@@ -62,19 +69,31 @@ async def login(
     return RedirectResponse(redirect_url, status_code=status.HTTP_302_FOUND)
 
 
-@login_app.get("/github")
+@login_app.get(
+    "/github",
+    response_class=RedirectResponse,
+    summary="Handle GitHub OAuth callback",
+    description=(
+        "This endpoint is called by GitHub as part of the OAuth login flow. "
+        "It completes the login by exchanging the `code` for user credentials and redirects "
+        "the user to the app's final redirect URL based on the login request.\n\n"
+        "This should not be called directly by users—GitHub calls this after the user authorizes "
+        "the application."
+    ),
+    responses={
+        302: {"description": "Redirect to the final app URL"},
+        401: {"description": "Authentication failed"},
+    },
+)
 async def github(
-    code: str,
-    state: UUID,
     settings: SettingsDependency,
     conn: DatabaseDependency,
     log: LoggerDependency,
+    code: str = Query(
+        ..., description="The code to exchange for GitHub auth credentials."
+    ),
+    state: UUID = Query(..., description="Login request ID used to identify the user."),
 ) -> RedirectResponse:
-    """
-    This endpoint is 'called' by GitHub itself, and attempts to complete
-    the login flow from GitHub.
-    """
-
     unauthorized = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication failed"
     )
@@ -105,33 +124,45 @@ async def github(
 
     app = await app_service.read_by_id(app_id=login_request.app_id, conn=conn)
 
-    # TODO: Parameterize this redirect process through a service layer.
-
+    # Limit the length of external strings sent downstream.
     response = RedirectResponse(
-        url=f"{app.redirect_url}?code={login_request.secret_code}&state={state}",
+        url=f"{app.redirect_url}?code={login_request.secret_code}&state={str(state)[:256]}",
         status_code=302,
     )
 
     return response
 
 
-@login_app.post("/code/{app_id}")
+@login_app.post(
+    "/code/{app_id}",
+    response_model=KeyRefreshResponse,
+    summary="Exchange a code and client secret for tokens",
+    description=(
+        "Exchange an authorization `code` and a client `secret` for an access token, "
+        "refresh token, token expiry times, and a redirect URL.\n\n"
+        "The redirect URL is where the user should be sent after the exchange is complete. "
+        "This will be either the root of your app or the original URL the user came from."
+    ),
+    responses={
+        200: {"description": "Tokens successfully returned"},
+        401: {"description": "Authentication failed"},
+    },
+)
 async def code(
-    code: str,
-    secret: str,
-    app_id: UUID,
     request: Request,
     settings: SettingsDependency,
     conn: DatabaseDependency,
     log: LoggerDependency,
+    code: str = Query(
+        ..., description="The access code you received at your `/redirect` endpoint."
+    ),
+    secret: str = Query(
+        ..., description="The client secret provided during app initialization."
+    ),
+    app_id: UUID = Path(
+        ..., description="The app ID provided during app initialization."
+    ),
 ) -> KeyRefreshResponse:
-    """
-    Exchange a code and client secret for keys.
-
-    Returns a dictionary with access_token, refresh_token, and redirect - which is where
-    you should redirect the user to after completing the exchange.
-    """
-
     # All of this can be surely balled up into a service layer function?
 
     unauthorized = HTTPException(
@@ -195,23 +226,27 @@ async def code(
     )
 
 
-@login_app.post("/exchange")
-async def exchange_post(
+@login_app.post(
+    "/exchange",
+    response_model=KeyRefreshResponse,
+    summary="Exchange a refresh token for new tokens",
+    description=(
+        "Exchange a valid refresh token for a new access token and a new refresh token. "
+        "The old refresh token becomes invalid after this call.\n\n"
+        "You must provide the `refresh_token` in the request body."
+    ),
+    responses={
+        200: {"description": "New access and refresh tokens returned"},
+        401: {"description": "Invalid or expired refresh token"},
+    },
+)
+async def exchange(
     content: RefreshTokenModel,
     request: Request,
     settings: SettingsDependency,
     conn: DatabaseDependency,
     log: LoggerDependency,
 ) -> KeyRefreshResponse:
-    """
-    Exchange your refresh key for a new refresh key and a new auth key.
-
-    The refresh key should be passed as a POST parameter, and you will
-    recieve back a JSON blob that contains:
-
-    {"access_token": xxxx, "refresh_token": xxxx}
-    """
-
     refresh_token = content.refresh_token
 
     try:
@@ -244,19 +279,28 @@ async def exchange_post(
     )
 
 
-@login_app.post("/expire/{app_id}")
+@login_app.post(
+    "/expire/{app_id}",
+    summary="Expire a refresh token",
+    description=(
+        "Expire a refresh token on the backend, effectively logging the user out. "
+        "You must provide the `refresh_token` in the request body."
+    ),
+    responses={
+        200: {"description": "Refresh token expired successfully"},
+        400: {"description": "Invalid or missing refresh token"},
+    },
+)
 async def expire(
-    app_id: UUID,
     content: RefreshTokenModel,
     request: Request,
     settings: SettingsDependency,
     conn: DatabaseDependency,
     log: LoggerDependency,
+    app_id: UUID = Path(
+        ..., description="The app ID you are using (unused, but kept for consistency)."
+    ),
 ):
-    """
-    Expires a key.
-    """
-
     try:
         await flow_service.logout(
             encoded_refresh_key=content.refresh_token,

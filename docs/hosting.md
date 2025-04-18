@@ -149,3 +149,5 @@ SOAUTH_DATABASE_DB=soauth
 Before running the container for the first time, it would be wise to mount a
 persistent volume at `/data` with read/write permissions for the user running
 the `soauth` server, for the local data to be stored.
+
+**Next**: [developing SOAuth](developing.md)

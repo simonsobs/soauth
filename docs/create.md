@@ -138,4 +138,4 @@ these will only be shown once - if you want to see them again, you will need to 
 
 ![Created](app_create_4.png)
 
-**Next**: managing users
+**Next**: [hosting SOAuth](hosting.md)

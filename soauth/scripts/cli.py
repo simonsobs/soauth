@@ -54,7 +54,6 @@ def main():
                 "SOAUTH_DATABASE_ECHO": "False",
                 "SOAUTH_CREATE_EXAMPLE_APP_AND_USER": "True",
                 "soauth_host_development_only_endpoint": "True",
-                "SOAUTH_CREATE_ADMIN_USERS": '["jborrow"]',
             }
 
             background_process = Process(target=run_server, kwargs=environment)

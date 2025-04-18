@@ -24,6 +24,8 @@ from soauth.core.uuid import UUID
 from soauth.database.app import App
 from soauth.database.auth import RefreshKey
 from soauth.database.user import User
+from soauth.service import user as user_service
+from soauth.service.github import GitHubLoginError, github_get_user_from_access_token
 
 
 class AuthorizationError(Exception):
@@ -143,14 +145,18 @@ async def decode_refresh_key(
 
 
 async def refresh_refresh_key(
-    payload: dict[str, Any], settings: Settings, conn: AsyncSession
+    payload: dict[str, Any],
+    settings: Settings,
+    conn: AsyncSession,
+    log: FilteringBoundLogger,
 ) -> tuple[str, RefreshKey]:
     """
     Perform the key refresh flow. This:
 
     1. Checks that the payload corresponds to an active key.
     2. Revokes that key.
-    3. Refreshes the content of the key payload, re-signs it, and returns for use
+    3. Refreshes the user against GitHub, for when the access key must be created
+    4. Refreshes the content of the key payload, re-signs it, and returns for use
     """
 
     uuid = payload["uuid"]
@@ -166,6 +172,11 @@ async def refresh_refresh_key(
     if res.revoked:
         raise AuthorizationError("Key used for refresh has been revoked")
 
+    if (uid := UUID(hex=payload["user_id"])) != res.user_id:
+        raise AuthorizationError(
+            f"User ID does not match database {uid} v.s. {res.user_id}!"
+        )
+
     # We have an active key.
     new_payload = refresh_refresh_key_payload(payload)
     app = await conn.get(App, res.app_id)
@@ -173,10 +184,6 @@ async def refresh_refresh_key(
     create_time = new_payload["iat"]
     expiry_time = new_payload["exp"]
     uuid = new_payload["uuid"]
-
-    # TODO: should we not check against GitHub to update the user's info
-    #       here? We could have a service function reverify_user that does
-    #       this for us.
 
     if isinstance(create_time, int):
         create_time = datetime.fromtimestamp(create_time)
@@ -215,6 +222,19 @@ async def refresh_refresh_key(
 
     conn.add(refresh_key)
     conn.add(res)
+
+    # Check against GitHub for this user
+    try:
+        user = await user_service.read_by_id(user_id=refresh_key.user_id, conn=conn)
+    except user_service.UserNotFound:
+        raise AuthorizationError(f"User {refresh_key.user_id} not found")
+
+    try:
+        await github_get_user_from_access_token(
+            access_token=user.gh_access_token, settings=settings, conn=conn, log=log
+        )
+    except GitHubLoginError as e:
+        raise AuthorizationError(*e.args)
 
     return content, refresh_key
 

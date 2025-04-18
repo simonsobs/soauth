@@ -93,6 +93,105 @@ async def github_check_orgs_without_login(
     return user
 
 
+async def github_get_user_from_access_token(
+    access_token: str, settings: Settings, conn: AsyncSession, log: FilteringBoundLogger
+) -> User:
+    """
+    Use a GitHub access token to call up and ask about organization membership
+    and more. Returns a qualified user.
+
+    Parameters
+    ----------
+    access_token: str
+        The access token from GitHub.
+    settings
+        Server settings
+    conn: AsyncSession
+        Database session
+    log: FilteringBoundLogger
+        Logger
+
+    Returns
+    -------
+    user: User
+        The previously reconstructed or new user.
+
+    Raises
+    ------
+    GitHubLoginError
+        If we can't access GitHub.
+    """
+    gh_last_logged_in = datetime.now(timezone.utc)
+
+    log = log.bind(gh_last_logged_in=gh_last_logged_in)
+
+    # Attain user info.
+    user_info = await github_api_call(
+        github_api_access_token=access_token, url="https://api.github.com/user"
+    )
+
+    # Attain organization info
+    organization_info = await github_api_call(
+        github_api_access_token=access_token, url=user_info["organizations_url"]
+    )
+
+    username = user_info["login"].lower()
+
+    log = log.bind(
+        user_name=username, email=user_info["email"], full_name=user_info["name"]
+    )
+
+    user_email = user_info["email"]
+
+    if user_email is None:
+        try:
+            user_email_info = await github_api_call(
+                github_api_access_token=access_token,
+                url="https://api.github.com/user/emails",
+            )
+            for email in user_email_info:
+                if email["primary"]:
+                    user_email = email["email"]
+                    log = log.bind(email=user_email)
+                    break
+        except GitHubLoginError:
+            # I give up...
+            user_email = None
+
+    try:
+        user = await read_by_name(user_name=username, conn=conn)
+        user.email = user_email
+        user.full_name = user_info["name"]
+        log = log.bind(user_read=True, user_created=False)
+    except UserNotFound:
+        user = await create_user(
+            user_name=username,
+            email=user_email,
+            full_name=user_info["name"],
+            grants="",
+            conn=conn,
+            log=log,
+        )
+        log = log.bind(user_created=True, user_read=False)
+
+    log.bind(user_id=user.user_id)
+
+    user.gh_access_token = access_token
+    user.gh_last_logged_in = gh_last_logged_in
+
+    log.bind(gh_last_logged_in=gh_last_logged_in)
+
+    user = apply_organization_grants(
+        organization_info=organization_info, user=user, settings=settings
+    )
+
+    conn.add(user)
+
+    await log.ainfo("github.user.success")
+
+    return user
+
+
 async def github_login(
     code: str, settings: Settings, conn: AsyncSession, log: FilteringBoundLogger
 ) -> User:
@@ -116,6 +215,11 @@ async def github_login(
     -------
     user: User
         The previously reconstructed or new user.
+
+    Raises
+    ------
+    GitHubLoginError
+        If we can't access GitHub.
     """
 
     login_error = GitHubLoginError("Could not authenticate with GitHub")
@@ -140,7 +244,6 @@ async def github_login(
         raise login_error
 
     gh_access_token = response.json().get("access_token")
-    gh_last_logged_in = datetime.now(timezone.utc)
 
     if gh_access_token is None:
         await log.aerror("github.login.no_access_token")
@@ -148,70 +251,11 @@ async def github_login(
 
     await log.ainfo("github.login.code_exchange_success")
 
-    # Attain user info.
-    user_info = await github_api_call(
-        github_api_access_token=gh_access_token, url="https://api.github.com/user"
-    )
-
-    # Attain organization info
-    organization_info = await github_api_call(
-        github_api_access_token=gh_access_token, url=user_info["organizations_url"]
-    )
-
-    username = user_info["login"].lower()
-
-    log = log.bind(
-        user_name=username, email=user_info["email"], full_name=user_info["name"]
-    )
-
-    # TODO: call the /email endpoint if email is null using     access token: https://stackoverflow.com/questions/35373995/github-user-email-is-null-despite-useremail-scope
-    # TODO: handle no name better? They might not have ever s   za  et one.
-    user_email = user_info["email"]
-
-    if user_email is None:
-        try:
-            user_email_info = await github_api_call(
-                github_api_access_token=gh_access_token,
-                url="https://api.github.com/user/emails",
-            )
-            for email in user_email_info:
-                if email["primary"]:
-                    user_email = email["email"]
-                    break
-        except GitHubLoginError:
-            # I give up...
-            user_email = None
-
-    try:
-        user = await read_by_name(user_name=username, conn=conn)
-        user.email = user_email
-        user.full_name = user_info["name"]
-        log = log.bind(user_read=True, user_created=False)
-    except UserNotFound:
-        user = await create_user(
-            user_name=username,
-            email=user_email,
-            full_name=user_info["name"],
-            grants="",
-            conn=conn,
-            log=log,
-        )
-        log = log.bind(user_created=True, user_read=False)
-
-    log.bind(user_id=user.user_id)
-
-    user.gh_access_token = gh_access_token
-    user.gh_last_logged_in = gh_last_logged_in
-
-    log.bind(gh_last_logged_in=gh_last_logged_in)
-
-    user = apply_organization_grants(
-        organization_info=organization_info, user=user, settings=settings
+    user = await github_get_user_from_access_token(
+        access_token=gh_access_token, settings=settings, conn=conn, log=log
     )
 
     log.bind(grants=user.grants)
-
-    conn.add(user)
 
     await log.ainfo("github.login.success")
 

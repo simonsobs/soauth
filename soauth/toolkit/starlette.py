@@ -67,6 +67,7 @@ class SOUser(BaseModel):
     """
     A Simons Observatory user that can be used with the SO Auth backend.
     """
+
     is_authenticated: bool = False
     display_name: str | None = None
     user_id: UUID | None = None

@@ -135,15 +135,12 @@ async def secondary(
     )
 
     encoded_refresh_key, refresh_key = await refresh_refresh_key(
-        payload=decoded_payload, settings=settings, conn=conn
+        payload=decoded_payload, settings=settings, conn=conn, log=log
     )
 
     log = log.bind(
         new_refresh_key_id=refresh_key.refresh_key_id,
     )
-
-    # TODO: Update user information from GitHub in case they have had
-    # grants added OR REMOVED
 
     await log.ainfo("secondary.refresh_key_exchanged")
 

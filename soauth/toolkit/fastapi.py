@@ -212,7 +212,7 @@ def global_setup(
     PUBLIC_KEY_FILE=/secrets/local_key.pem
     KEY_PAIR_TYPE=Ed25519
     ```
-    
+
     Then, in the code (using `pydantic_settings` to read these):
 
     ```python

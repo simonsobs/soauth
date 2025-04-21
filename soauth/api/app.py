@@ -3,6 +3,7 @@ FastAPI app
 """
 
 from importlib.metadata import version
+import os
 
 from fastapi import FastAPI
 
@@ -19,12 +20,18 @@ settings = SETTINGS()
 
 async def lifespan(app: FastAPI):
     app.settings = settings
-
+    app_id = None
     if settings.app_id_filename:
-        with open(settings.app_id_filename, "r") as handle:
-            app_id = handle.read()
+        try:
+            with open(settings.app_id_filename, "r") as handle:
+                app_id = handle.read()
+        except FileNotFoundError:
+            raise RuntimeError(f"App ID file not found: {settings.app_id_filename}")
     else:
         app_id = settings.created_app_id
+    if not app_id:
+        raise RuntimeError("App ID could not be determined.")
+    app.app_id = str(app_id)
 
     if settings.public_key_filename:
         with open(settings.public_key_filename, "r") as handle:

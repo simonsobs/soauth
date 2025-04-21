@@ -13,6 +13,8 @@ router = APIRouter(prefix="/apps")
 
 
 def check_scope(request):
+    if not hasattr(request, "auth") or not hasattr(request.auth, "scopes"):
+        raise HTTPException(status_code=401)
     if "admin" not in request.auth.scopes:
         if "appmanager" not in request.auth.scopes:
             raise HTTPException(status_code=401)
@@ -20,14 +22,17 @@ def check_scope(request):
 
 def handle_request(url: str, request: Request, method: str = "get", **kwargs):
     check_scope(request=request)
-
-    response = httpx.request(method=method, url=url, cookies=request.cookies, **kwargs)
-
     try:
+        response = httpx.request(
+            method=method, url=url, cookies=request.cookies, **kwargs
+        )
         response.raise_for_status()
     except httpx.HTTPStatusError:
         raise HTTPException(status_code=401, detail="Error from downstream API")
-
+    except httpx.RequestError:
+        raise HTTPException(
+            status_code=502, detail="Unable to connect to downstream API"
+        )
     return response
 
 

@@ -35,7 +35,7 @@ SOAuth is built out of six major layers:
   on top of the toolkit and API layers.
 
 Included are a somewhat comprehensive set of tests for the service layer down.
-These can be ran with `pytest`.
+These can be run with `pytest`.
 
 Getting set up
 --------------
@@ -83,4 +83,3 @@ For code API docs (e.g. whatever you get from the docstrings), you can run
 pdoc --docformat=numpy soauth
 ```
 on the command line to bring up the documentation server.
-  

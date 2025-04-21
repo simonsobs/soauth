@@ -15,7 +15,7 @@ occurrs through a series of steps:
 Authentication in Practice
 --------------------------
 
-![SOAuth's app flow invovles communication by SOAuth with GitHub.](soauth_app_flow.svg)
+![SOAuth's app flow involves communication by SOAuth with GitHub.](soauth_app_flow.svg)
 
 Assuming the soauth server is running at `soauth.org` (note this doesn't exist!), and your
 application is running at `myapp.org`, the authentication flow works as follows:
@@ -40,7 +40,7 @@ application is running at `myapp.org`, the authentication flow works as follows:
   an `access_token`, and a `refresh_token`. It also includes the `redirect`
   url which was pulled from your user's browser when they initially were directed
   to the login page.
-- Your server sets the `access_token` and `refresh_token`s as cookies, which
+- Your server sets the `access_token` and `refresh_token` as cookies, which
   are included in every request to the server.
 
 This is essentially a double OAuth2 flow; SOAuth does not itself actually

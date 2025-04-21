@@ -143,7 +143,7 @@ When redirecting users via a simple link, it is wise to include the
 redirected back to the path they came from, for example:
 
 ```html
-  <a href="https://soauth.org/login/bc5af7c9-6525-449b-92db-ae935e115f6a" referrerpolicy="no-referrer-when-downgrade">Login</a>
+<a href="https://soauth.org/login/bc5af7c9-6525-449b-92db-ae935e115f6a" referrerpolicy="no-referrer-when-downgrade">Login</a>
 ```
 
 Users are not automatically authenticated when attempting to access protected

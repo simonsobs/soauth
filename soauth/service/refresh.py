@@ -98,6 +98,7 @@ async def create_refresh_key(
     )
 
     conn.add(refresh_key)
+    await conn.commit()
 
     return content, refresh_key
 

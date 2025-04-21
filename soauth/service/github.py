@@ -61,7 +61,7 @@ def apply_organization_grants(
     for organization in settings.github_organization_checks:
         org_found = False
         for item in organization_info:
-            if item["login"] == organization:
+            if item.get("login") == organization:
                 org_found = True
                 user.add_grant(organization)
                 break

@@ -52,12 +52,13 @@ async def test_primary_then_secondary(
                 log=logger,
             )
 
+            # Refresh key expiry doesn't change, auth key does.
+
             auth = key_content.access_token
             refresh = key_content.refresh_token
             nake = key_content.access_token_expires
             nrke = key_content.refresh_token_expires
 
-            # Refresh key expiry doesnt change, auth key does.
             assert nake > ake
             assert nrke == rke
 

@@ -11,7 +11,7 @@ Wherever possible, asynchronous database calls are used.
 
 To configure the database, the following environment variables are used:
 
-- `SOAUTH_DATABSE_TYPE`, taking the value "sqlite" OR "postgres"
+- `SOAUTH_DATABASE_TYPE`, taking the value "sqlite" OR "postgres"
 - `SOAUTH_DATABASE_USER`, the database user or unset for sqlite
 - `SOAUTH_DATABASE_PASSWORD`, the database password or unset for sqlite
 - `SOAUTH_DATABASE_PORT`, the database port or unset for sqlite
@@ -71,7 +71,7 @@ unless you have a strong reason for changing them.
 - `SOAUTH_KEY_PASSWORD="CHANGEME"`, the key password to use, rendering a database leak of keys less useful
 - `SOAUTH_REFRESH_KEY_EXPIRY=1.572e+7`, the expiry time of refresh keys. Default: 26 weeks
 - `SOAUTH_ACCESS_KEY_EXPIRY=08:00:00`, the expiry time of access keys. Default is 8 hours
-- `SOAUTH_STALE_LOGIN_EXPIRY=00:30:00`, how long users have to complete a login. Default is 30 miuntes
+- `SOAUTH_STALE_LOGIN_EXPIRY=00:30:00`, how long users have to complete a login. Default is 30 minutes
 - `SOAUTH_LOGIN_RECORD_LENGTH=1.21e+6`, how long to keep a record of user logins. Default is 2 weeks
 
 ### Hostnames
@@ -81,7 +81,7 @@ They are used for redirects, and for internal configuration.
 
 - `SOAUTH_HOSTNAME=http://localhost:8000`, the address of your running API server, e.g. `https://soauth.org`
 - `SOAUTH_MANAGEMENT_PATH=/management`, where to host the management interface
-- `SOAUTH_MANAGEMENT_HOSTNAME=http://localhost:8001`, the management hostname, usually the same sa `SOAUTH_HOSTNAME`
+- `SOAUTH_MANAGEMENT_HOSTNAME=http://localhost:8001`, the management hostname, usually the same as `SOAUTH_HOSTNAME`
 
 ### GitHub
 
@@ -138,7 +138,7 @@ SOAUTH_PUBLIC_KEY_FILENAME=/data/public_key
 SOAUTH_HOSTNAME=https://soauth.org
 SOAUTH_MANAGEMENT_HOSTNAME=https://soauth.org
 
-SOAUTH_DATABSE_TYPE=postgres
+SOAUTH_DATABASE_TYPE=postgres
 SOAUTH_DATABASE_USER=postgres
 SOAUTH_DATABASE_PASSWORD=alls67itauksgdf67u6asdf
 SOAUTH_DATABASE_PORT=5432

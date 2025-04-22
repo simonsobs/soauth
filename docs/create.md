@@ -58,7 +58,7 @@ async def test(request: Request):
     return {"user": user, "scopes": scopes}
 ```
 
-### Depenedencies
+### Dependencies
 
 To use the helper function to protect routes without middleware:
 
@@ -87,7 +87,7 @@ from soauth.toolkit.fastapi import UserDependency, AuthenticatedUserDependency
 
 @app.get("/test")
 @requires("admin")
-async def test(request: Request, user: AuthenticatedUserDepdendency):
+async def test(request: Request, user: AuthenticatedUserDependency):
     scopes = user.grants
     assert user.is_authenticated
     return {"user": user, "scopes": scopes}
@@ -120,7 +120,8 @@ Below we will walk you through the steps of performing this.
 First, log in to the SOAuth service you are using:
 ![Log in](app_create_0.png)
 Second, click on the 'App List' button. If you don't see this, you do not have either
-the `appmanger` or `admin` grant.
+the `appmanager` or `admin` grant.
+
 ![App list](app_create_1.png)
 Third, click on the green 'plus' to create a new app.
 ![Green button](app_create_2.png)

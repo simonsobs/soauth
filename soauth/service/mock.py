@@ -47,7 +47,7 @@ class MockProvider(AuthProvider):
             user = await user_service.create_user(
                 user_name=self.user_name,
                 email=self.email,
-                full_name=self.email,
+                full_name=self.full_name,
                 grants=self.grants,
                 conn=conn,
                 log=log,

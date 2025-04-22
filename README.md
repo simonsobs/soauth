@@ -1,6 +1,8 @@
 SOAuth
 ======
 
+[![Test and Format](https://github.com/simonsobs/soauth/actions/workflows/pytest.yml/badge.svg)](https://github.com/simonsobs/soauth/actions/workflows/pytest.yml)
+
 SOAuth is the Simons Observatory Authentication Framework. It is designed to wrap around
 the GitHub authentication API, to serve several goals:
 

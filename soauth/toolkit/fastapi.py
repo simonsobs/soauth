@@ -274,6 +274,7 @@ def global_setup(
     app.code_url = f"{authentication_base_url}/code/{app_id}"
     app.refresh_url = f"{authentication_base_url}/exchange"
     app.expire_url = f"{authentication_base_url}/expire/{app_id}"
+    app.logout_url = f"{app_base_url}/logout"
 
     if add_middleware:
         app.add_middleware(

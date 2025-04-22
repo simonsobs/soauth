@@ -166,4 +166,4 @@ def handle_401(request: Request, exc):
 app.add_exception_handler(401, handle_401)
 ```
 
-**Next**: [hosting SOAuth](hosting.md)
+**Next**: [check out a sample app](sample.md)

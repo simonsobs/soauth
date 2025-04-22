@@ -154,7 +154,7 @@ async def code(
     conn: DatabaseDependency,
     log: LoggerDependency,
     code: str = Query(
-        ..., description="The access code you received at your `/redirect` endpoint."
+        ..., description="The access code you received at your `/callback` endpoint."
     ),
     secret: str = Query(
         ..., description="The client secret provided during app initialization."

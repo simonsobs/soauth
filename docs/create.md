@@ -102,9 +102,9 @@ account in the SOAuth server you are trying to use. You will need to know:
 - Your applications domain (including path if you are running behind a reverse proxy).
   For example, `https://myapp.org/reverse/proxied`. For the remainder of the example
   we will assume this is `https://myapp.org`. This is also known as the `app_base_url`.
-- Your redirect url, which is where the user will be redirected after completing
+- Your callbac url, which is where the user will be redirected after completing
   the SOAuth part of the exchange. If you use the default handlers above, this
-  will be `https://myapp.org/redirect`. 
+  will be `https://myapp.org/callback`. 
 - The authentication server's url, for example `https://soauth.org`. This is known as
   the `authentication_base_url`.
 - The server will provide you:

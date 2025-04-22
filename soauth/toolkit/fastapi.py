@@ -285,7 +285,7 @@ def global_setup(
         )
 
     app.add_api_route(path="/logout", endpoint=logout)
-    app.add_api_route(path="/redirect", endpoint=handle_redirect)
+    app.add_api_route(path="/callback", endpoint=handle_redirect)
 
     return app
 

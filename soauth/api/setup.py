@@ -54,7 +54,7 @@ def initial_setup(settings: Settings):
             key_pair_type=settings.key_pair_type,
             public_key=public,
             private_key=private,
-            redirect_url=f"{settings.management_hostname}{settings.management_path}/redirect",
+            redirect_url=f"{settings.management_hostname}{settings.management_path}/callback",
         )
 
         conn.add_all([user, group, app])
@@ -128,7 +128,7 @@ def example_setup(settings: Settings):
             key_pair_type=settings.key_pair_type,
             public_key=public,
             private_key=private,
-            redirect_url="http://localhost:8001/redirect",
+            redirect_url="http://localhost:8001/callback",
         )
 
         conn.add_all([user, group, app])
@@ -154,7 +154,7 @@ def example_setup(settings: Settings):
             key_pair_type=settings.key_pair_type,
             public_key=public,
             private_key=private,
-            redirect_url="http://simonsobs.org/redirect",
+            redirect_url="http://simonsobs.org/callback",
         )
 
         conn.add(second_demo_app)

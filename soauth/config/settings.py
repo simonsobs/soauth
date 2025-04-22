@@ -42,10 +42,10 @@ class Settings(BaseSettings):
     stale_login_expiry: timedelta = timedelta(minutes=30)
     login_record_length: timedelta = timedelta(weeks=2)
 
-    github_client_id: str
-    github_client_secret: str
-    github_redirect_uri: str
-    github_organization_checks: list[str]
+    github_client_id: str | None = None
+    github_client_secret: str | None = None
+    github_redirect_uri: str | None
+    github_organization_checks: list[str] = []
 
     # Production setup
     hostname: str = "http://localhost:8000"

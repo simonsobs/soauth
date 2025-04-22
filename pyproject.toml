@@ -36,7 +36,8 @@ dev = [
     "pytest-cov",
     "pre-commit",
     "testcontainers[postgres]",
-    "pdoc"
+    "pdoc",
+    "aiosqlite"
 ]
 
 [tool.setuptools]

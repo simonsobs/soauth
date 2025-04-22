@@ -11,7 +11,9 @@ from soauth.service import user as user_service
 
 
 @pytest.mark.asyncio(loop_scope="session")
-async def test_create_refresh_key(user, app, session_manager, logger, server_settings):
+async def test_create_refresh_key(
+    user, app, session_manager, logger, server_settings, provider
+):
     async with session_manager.session() as conn:
         async with conn.begin():
             encoded, refresh_key = await refresh_service.create_refresh_key(
@@ -60,7 +62,11 @@ async def test_create_refresh_key(user, app, session_manager, logger, server_set
                     encoded_payload=encoded, conn=conn
                 )
                 await refresh_service.refresh_refresh_key(
-                    payload=decoded, settings=server_settings, conn=conn, log=logger
+                    payload=decoded,
+                    settings=server_settings,
+                    conn=conn,
+                    log=logger,
+                    provider=provider,
                 )
 
     # Now let's refresh our new refresh key.
@@ -73,7 +79,11 @@ async def test_create_refresh_key(user, app, session_manager, logger, server_set
                 refreshed_encoded,
                 refreshed_refresh_key,
             ) = await refresh_service.refresh_refresh_key(
-                payload=decoded, settings=server_settings, conn=conn, log=logger
+                payload=decoded,
+                settings=server_settings,
+                conn=conn,
+                log=logger,
+                provider=provider,
             )
             REFRESHED_KEY_ID = refreshed_refresh_key.refresh_key_id
             assert refreshed_refresh_key.previous == NEW_REFRESH_KEY_ID

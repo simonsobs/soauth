@@ -8,6 +8,7 @@ import structlog
 from soauth.config.settings import Settings
 from soauth.service import app as app_service
 from soauth.service import user as user_service
+from soauth.service.mock import MockProvider
 
 
 @pytest_asyncio.fixture(scope="session")
@@ -70,3 +71,14 @@ async def app(session_manager, logger, user, server_settings):
                 conn=conn,
                 log=logger,
             )
+
+
+@pytest_asyncio.fixture(scope="session")
+async def provider():
+    # Same as `user`
+    yield MockProvider(
+        user_name="admin",
+        email="admin@simonsobservatory.org",
+        full_name="Admin User",
+        grants="admin",
+    )

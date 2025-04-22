@@ -3,7 +3,6 @@ FastAPI app
 """
 
 from importlib.metadata import version
-import os
 
 from fastapi import FastAPI
 

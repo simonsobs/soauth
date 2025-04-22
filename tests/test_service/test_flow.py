@@ -12,7 +12,7 @@ from soauth.core.tokens import reconstruct_payload
 
 @pytest.mark.asyncio(loop_scope="session")
 async def test_primary_then_secondary(
-    user, app, logger, server_settings, session_manager
+    user, app, logger, server_settings, session_manager, provider
 ):
     async with session_manager.session() as conn:
         async with conn.begin():
@@ -50,6 +50,7 @@ async def test_primary_then_secondary(
                 settings=server_settings,
                 conn=conn,
                 log=logger,
+                provider=provider,
             )
 
             # Refresh key expiry doesn't change, auth key does.

@@ -12,6 +12,7 @@ from soauth.core.models import KeyRefreshResponse
 from soauth.core.uuid import UUID
 from soauth.database.app import App
 from soauth.database.user import User
+from soauth.service.provider import AuthProvider
 
 from .auth import create_auth_key
 from .refresh import (
@@ -94,6 +95,7 @@ async def secondary(
     settings: Settings,
     conn: AsyncSession,
     log: FilteringBoundLogger,
+    provider: AuthProvider,
 ) -> KeyRefreshResponse:
     """
     Secondary authentication flow - turn in your encoded refresh key
@@ -108,6 +110,10 @@ async def secondary(
         Server settings.
     conn
         Database sesssion (async)
+    log
+        Logger connection
+    provider: AuthProvider
+        The authentication provider
 
     Returns
     -------
@@ -134,7 +140,11 @@ async def secondary(
     )
 
     encoded_refresh_key, refresh_key = await refresh_refresh_key(
-        payload=decoded_payload, settings=settings, conn=conn, log=log
+        payload=decoded_payload,
+        settings=settings,
+        conn=conn,
+        log=log,
+        provider=provider,
     )
 
     log = log.bind(

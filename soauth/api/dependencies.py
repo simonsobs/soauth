@@ -11,6 +11,8 @@ from structlog import get_logger
 from structlog.typing import FilteringBoundLogger
 
 from soauth.config.settings import Settings
+from soauth.service.github import GithubAuthProvider
+from soauth.service.provider import AuthProvider
 
 
 @lru_cache
@@ -38,6 +40,12 @@ def logger():
     return get_logger()
 
 
+@lru_cache
+def get_github():
+    return GithubAuthProvider()
+
+
 SettingsDependency = Annotated[Settings, Depends(SETTINGS)]
 DatabaseDependency = Annotated[AsyncSession, Depends(get_async_session)]
 LoggerDependency = Annotated[FilteringBoundLogger, Depends(logger)]
+AuthProviderDependency = Annotated[AuthProvider, Depends(get_github)]

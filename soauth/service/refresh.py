@@ -25,7 +25,7 @@ from soauth.database.app import App
 from soauth.database.auth import RefreshKey
 from soauth.database.user import User
 from soauth.service import user as user_service
-from soauth.service.github import GitHubLoginError, github_get_user_from_access_token
+from soauth.service.provider import AuthProvider
 
 
 class AuthorizationError(Exception):
@@ -149,6 +149,7 @@ async def refresh_refresh_key(
     settings: Settings,
     conn: AsyncSession,
     log: FilteringBoundLogger,
+    provider: AuthProvider,
 ) -> tuple[str, RefreshKey]:
     """
     Perform the key refresh flow. This:
@@ -229,14 +230,7 @@ async def refresh_refresh_key(
     except user_service.UserNotFound:
         raise AuthorizationError(f"User {refresh_key.user_id} not found")
 
-    # Only makes sense if they actually logged in with GitHub.
-    if user.gh_access_token is not None:
-        try:
-            await github_get_user_from_access_token(
-                access_token=user.gh_access_token, settings=settings, conn=conn, log=log
-            )
-        except GitHubLoginError as e:
-            raise AuthorizationError(*e.args)
+    user = await provider.refresh(user=user, settings=settings, conn=conn, log=log)
 
     return content, refresh_key
 

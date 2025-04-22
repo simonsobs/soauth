@@ -34,7 +34,7 @@ application is running at `myapp.org`, the authentication flow works as follows:
 - An internal SOAuth user is then either created, or pulled from the database,
   and checked for consistency against the information from GitHub.
 - The user's browser is then redirected back to your application, towards the
-  `myapp.org/redirect` endpoint, along with yet another code.
+  `myapp.org/callback` endpoint, along with yet another code.
 - Your server then handles this request by exchanging this code with the
   `soauth.org/code` endpoint. The response to this request is two tokens:
   an `access_token`, and a `refresh_token`. It also includes the `redirect`

@@ -18,13 +18,18 @@ async def test_primary_then_secondary(
         async with conn.begin():
             application = await app_service.read_by_id(app_id=app, conn=conn)
             user_obj = await user_service.read_by_id(user_id=user, conn=conn)
-            auth, refresh, ake, rke = await flow_service.primary(
+            key_content = await flow_service.primary(
                 user=user_obj,
                 app=application,
                 settings=server_settings,
                 conn=conn,
                 log=logger,
             )
+
+            auth = key_content.access_token
+            refresh = key_content.refresh_token
+            ake = key_content.access_token_expires
+            rke = key_content.refresh_token_expires
 
             APP_PUBLIC_KEY = application.public_key
             APP_KEY_PAIR_TYPE = application.key_pair_type
@@ -40,7 +45,7 @@ async def test_primary_then_secondary(
     # Ok, now let's refresh it!
     async with session_manager.session() as conn:
         async with conn.begin():
-            auth, refresh, nake, nrke = await flow_service.secondary(
+            key_content = await flow_service.secondary(
                 encoded_refresh_key=refresh,
                 settings=server_settings,
                 conn=conn,
@@ -48,6 +53,12 @@ async def test_primary_then_secondary(
             )
 
             # Refresh key expiry doesn't change, auth key does.
+
+            auth = key_content.access_token
+            refresh = key_content.refresh_token
+            nake = key_content.access_token_expires
+            nrke = key_content.refresh_token_expires
+
             assert nake > ake
             assert nrke == rke
 

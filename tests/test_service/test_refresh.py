@@ -60,7 +60,7 @@ async def test_create_refresh_key(user, app, session_manager, logger, server_set
                     encoded_payload=encoded, conn=conn
                 )
                 await refresh_service.refresh_refresh_key(
-                    payload=decoded, settings=server_settings, conn=conn
+                    payload=decoded, settings=server_settings, conn=conn, log=logger
                 )
 
     # Now let's refresh our new refresh key.
@@ -73,7 +73,7 @@ async def test_create_refresh_key(user, app, session_manager, logger, server_set
                 refreshed_encoded,
                 refreshed_refresh_key,
             ) = await refresh_service.refresh_refresh_key(
-                payload=decoded, settings=server_settings, conn=conn
+                payload=decoded, settings=server_settings, conn=conn, log=logger
             )
             REFRESHED_KEY_ID = refreshed_refresh_key.refresh_key_id
             assert refreshed_refresh_key.previous == NEW_REFRESH_KEY_ID

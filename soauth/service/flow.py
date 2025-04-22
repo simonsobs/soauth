@@ -4,12 +4,11 @@ Secondary authentication flow - exchange a refresh token for a new one and
 a new access token.
 """
 
-from datetime import datetime
-
 from sqlalchemy.ext.asyncio import AsyncSession
 from structlog.typing import FilteringBoundLogger
 
 from soauth.config.settings import Settings
+from soauth.core.models import KeyRefreshResponse
 from soauth.core.uuid import UUID
 from soauth.database.app import App
 from soauth.database.user import User
@@ -31,7 +30,7 @@ async def primary(
     settings: Settings,
     conn: AsyncSession,
     log: FilteringBoundLogger,
-) -> tuple[str, str, datetime, datetime]:
+) -> KeyRefreshResponse:
     """
     Primary authentication flow - assumes that you just created the 'user'
     and that the 'user' has _all required credentials, grants and groups_.
@@ -82,11 +81,11 @@ async def primary(
     )
     await log.ainfo("primary.auth_key_created")
 
-    return (
-        encoded_auth_key,
-        encoded_refresh_key,
-        auth_key_expires,
-        refresh_key.expires_at,
+    return KeyRefreshResponse(
+        access_token=encoded_auth_key,
+        refresh_token=encoded_refresh_key,
+        access_token_expires=auth_key_expires,
+        refresh_token_expires=refresh_key.expires_at,
     )
 
 
@@ -95,7 +94,7 @@ async def secondary(
     settings: Settings,
     conn: AsyncSession,
     log: FilteringBoundLogger,
-) -> tuple[str, str, datetime, datetime]:
+) -> KeyRefreshResponse:
     """
     Secondary authentication flow - turn in your encoded refresh key
     for a new one and an authentication key. This checks against
@@ -156,11 +155,11 @@ async def secondary(
 
     await log.ainfo("secondary.auth_key_created")
 
-    return (
-        encoded_auth_key,
-        encoded_refresh_key,
-        auth_key_expires,
-        refresh_key.expires_at,
+    return KeyRefreshResponse(
+        access_token=encoded_auth_key,
+        refresh_token=encoded_refresh_key,
+        access_token_expires=auth_key_expires,
+        refresh_token_expires=refresh_key.expires_at,
     )
 
 

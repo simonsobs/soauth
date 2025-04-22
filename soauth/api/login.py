@@ -154,7 +154,7 @@ async def code(
     conn: DatabaseDependency,
     log: LoggerDependency,
     code: str = Query(
-        ..., description="The access code you received at your `/redirect` endpoint."
+        ..., description="The access code you received at your `/callback` endpoint."
     ),
     secret: str = Query(
         ..., description="The client secret provided during app initialization."
@@ -194,12 +194,7 @@ async def code(
 
     # Create the codes!
     app = await app_service.read_by_id(app_id=login_request.app_id, conn=conn)
-    (
-        auth_key,
-        refresh_key,
-        auth_key_expires,
-        refresh_key_expires,
-    ) = await flow_service.primary(
+    key_content = await flow_service.primary(
         user=user, app=app, settings=settings, conn=conn, log=log
     )
 
@@ -218,10 +213,10 @@ async def code(
     )
 
     return KeyRefreshResponse(
-        access_token=auth_key,
-        refresh_token=refresh_key,
-        access_token_expires=auth_key_expires,
-        refresh_token_expires=refresh_key_expires,
+        access_token=key_content.access_token,
+        refresh_token=key_content.refresh_token,
+        access_token_expires=key_content.access_token_expires,
+        refresh_token_expires=key_content.refresh_token_expires,
         redirect=redirect,
     )
 
@@ -250,12 +245,7 @@ async def exchange(
     refresh_token = content.refresh_token
 
     try:
-        (
-            auth_key,
-            refresh_key,
-            auth_key_expires,
-            refresh_key_expires,
-        ) = await flow_service.secondary(
+        key_content = await flow_service.secondary(
             encoded_refresh_key=refresh_token, settings=settings, conn=conn, log=log
         )
     except refresh_service.AuthorizationError as e:
@@ -271,12 +261,7 @@ async def exchange(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token expired"
         )
 
-    return KeyRefreshResponse(
-        access_token=auth_key,
-        refresh_token=refresh_key,
-        access_token_expires=auth_key_expires,
-        refresh_token_expires=refresh_key_expires,
-    )
+    return key_content
 
 
 @login_app.post(

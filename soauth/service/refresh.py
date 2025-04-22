@@ -229,12 +229,14 @@ async def refresh_refresh_key(
     except user_service.UserNotFound:
         raise AuthorizationError(f"User {refresh_key.user_id} not found")
 
-    try:
-        await github_get_user_from_access_token(
-            access_token=user.gh_access_token, settings=settings, conn=conn, log=log
-        )
-    except GitHubLoginError as e:
-        raise AuthorizationError(*e.args)
+    # Only makes sense if they actually logged in with GitHub.
+    if user.gh_access_token is not None:
+        try:
+            await github_get_user_from_access_token(
+                access_token=user.gh_access_token, settings=settings, conn=conn, log=log
+            )
+        except GitHubLoginError as e:
+            raise AuthorizationError(*e.args)
 
     return content, refresh_key
 

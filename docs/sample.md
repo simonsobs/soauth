@@ -11,7 +11,7 @@ First, you will need to read in the details so they can be used in your app:
 import os
 APP_ID = os.environ["APP_ID"]
 BASE_URL = os.environ["BASE_URL"]
-AUTHENTICATION_SERVICE_URL = os.environ["APPLICATION_SERVICE_URL"]
+AUTHENTICATION_SERVICE_URL = os.environ["AUTHENTICATION_SERVICE_URL"]
 PUBLIC_KEY = os.environ["PUBLIC_KEY"]
 CLIENT_SECRET = os.environ["CLIENT_SECRET"]
 # Note that SOAuth always uses this as a key pair type, so you can probably
@@ -95,7 +95,7 @@ import os
 
 APP_ID = os.environ["APP_ID"]
 BASE_URL = os.environ["BASE_URL"]
-AUTHENTICATION_SERVICE_URL = os.environ["APPLICATION_SERVICE_URL"]
+AUTHENTICATION_SERVICE_URL = os.environ["AUTHENTICATION_SERVICE_URL"]
 PUBLIC_KEY = os.environ["PUBLIC_KEY"]
 CLIENT_SECRET = os.environ["CLIENT_SECRET"]
 KEY_PAIR_TYPE = "Ed25519"

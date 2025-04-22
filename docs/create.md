@@ -164,7 +164,7 @@ def handle_403(request: Request, exc):
     else:
         return RedirectResponse(request.app.login_url)
 
-app.add_exception_handler(403, handle_401)
+app.add_exception_handler(403, handle_403)
 ```
 
 **Next**: [check out a sample app](sample.md)

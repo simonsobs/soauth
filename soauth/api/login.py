@@ -10,13 +10,14 @@ from soauth.core.tokens import KeyExpiredError
 from soauth.core.uuid import UUID
 from soauth.service import app as app_service
 from soauth.service import flow as flow_service
-from soauth.service import github as github_service
 from soauth.service import login as login_service
+from soauth.service import provider as provider_service
 from soauth.service import refresh as refresh_service
 from soauth.service import user as user_service
 
 from .dependencies import (
     SETTINGS,
+    AuthProviderDependency,
     DatabaseDependency,
     LoggerDependency,
     SettingsDependency,
@@ -46,6 +47,7 @@ async def login(
     settings: SettingsDependency,
     conn: DatabaseDependency,
     log: LoggerDependency,
+    provider: AuthProviderDependency,
     app_id: UUID = Path(..., description="The app ID to authenticate against."),
 ) -> RedirectResponse:
     try:
@@ -57,7 +59,7 @@ async def login(
         app=app, redirect_to=request.headers.get("Referer", None), conn=conn, log=log
     )
 
-    redirect_url = await github_service.github_login_redirect(
+    redirect_url = await provider.redirect(
         login_request=login_request, settings=settings
     )
 
@@ -89,6 +91,7 @@ async def github(
     settings: SettingsDependency,
     conn: DatabaseDependency,
     log: LoggerDependency,
+    provider: AuthProviderDependency,
     code: str = Query(
         ..., description="The code to exchange for GitHub auth credentials."
     ),
@@ -111,12 +114,10 @@ async def github(
     # This calls GitHub upp and authenticates as the user, allowing us access
     # to user information and to actually validate the login
     try:
-        user = await github_service.github_login(
-            code=code, settings=settings, conn=conn, log=log
-        )
+        user = await provider.login(code=code, settings=settings, conn=conn, log=log)
         login_request.user_id = user.user_id
         conn.add(user)
-    except github_service.GitHubLoginError:
+    except provider_service.BaseLoginError:
         await log.aerror("api.login.github.github_error")
         raise unauthorized
 
@@ -241,12 +242,17 @@ async def exchange(
     settings: SettingsDependency,
     conn: DatabaseDependency,
     log: LoggerDependency,
+    provider: AuthProviderDependency,
 ) -> KeyRefreshResponse:
     refresh_token = content.refresh_token
 
     try:
         key_content = await flow_service.secondary(
-            encoded_refresh_key=refresh_token, settings=settings, conn=conn, log=log
+            encoded_refresh_key=refresh_token,
+            settings=settings,
+            conn=conn,
+            log=log,
+            provider=provider,
         )
     except refresh_service.AuthorizationError as e:
         log = log.bind(error=str(e))

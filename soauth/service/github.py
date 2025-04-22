@@ -108,7 +108,7 @@ class GithubAuthProvider(AuthProvider):
         log: FilteringBoundLogger,
     ) -> User:
         """
-        Perform the GitHub login _after recieving the code from the GitHub
+        Perform the GitHub login _after_ recieving the code from the GitHub
         authentication service. That code is used to authenticate against
         GitHub and attain a refresh and access token.
 

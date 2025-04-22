@@ -4,7 +4,6 @@ Secondary authentication flow - exchange a refresh token for a new one and
 a new access token.
 """
 
-
 from sqlalchemy.ext.asyncio import AsyncSession
 from structlog.typing import FilteringBoundLogger
 

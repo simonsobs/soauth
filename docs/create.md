@@ -149,13 +149,14 @@ redirected back to the path they came from, for example:
 ```
 
 Users are not automatically authenticated when attempting to access protected
-routes, and instead raise a 401 status `HTTPException`. This is to allow
+routes, and instead raise a 403 status `HTTPException` (for middleware; for
+dependency injection we raise a 401 status `HTTPException`). This is to allow
 flexibility in handling these errors - some applications may wish to redirect
 them to log in, some may wish to send users back home, and so forth. An example
 exception handler could be as follows:
 
 ```python
-def handle_401(request: Request, exc):
+def handle_403(request: Request, exc):
     if request.user.is_authenticated:
         return HTMLResponse(
             "<p>You are not able to access this due to a lack of priviliges</p>"
@@ -163,7 +164,7 @@ def handle_401(request: Request, exc):
     else:
         return RedirectResponse(request.app.login_url)
 
-app.add_exception_handler(401, handle_401)
+app.add_exception_handler(403, handle_401)
 ```
 
 **Next**: [check out a sample app](sample.md)

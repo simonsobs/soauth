@@ -40,9 +40,9 @@ app = global_setup(
 )
 ```
 This is all we need to do to protect our application. You may want to
-add exception handlers (which we won't cover here, see
+add exception handlers (which we won't cover until the end here, see
 [the bottom section](create.md) in the app creation documentation) for
-things like 401 authorization errors.
+things like 401/403 authorization errors.
 
 Now, let's add a way for users to login (and get access tokens and refresh
 keys):
@@ -55,7 +55,7 @@ async def homepage(request: Request):
   if request.user.is_authenticated:
     return HTMLResponse(
       "You are logged in. "
-      "<a href='proprietary'>Prop check</a> "
+      "<a href='proprietary'>Proprietary</a> "
       f"<a href='logout'>Logout</a>"
     )
   else:
@@ -82,6 +82,26 @@ that `simonsobs` must be in the user's `request.auth.scopes`. You can check this
 list yourself if you need, like in a template where you want to render something
 different depending on available scopes.
 
+If your user attempts to go to `/proprietary` and they don't have the `simonsobs`
+grant, there will be a 403 error raised. This can be handled by adding an exception
+handler to the application:
+```python
+def redirect_to_login(request: Request, exc):
+    if user.is_authenticated:
+        return HTMLResponse(
+            "<p>You are not able to access this due to a lack of privileges</p>",
+        )
+    else:
+        return RedirectResponse(app.login_url)
+
+app.add_exception_handler(403, redirect_to_login)
+```
+This handler makes sure that a user is presented with a message telling them
+they don't have priviliges. If they aren't logged in (`not user.is_authenticated`),
+they are redirected to the login page.
+
+You do not need to check whether `user` is available on `request`, or `is_authenticated`
+is available on `user`; these are _always_ defined when the middleware is used.
 
 Full App
 --------
@@ -117,7 +137,7 @@ async def homepage(request: Request):
   if request.user.is_authenticated:
     return HTMLResponse(
       "You are logged in. "
-      "<a href='proprietary'>Prop check</a> "
+      "<a href='proprietary'>Proprietary</a> "
       f"<a href='logout'>Logout</a>"
     )
   else:

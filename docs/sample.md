@@ -151,6 +151,16 @@ async def prop(request: Request):
     "You have the 'simonsobs' auth credential. "
     f"All your credentials: {request.auth.scopes}"
   )
+
+def redirect_to_login(request: Request, exc):
+    if user.is_authenticated:
+        return HTMLResponse(
+            "<p>You are not able to access this due to a lack of privileges</p>",
+        )
+    else:
+        return RedirectResponse(app.login_url)
+
+app.add_exception_handler(403, redirect_to_login)
 ```
 
 **Next**: [hosting SOAuth](hosting.md)

@@ -19,6 +19,7 @@ async def test_create_refresh_key(
             encoded, refresh_key = await refresh_service.create_refresh_key(
                 user=await user_service.read_by_id(user, conn),
                 app=await app_service.read_by_id(app, conn),
+                api_key=False,
                 settings=server_settings,
                 conn=conn,
             )
@@ -40,6 +41,7 @@ async def test_create_refresh_key(
             new_encoded, refresh_key = await refresh_service.create_refresh_key(
                 user=await user_service.read_by_id(user, conn),
                 app=await app_service.read_by_id(app, conn),
+                api_key=False,
                 settings=server_settings,
                 conn=conn,
             )

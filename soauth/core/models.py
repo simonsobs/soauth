@@ -19,6 +19,11 @@ class KeyRefreshResponse(BaseModel):
     refresh_token_expires: datetime
 
 
+class APIKeyCreationResponse(BaseModel):
+    refresh_token: str
+    refresh_token_expires: datetime
+
+
 class RefreshTokenModel(BaseModel):
     refresh_token: str | bytes
 

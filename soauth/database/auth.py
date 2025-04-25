@@ -23,6 +23,9 @@ class RefreshKey(SQLModel, table=True):
     hash_algorithm: str
     hashed_content: str
 
+    # Whether this is an API key (True) or a regular login token (False)
+    api_key: bool
+
     last_used: datetime = Field(sa_column=Column(DateTime(timezone=True)))
     used: int
     revoked: bool

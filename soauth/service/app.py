@@ -22,15 +22,21 @@ class AppNotFound(Exception):
 
 
 async def create(
+    name: str,
     domain: str,
     redirect_url: str,
+    api_access: bool,
     user: User,
     settings: Settings,
     conn: AsyncSession,
     log: FilteringBoundLogger,
 ) -> App:
     log = log.bind(
-        user_id=user.user_id, domain=domain, key_pair_type=settings.key_pair_type
+        user_id=user.user_id,
+        domain=domain,
+        key_pair_type=settings.key_pair_type,
+        name=name,
+        api_access=api_access,
     )
 
     public_key, private_key = generate_key_pair(
@@ -38,6 +44,8 @@ async def create(
     )
 
     app = App(
+        app_name=name,
+        api_access=api_access,
         created_by_user_id=user.user_id,
         created_by=user,
         created_at=datetime.now(timezone.utc),
@@ -57,16 +65,22 @@ async def create(
 
 
 async def get_app_list(
-    created_by_user_id: UUID | None, conn: AsyncSession
+    created_by_user_id: UUID | None,
+    conn: AsyncSession,
+    require_api_access: bool = False,
 ) -> list[AppData]:
     """
     Get the app list, either all (created_by_user_id = None) or a specific
-    user.
+    user. If require_api_access is True, only those that have API access enabled
+    are returned.
     """
     query = select(App)
 
     if created_by_user_id is not None:
         query = query.filter_by(created_by_user_id=created_by_user_id)
+
+    if require_api_access:
+        query = query.filter_by(api_access=True)
 
     res = await conn.execute(query)
 

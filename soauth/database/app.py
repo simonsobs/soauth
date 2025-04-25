@@ -19,6 +19,10 @@ if TYPE_CHECKING:
 class App(SQLModel, table=True):
     app_id: UUID = Field(primary_key=True, default_factory=uuid7)
 
+    app_name: str
+    # Whether to allow users to generate API keys (on-demand refresh tokens)
+    api_access: bool = False
+
     created_by_user_id: UUID | None = Field(foreign_key="user.user_id")
     created_by: Optional["User"] = Relationship(
         back_populates="managed_apps", sa_relationship_kwargs=dict(lazy="joined")
@@ -39,7 +43,9 @@ class App(SQLModel, table=True):
 
     def to_core(self) -> AppData:
         return AppData(
+            app_name=self.app_name,
             app_id=self.app_id,
+            api_access=self.api_access,
             created_by_user_id=self.created_by_user_id,
             created_by_user_name=(
                 self.created_by.user_name if self.created_by else "system"

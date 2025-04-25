@@ -40,6 +40,10 @@ async def expire_refresh_keys(user: User, app: App, conn: AsyncSession):
         RefreshKey.user_id == user.user_id,
         RefreshKey.app_id == app.app_id,
         RefreshKey.revoked == false(),
+        # We only care about restricting keys used for web sessions;
+        # users can have as many API keys as they wish active at any
+        # given time. They are responsible for managing them.
+        RefreshKey.api_key == false(),
     )
 
     all_unexpired = (await conn.execute(query)).scalars().all()
@@ -54,11 +58,14 @@ async def expire_refresh_keys(user: User, app: App, conn: AsyncSession):
 
 
 async def create_refresh_key(
-    user: User, app: App, settings: Settings, conn: AsyncSession
+    user: User, app: App, api_key: bool, settings: Settings, conn: AsyncSession
 ) -> tuple[str, RefreshKey]:
     """
     Creates a 'fresh' refresh token for a user, stores it in the database,
-    and returns the encrypted payload.
+    and returns the encrypted payload. `api_key` is a boolean describing
+    whether this is an API key or a regular 'login' token used for web
+    access. As many API keys may be allowed as the user wants, but there
+    can only be one active web session.
     """
 
     # We must make sure we have a singleton key - there can be only one!
@@ -91,6 +98,7 @@ async def create_refresh_key(
         hashed_content=hashed_content,
         last_used=create_time,
         used=0,
+        api_key=api_key,
         revoked=False,
         previous=None,
         created_at=create_time,
@@ -210,6 +218,7 @@ async def refresh_refresh_key(
         hashed_content=hashed_content,
         last_used=create_time,
         used=0,
+        api_key=res.api_key,
         revoked=False,
         previous=res.refresh_key_id,
         created_by=res.user_id,
@@ -293,6 +302,7 @@ async def get_all_logins_for_user(
             RefreshKey.last_used,
             RefreshKey.expires_at,
             User.user_id,
+            RefreshKey.api_key,
         )
         .filter(RefreshKey.user_id == user_id, RefreshKey.revoked == false())
         .join(RefreshKey.user)
@@ -309,6 +319,7 @@ async def get_all_logins_for_user(
             last_authenticated=x[4],
             login_expires=x[5],
             user_id=x[6],
+            api_key=x[7],
         )
 
     unpacked = [unpack(x) for x in result]
@@ -338,6 +349,7 @@ async def get_logged_in_users(
             RefreshKey.expires_at,
             RefreshKey.app_id,
             User.user_id,
+            RefreshKey.api_key,
         )
         .filter(RefreshKey.app_id == app_id, RefreshKey.revoked == false())
         .join(RefreshKey.user)
@@ -354,6 +366,7 @@ async def get_logged_in_users(
             login_expires=x[4],
             app_id=x[5],
             user_id=x[6],
+            api_key=x[7],
         )
 
     unpacked = [unpack(x) for x in result]

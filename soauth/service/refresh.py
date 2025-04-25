@@ -70,7 +70,8 @@ async def create_refresh_key(
 
     # We must make sure we have a singleton key - there can be only one!
     # This helps with race conditions, too.
-    await expire_refresh_keys(user=user, app=app, conn=conn)
+    if not api_key:
+        await expire_refresh_keys(user=user, app=app, conn=conn)
 
     payload = build_refresh_key_payload(
         user_id=user.user_id, app_id=app.app_id, validity=settings.refresh_key_expiry
@@ -130,10 +131,6 @@ async def decode_refresh_key(
         raise AuthorizationError(
             "Unable to reconstruct the application ID from the key"
         )
-
-    # UUIDs are serialized to integers
-    if isinstance(app_id, int):
-        app_id = UUID(hex=app_id)
 
     app = await conn.get(App, app_id)
 

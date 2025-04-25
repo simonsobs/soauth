@@ -70,10 +70,10 @@ async def create(
 
 @key_management_routes.get(
     "/list",
-    summary="Get the list of apps that can be authenticated against with API keys.",
+    summary="Get the list of apps that can be authenticated against.",
     description=(
-        "Returns the list of all applications that have api_access=True in their "
-        "configuration and hence allow for the creation of API keys. Includes information "
+        "Returns the list of all applications (those that have api_access=True in their "
+        "configuration and hence allow for the creation of API keys). Includes information "
         "about the current user's active sessions within those apps"
     ),
 )
@@ -85,7 +85,7 @@ async def list(
 ) -> list[AppDetailResponse]:
     # In theory we can chain these futures, but not worth it.
     app_list = await app_service.get_app_list(
-        created_by_user_id=None, conn=conn, require_api_access=True
+        created_by_user_id=None, conn=conn, require_api_access=False
     )
 
     login_list = await refresh_service.get_all_logins_for_user(

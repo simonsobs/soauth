@@ -20,9 +20,21 @@
           <li><span class="nes-text is-primary">Last Used</span> {{key.last_authenticated}}</li>
           <li><span class="nes-text is-primary">Expires</span> {{key.login_expires}}</li>
         </ul>
-        <button class="nes-btn is-error" style="flex-grow:0;margin-left:auto"
-          onclick="location.href='{{base_url}}/keys/revoke/{{key.refresh_key_id}}'">Revoke
-          Key</button>
+        <div style="display:flex;flex-direction:column;margin-left:auto;justify-content:space-between">
+          {% if key.api_key %}
+          <div class="nes-badge" style="flex-grow:0;margin-left:auto">
+            <span class="is-success">API</span>
+          </div>
+          {% else %}
+          <div class="nes-badge" style="flex-grow:0;margin-left:auto">
+            <span class="is-warning">Login</span>
+          </div>
+          {%endif %}
+          <button class="nes-btn is-error" style="flex-grow:0"
+            onclick="location.href='{{base_url}}/keys/revoke/{{key.refresh_key_id}}'">Revoke
+            Key</button>
+
+        </div>
       </div>
     </section>
     {% endfor %}

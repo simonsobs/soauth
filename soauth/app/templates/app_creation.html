@@ -9,6 +9,11 @@
     your service, <span class="nes-text is-error">once and only once</span>.</p>
   <form method="POST" action="{{base_url}}/apps/create">
     <div class="nes-field">
+      <label for="name_field">Name</label>
+      <input type="text" id="name_field" class="nes-input" placeholder="..." style="margin-bottom: 1em" required
+        name="name" />
+    </div>
+    <div class="nes-field">
       <label for="domain_field">Domain</label>
       <input type="url" id="domain_field" class="nes-input" placeholder="..." style="margin-bottom: 1em" required
         name="domain" />
@@ -17,6 +22,14 @@
       <label for="redirect_field">Redirect</label>
       <input type="url" id="redirect_field" class="nes-input" placeholder="..." style="margin-bottom: 1em" required
         name="redirect" />
+    </div>
+    <p>Do you wish to enable API access (and associated key generation) for your application? If not, then only the
+      typical 'login' flow will be available to users.</p>
+    <div class="nes-field" style="margin-top:1em;margin-bottom:2em">
+      <label>
+        <input type="checkbox" class="nes-checkbox" name="api" checked />
+        <span>Enable API Access</span>
+      </label>
     </div>
     <button class="nes-btn is-success" type="submit" value="Create" />Create</button>
   </form>

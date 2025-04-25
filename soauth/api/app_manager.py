@@ -49,8 +49,10 @@ app_management_routes = APIRouter(tags=["App Management"])
     },
 )
 async def create_app(
+    name: str,
     domain: str,
     redirect_url: str,
+    api_access: bool,
     user: AppManagerUser,
     conn: DatabaseDependency,
     settings: SettingsDependency,
@@ -61,8 +63,10 @@ async def create_app(
     # user, it's re-created from the webtoken.
     database_user = await user_service.read_by_id(user_id=user.user_id, conn=conn)
     app = await app_service.create(
+        name=name,
         domain=domain,
         redirect_url=redirect_url,
+        api_access=api_access,
         user=database_user,
         settings=settings,
         conn=conn,

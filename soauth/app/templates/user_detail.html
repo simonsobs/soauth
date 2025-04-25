@@ -38,7 +38,7 @@
     {% for app in other_user_logins %}
     <section class="section">
       <div class="nes-container with-title">
-        <p class="title"><a href="{{base_url}}/apps/{{app.app_id}}">{{ app.app_id }}</a></p>
+        <p class="title"><a href="{{base_url}}/apps/{{app.app_id}}">{{ app.app_name }}</a></p>
         <ul class="nes-list is-disc">
           <li><span class="nes-text is-primary">Key ID</span> {{app.refresh_key_id}}</li>
           <li><span class="nes-text is-primary">Created at</span> {{app.first_authenticated}}</li>

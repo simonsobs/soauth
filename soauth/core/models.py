@@ -7,6 +7,7 @@ from datetime import datetime
 from pydantic import BaseModel
 
 from soauth.core.user import UserData
+from soauth.core.uuid import UUID
 
 from .app import AppData, LoggedInUserData
 
@@ -20,6 +21,9 @@ class KeyRefreshResponse(BaseModel):
 
 
 class APIKeyCreationResponse(BaseModel):
+    app_name: str
+    app_id: UUID
+    app_hostname: str
     refresh_token: str
     refresh_token_expires: datetime
 

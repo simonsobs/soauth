@@ -244,6 +244,15 @@ async def refresh_refresh_key(
     return content, refresh_key
 
 
+async def read_by_id(refresh_key_id: UUID, conn: AsyncSession) -> RefreshKey:
+    key = await conn.get(RefreshKey, refresh_key_id)
+
+    if key is None:
+        raise AuthorizationError("Key not found")
+
+    return key
+
+
 async def expire_refresh_key(
     payload: dict[str, Any], settings: Settings, conn: AsyncSession
 ):
@@ -303,9 +312,11 @@ async def get_all_logins_for_user(
             RefreshKey.expires_at,
             User.user_id,
             RefreshKey.api_key,
+            App.app_name,
         )
         .filter(RefreshKey.user_id == user_id, RefreshKey.revoked == false())
         .join(RefreshKey.user)
+        .join(RefreshKey.app)
     )
 
     result = await conn.execute(query)
@@ -320,6 +331,7 @@ async def get_all_logins_for_user(
             login_expires=x[5],
             user_id=x[6],
             api_key=x[7],
+            app_name=x[8],
         )
 
     unpacked = [unpack(x) for x in result]
@@ -350,9 +362,11 @@ async def get_logged_in_users(
             RefreshKey.app_id,
             User.user_id,
             RefreshKey.api_key,
+            App.app_name,
         )
         .filter(RefreshKey.app_id == app_id, RefreshKey.revoked == false())
         .join(RefreshKey.user)
+        .join(RefreshKey.app)
     )
 
     result = await conn.execute(query)
@@ -367,6 +381,7 @@ async def get_logged_in_users(
             app_id=x[5],
             user_id=x[6],
             api_key=x[7],
+            app_name=x[8],
         )
 
     unpacked = [unpack(x) for x in result]

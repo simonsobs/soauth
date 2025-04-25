@@ -18,7 +18,7 @@ key_management_routes = APIRouter(tags=["API Key Management"])
 
 
 @key_management_routes.get(
-    "/create/{app_id}",
+    "/app/{app_id}",
     summary="Get a new API key for a given app.",
     description=(
         "Request a new API key (actually a refresh token that their "
@@ -60,6 +60,9 @@ async def create(
     )
 
     return APIKeyCreationResponse(
+        app_id=app.app_id,
+        app_name=app.app_name,
+        app_hostname=app.domain,
         refresh_token=content,
         refresh_token_expires=key.expires_at,
     )

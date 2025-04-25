@@ -13,6 +13,7 @@ from soauth.config.settings import Settings
 from soauth.toolkit.fastapi import global_setup
 
 from .apps import router as app_router
+from .keys import router as key_router
 from .users import router as user_router
 
 settings = Settings()
@@ -56,6 +57,8 @@ async def lifespan(app: FastAPI):
     app.key_revoke_url = f"{settings.hostname}/admin/keys"
     app.app_list_url = f"{settings.hostname}/apps/apps"
     app.app_detail_url = f"{settings.hostname}/apps/app"
+    app.key_list_url = f"{settings.hostname}/keys/list"
+    app.key_detail_url = f"{settings.hostname}/keys/app"
     yield
 
 
@@ -86,3 +89,4 @@ template_endpoint(app=app, path="/", template="index.html", log_name="app.home")
 
 app.include_router(app_router)
 app.include_router(user_router)
+app.include_router(key_router)

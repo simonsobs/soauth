@@ -1,0 +1,32 @@
+{% extends "core.html" %}
+{% block content %}
+{% if user.is_authenticated %}
+{% for app in apps %}
+<div class="nes-container with-title">
+  <p class="title">{{app.app.app_name}}</p>
+  <div style="display:flex;align-items:flex-start">
+    <p>API hosted at <a href="{{app.app.domain}}">{{app.app.domain}}</a></p>
+    <button class="nes-btn is-success" style="flex-grow:0;margin-left:auto; margin-bottom:1em"
+      onclick="location.href='{{base_url}}/keys/{{app.app.app_id}}'">Create Key</button>
+  </div>
+  {% if app.users %}
+  {% for key in app.users %}
+  <section>
+    <div class="nes-container" style="display:flex;align-items:flex-end">
+      <ul class="nes-list is-disc" style="margin-right:auto;margin-bottom:0">
+        <li><span class="nes-text is-primary">Key ID</span> {{key.refresh_key_id}}</li>
+        <li><span class="nes-text is-primary">Created at</span> {{key.first_authenticated}}</li>
+        <li><span class="nes-text is-primary">Last Used</span> {{key.last_authenticated}}</li>
+        <li><span class="nes-text is-primary">Expires</span> {{key.login_expires}}</li>
+      </ul>
+      <button class="nes-btn is-error" style="flex-grow:0;margin-left:auto"
+        onclick="location.href='{{base_url}}/keys/revoke/{{key.refresh_key_id}}'">Revoke
+        Key</button>
+    </div>
+  </section>
+  {% endfor %}
+  {% endif %}
+</div>
+{% endfor %}
+{% endif %}
+{%endblock%}

@@ -1,0 +1,18 @@
+{% extends "core.html" %}
+{% block content %}
+{% if user.is_authenticated %}
+<section class="section">
+  <div class="nes-container with-title">
+    <p class="title">New Key Information</p>
+    <p>Your new API key for <span class="nes-text is-error">{{app_name}}</span>
+      (<a href="{{app_hostname}}">{{app_hostname}}</a>) is displayed in the box below. It will
+      <span class="nes-text is-error">only be shown once</span>, so be careful to copy it now.
+    </p>
+    <div class="nes-field" style="margin-bottom:1em">
+      <label for="key-pair-type-field">API Key</label>
+      <input type="text" class="nes-input" readonly value='{{refresh_token}}' />
+    </div>
+  </div>
+</section>
+{% endif %}
+{% endblock %}

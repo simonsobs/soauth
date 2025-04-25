@@ -23,6 +23,7 @@ class LoggedInUserData(BaseModel):
     user_name: str
     user_id: UUID
     app_id: UUID
+    app_name: str
     api_key: bool
     refresh_key_id: UUID
     first_authenticated: datetime

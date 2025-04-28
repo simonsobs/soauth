@@ -36,6 +36,34 @@ the refresh token is also replaced. The process works as follows:
      to authenticate with refresh token A once token B, or token C, and so forth
      have been emitted by the indentity server will fail.
 
-We provide functionality for managing this lifecycle within SOAuth itself.
+We provide functionality for managing this lifecycle within SOAuth itself. It is critical
+to realise that API keys can only be used by a single client at a time; that should hopefully
+be clear as a consequence of the refresh token rotation. You can generate as many 'parallel'
+API keys you like from the management interface at this time.
+
+Creating an API Key
+-------------------
+
+Creating an API key is simple, and can be handled through the web interface. Again, remember
+that _after you first use this key, it will be invalidated_, and as such you either need
+to manage its lifecycle yourself or use the built-in SOAuth tools.
+![Navigation to the key creation/removal screen](key_create_1.png)
+Then, click the 'create key' button on the appropriate tab:
+![Create a new key](key_create_2.png)
+Finally, you should copy the key out and make use of it.
+![Copy out your key](key_create_3.png)
+
+
+Revoking an API Key
+-------------------
+
+The list of all of your keys on the keys page, which can be navigated to from the management
+interface home:
+![Navigation to the key creation/removal screen](key_create_1.png)
+To delete a key, you simply click on the 'Delete Key' button:
+![Key deletion](key_deletion.png)
+The next time this _refresh_ key is used, it will not work. Note that any _access tokens_
+(i.e. currently active sessions) 
+
 
 **Next**: [hosting SOAuth](hosting.md)

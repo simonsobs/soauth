@@ -61,7 +61,7 @@ The list of all of your keys on the keys page, which can be navigated to from th
 interface home:
 ![Navigation to the key creation/removal screen](key_create_1.png)
 To delete a key, you simply click on the 'Delete Key' button:
-![Key deletion](key_deletion.png)
+![Key deletion](key_revoke.png)
 The next time this _refresh_ key is used, it will not work. Note that any _access tokens_
 (i.e. currently active sessions) 
 

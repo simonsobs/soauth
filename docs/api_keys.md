@@ -63,7 +63,7 @@ interface home:
 To delete a key, you simply click on the 'Delete Key' button:
 ![Key deletion](key_revoke.png)
 The next time this _refresh_ key is used, it will not work. Note that any _access tokens_
-(i.e. currently active sessions) 
+(i.e. currently active sessions) will remain value until they expire.
 
 
 **Next**: [hosting SOAuth](hosting.md)

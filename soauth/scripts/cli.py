@@ -98,5 +98,8 @@ def main():
 
         data = TokenData(refresh_token=key)
 
-        with open(Path.home() / f".config/soauth/{tag}", "w") as handle:
+        storage_location = Path.home() / ".config/soauth"
+        storage_location.mkdir(exist_ok=True, parents=True)
+
+        with open(storage_location / tag, "w") as handle:
             handle.write(data.model_dump_json())

@@ -139,7 +139,7 @@ class SOAuthCookieBackend(AuthenticationBackend):
             if self.refresh_token_name in conn.cookies:
                 log.debug("tk.starlette.auth.only_refresh_cookie")
                 raise AuthenticationExpiredError("Token expired")
-            
+
             log.debug("tk.starlette.auth.no_cookies")
             return AuthCredentials([]), SOUser(
                 is_authenticated=False, display_name=None

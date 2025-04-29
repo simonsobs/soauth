@@ -6,9 +6,13 @@
   <div class="nes-container with-title">
     <p class="title">{{app.app.app_name}}</p>
     <div style="display:flex;align-items:flex-start">
+      {% if app.app.api_access %}
       <p>API hosted at <a href="{{app.app.domain}}">{{app.app.domain}}</a></p>
       <button class="nes-btn is-success" style="flex-grow:0;margin-left:auto; margin-bottom:1em"
         onclick="location.href='{{base_url}}/keys/{{app.app.app_id}}'">Create Key</button>
+      {% else %}
+      <p>Application hosted at <a href="{{app.app.domain}}">{{app.app.domain}}</a></p>
+      {% endif %}
     </div>
     {% if app.users %}
     {% for key in app.users %}

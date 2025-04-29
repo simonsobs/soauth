@@ -2,6 +2,8 @@
 An API client for SOAuth, wraps around httpx.
 """
 
+import asyncio
+import threading
 from datetime import datetime, timedelta, timezone
 from hashlib import md5
 from pathlib import Path
@@ -11,15 +13,206 @@ import httpx
 from httpx._types import QueryParamTypes, RequestContent, RequestData, RequestFiles
 from pydantic import BaseModel
 
-_IDENTITY_SERVER = "https://ingress.simonsobs-identity.production.svc.spin.nersc.org"
-_SERIALIZATION_DIRECTORY = Path("~/.config/soauth")
-
 
 class TokenData(BaseModel):
-    access_token: str
+    access_token: str | None = None
     refresh_token: str
-    access_token_expires: datetime
-    refresh_token_expires: datetime
+    access_token_expires: datetime | None = None
+    refresh_token_expires: datetime | None = None
+
+
+class SOAuth(httpx.Auth):
+    """
+    An authentication provider for httpx, providing threadsafe authentication access.
+    """
+
+    token_data: TokenData | None = None
+    serialization_directory: Path
+    identity_server: str
+    token_tag: str
+
+    def __init__(
+        self,
+        token_tag: str,
+        *,
+        api_key: str | None = None,
+        serialization_directory: Path | None = None,
+        identity_server: str | None = None,
+    ):
+        """
+        Create the SOAuth httpx provider. Requires a 'token tag' that uniquely identifies this token
+        on your system.
+
+        Parameters
+        ----------
+        token_tag: str
+            Required tag for this service, associated with the API key. Allows for (de)serialization
+            of the keys to a file to enable storage between sessions. Example values would be `hippo`,
+            `lightserve`, or whatever you like!
+        api_key: str | None, optional
+            The API key when using it in the first instance. If not provided, we will de-serialize your
+            key from the `token_tag` (see example and documentation).
+        serialization_directory: Path | None, optional
+            The serialization directory for keys. If not provided, we use `~/.config/soauth`.
+        identity_server: str | None, optional
+            Which identity server to use, if not provided we use the default.
+
+        Example
+        -------
+        The usage of `SOAuth` differs between first use and subsequent uses.
+
+        First use:
+        ```python
+        import httpx
+        from soauth.toolkit.client import SOAuth
+
+        TOKEN_TAG = "hippo"
+        API_KEY = "ashSDFo98hoaisdfsd..."
+
+        client = httpx.Client(
+            base_url="https://hippo.simonsobservatory.org",
+            auth=SOAuth(
+                TOKEN_TAG,
+                api_key=API_KEY
+            )
+        )
+
+        client.post("/whatever")
+        ```
+        Here, we have to specify the API key. Generally, we recommend doing this in an interactive
+        shell before moving on to scripts that simply reference everything via the tag. After the
+        first use, your original API key will expire, and as such running this again will not work.
+        For subsequent uses, you should do:
+                ```python
+        import httpx
+        from soauth.toolkit.client import SOAuth
+
+        TOKEN_TAG = "hippo"
+
+        client = httpx.Client(
+            base_url="https://hippo.simonsobservatory.org",
+            auth=SOAuth(TOKEN_TAG)
+        )
+
+        client.post("/whatever")
+        ```
+        Which will de-serialize the keys from the appropriate file.
+        """
+        if api_key is not None:
+            self.token_data = TokenData(refresh_token=api_key)
+
+        if serialization_directory is None:
+            serialization_directory = Path.home() / ".config/soauth"
+
+        if identity_server is None:
+            identity_server = (
+                "https://ingress.simonsobs-identity.production.svc.spin.nersc.org"
+            )
+
+        self.identity_server = identity_server
+        self.serialization_directory = serialization_directory
+        self.token_tag = token_tag
+
+        self._sync_lock = threading.RLock()
+        self._async_lock = asyncio.Lock()
+
+    def sync_exchange_with_identity_server(self, refresh_token: str):
+        url = f"{self.identity_server}/exchange"
+
+        response = httpx.post(url, json={"refresh_token": refresh_token})
+
+        if response.status_code != 200:
+            raise ValueError(
+                f"Failed to exchange token: {response.status_code} {response.text}"
+            )
+
+        self.token_data = TokenData.model_validate_json(response.content)
+        self.serialize_tokens(token_data=self.token_data)
+
+        return
+
+    @property
+    def filename(self):
+        if not self.serialization_directory.exists():
+            self.serialization_directory.mkdir(exist_ok=True, parents=True)
+        return self.serialization_directory / self.token_tag
+
+    def serialize_tokens(self, token_data: TokenData) -> Path:
+        """
+        Serializes the access tokens to disk.
+        """
+
+        with open(self.filename, "w") as handle:
+            handle.write(token_data.model_dump_json())
+
+        self.filename.chmod(0o600)
+
+        return self.filename
+
+    def deserialize_tokens(self) -> TokenData:
+        """
+        Reads the token data from file but does not do any code exchange.
+        """
+
+        with open(self.filename, "r") as handle:
+            self.token_data = TokenData.model_validate_json(handle.read())
+
+        return self.token_data
+
+    def sync_get_token(self):
+        with self._sync_lock:
+            if self.token_data is None:
+                self.deserialize_tokens()
+
+            if self.token_data.access_token is None or (
+                self.token_data.access_token_expires - datetime.now(tz=timezone.utc)
+            ) < timedelta(minutes=5):
+                self.sync_exchange_with_identity_server(
+                    refresh_token=self.token_data.refresh_token
+                )
+
+            return self.token_data.access_token
+
+    def sync_auth_flow(self, request):
+        token = self.sync_get_token()
+        request.headers["Authorization"] = f"Bearer {token}"
+        yield request
+
+    async def async_exchange_with_identity_server(self, refresh_token: str):
+        url = f"{self.identity_server}/exchange"
+        async with httpx.AsyncClient() as client:
+            response = await client.post(url, json={"refresh_token": refresh_token})
+
+            if response.status_code != 200:
+                raise ValueError(
+                    f"Failed to exchange token: {response.status_code} {response.text}"
+                )
+
+        self.token_data = TokenData.model_validate_json(response.content)
+        self.serialize_tokens(token_data=self.token_data)
+
+        return
+
+    async def async_get_token(self):
+        async with self._async_lock:
+            if self.token_data is None:
+                # This must mean that we need to deserialize
+                with open(self.filename, "r") as handle:
+                    self.token_data = TokenData.Model_validate_json(handle.read())
+
+            if self.token_data.access_token is None or (
+                self.token_data.access_token_expires - datetime.now(tz=timezone.utc)
+            ) < timedelta(minutes=5):
+                await self.async_exchange_with_identity_server(
+                    refresh_token=self.token_data.refresh_token
+                )
+
+            return self.token_data.access_token
+
+    async def async_auth_flow(self, request):
+        token = await self.async_get_token()
+        request.headers["Authorization"] = f"Bearer {token}"
+        yield request
 
 
 class SOAuthClient:
@@ -59,9 +252,10 @@ class SOAuthClient:
 
         base_url = base_url if base_url[-1] != "/" else base_url[:-1]
 
-        return base_url, md5(
-            base_url.encode("utf-8"), usedforsecurity=False
-        ).hexdigest()
+        return (
+            base_url,
+            md5(base_url.encode("utf-8"), usedforsecurity=False).hexdigest(),
+        )
 
     def _create_client(self, token_data: TokenData) -> httpx.Client:
         """

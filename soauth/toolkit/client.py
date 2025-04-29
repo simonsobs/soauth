@@ -83,7 +83,7 @@ class SOAuth(httpx.Auth):
         shell before moving on to scripts that simply reference everything via the tag. After the
         first use, your original API key will expire, and as such running this again will not work.
         For subsequent uses, you should do:
-                ```python
+        ```python
         import httpx
         from soauth.toolkit.client import SOAuth
 

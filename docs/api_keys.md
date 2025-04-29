@@ -66,5 +66,75 @@ To delete a key, you simply click on the 'Delete Key' button:
 The next time this _refresh_ key is used, it will not work. Note that any _access tokens_
 (i.e. currently active sessions) will remain value until they expire.
 
+Using an API Key
+----------------
+
+In practice, you will need to communicate with both your destination application
+and the identity server to use an API key. Here, we'll assume you are trying to
+connect to an application `https://application.org` and using an identity server
+at `https://soauth.org`. To fufill this flow:
+
+First, `POST` your API key to `https://soauth.org/exchange` with structure
+`{"refresh_token": API_KEY}`.
+
+The response will be structured as:
+```json
+{
+  "access_token": "ajdksalksd....",
+  "access_token_expires": "2021-02-20:00:32:22Z",
+  "refresh_token": "ASHKjHILhlasdfa....",
+  "refresh_token_expires": "2021-08-20:00:32:22Z",
+}
+```
+where `refresh_token` replaces your current API key.
+
+To authenticate against the destination authentication provider, you can 
+either set `access_token: "ajdksalksd...."` as a cookie, or provide the
+`Bearer` `Authorization` header, as `Authorization: Bearer ajdksalksd...`
+(or in python, `headers={"Authorization": "Bearer ajdksalksd..."}`).
+
+Unless you include the `refresh_token` with your requests (not supported
+when using headers), you are responsible for managing its lifecycle yourself.
+You will need to again `POST` the new `refresh_token` to gain a new `access_token`
+when it expires. API Keys/refresh tokens are typically valid for six months
+after first being emitted.
+
+
+HTTPX Integration
+-----------------
+
+We provide integration with the [httpx](https://www.python-httpx.org) client providing
+a native authentication provider that is threadsafe. This works by internally managing the
+authentication key lifecycle and serializing your refresh keys to disk. There is
+additional documentation associated with the authentication object itself, but it is
+worth knowing that it works with both `httpx.Client` _and_ `httpx.AsyncClient`.
+
+To begin, register your API key with the SOAuth client:
+```
+soauth register {tag_name} {api_key}
+```
+For example:
+```
+soauth register hippo AHKSAJFH8a9ihknj89ahdsfias0d9fjoinJS...
+```
+The 'tag' is how you will refer to the API key in your script. By default, we
+serialize keys to `~/.config/soauth/{tag_name}`, where we store both access
+and refresh (API) tokens.
+
+To use the authentication provider (`soauth.toolkit.client.SOAuth`) in a python script:
+```python
+import httpx
+from soauth.toolkit.client import SOAuth
+
+TOKEN_TAG = "hippo"
+
+client = httpx.Client(
+    base_url="https://hippo.simonsobs.org",
+    auth=SOAuth(TOKEN_TAG)
+)
+
+client.post("/whatever")
+```
+Note that it is not generally safe to use these keys from multiple processes at once.
 
 **Next**: [hosting SOAuth](hosting.md)

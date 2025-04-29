@@ -22,7 +22,7 @@ the refresh token is also replaced. The process works as follows:
 
 1. A user retrieves an initial API key (refresh token A) from the management interface.
 2. The user exchanges refresh token A for access token B and refresh token B via
-   a post endpoint _at the indentity service_.
+   a post endpoint _at the identity service_.
 3. The user makes use of the access token to access protected resources via the
    destination API, sending the token as a cookie or as a 'Authorization: Bearer
    {token}' header. The user must then either:

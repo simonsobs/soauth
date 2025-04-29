@@ -25,5 +25,6 @@ Table of Contents
 - [Authentication Flow](introduction.md)
 - [Creating an App](create.md)
 - [Sample App](sample.md)
+- [API Keys](api_keys.md)
 - [Hosting SOAuth](hosting.md)
 - [Developing SOAuth](developing.md)

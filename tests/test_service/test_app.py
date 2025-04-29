@@ -16,6 +16,8 @@ async def test_create_app(user, session_manager, server_settings, logger):
                 domain="https://simonsobs.org",
                 user=await user_service.read_by_id(user_id=user, conn=conn),
                 redirect_url="https://simonsobs.org/callback",
+                name="Simons Observatory",
+                api_access=False,
                 settings=server_settings,
                 conn=conn,
                 log=logger,

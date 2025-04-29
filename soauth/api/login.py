@@ -14,6 +14,7 @@ from soauth.service import login as login_service
 from soauth.service import provider as provider_service
 from soauth.service import refresh as refresh_service
 from soauth.service import user as user_service
+from soauth.toolkit.fastapi import AuthenticatedUserDependency
 
 from .dependencies import (
     SETTINGS,
@@ -271,7 +272,7 @@ async def exchange(
 
 
 @login_app.post(
-    "/expire/{app_id}",
+    "/expire",
     summary="Expire a refresh token",
     description=(
         "Expire a refresh token on the backend, effectively logging the user out. "
@@ -288,9 +289,6 @@ async def expire(
     settings: SettingsDependency,
     conn: DatabaseDependency,
     log: LoggerDependency,
-    app_id: UUID = Path(
-        ..., description="The app ID you are using (unused, but kept for consistency)."
-    ),
 ):
     try:
         await flow_service.logout(
@@ -302,6 +300,51 @@ async def expire(
     except (refresh_service.AuthorizationError, KeyExpiredError):
         # I mean, we can't decode it so it's not valid, I don't care.
         pass
+
+
+@login_app.delete(
+    "/expire/{refresh_key_id}",
+    summary="Expire a refresh token",
+    description=(
+        "Expire a refresh token on the backend, effectively logging the user out. "
+        "You must provide the `refresh_token` in the request body."
+    ),
+    responses={
+        200: {"description": "Refresh token expired successfully"},
+        404: {"description": "That key does not exist or you are not the owner"},
+    },
+)
+async def expire_by_id(
+    request: Request,
+    settings: SettingsDependency,
+    conn: DatabaseDependency,
+    log: LoggerDependency,
+    user: AuthenticatedUserDependency,
+    refresh_key_id: UUID = Path(
+        ...,
+        description="The refresh token ID you want to expire; must be created by you.",
+    ),
+):
+    log = log.bind(refresh_key_id=refresh_key_id, user=user)
+    try:
+        refresh_key = await refresh_service.read_by_id(
+            refresh_key_id=refresh_key_id, conn=conn
+        )
+
+        if refresh_key.user_id != user.user_id:
+            log.ainfo("api.login.expire.user_id_mismatch")
+            raise refresh_service.AuthorizationError("Not your key")
+    except refresh_service.AuthorizationError:
+        await log.ainfo("api.login.expire.disallowed")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Key not found"
+        )
+
+    await refresh_service.expire_refresh_key_by_id(key_id=refresh_key_id, conn=conn)
+
+    await log.ainfo("api.login.expire.success")
+
+    return
 
 
 if SETTINGS().host_development_only_endpoint:

@@ -66,7 +66,7 @@ async def primary(
     """
     log = log.bind(user_id=user.user_id, app_id=app.app_id)
     encoded_refresh_key, refresh_key = await create_refresh_key(
-        user=user, app=app, settings=settings, conn=conn
+        user=user, app=app, api_key=False, settings=settings, conn=conn
     )
     log = log.bind(refresh_key_id=refresh_key.refresh_key_id)
     await log.ainfo("primary.refresh_key_created")

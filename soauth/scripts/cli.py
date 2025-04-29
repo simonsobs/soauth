@@ -28,6 +28,7 @@ def main():
     try:
         run = sys.argv[1] == "run"
         setup = sys.argv[1] == "setup"
+        register = sys.argv[1] == "register"
         dev = sys.argv[2] == "dev"
         prod = sys.argv[2] == "prod"
     except IndexError:
@@ -87,3 +88,15 @@ def main():
 
         print("Setup complete, please restart the container or application")
         exit(0)
+    if register:
+        from pathlib import Path
+
+        from soauth.toolkit.client import TokenData
+
+        tag = sys.argv[2]
+        key = sys.argv[3]
+
+        data = TokenData(refresh_token=key)
+
+        with open(Path.home() / f".config/soauth/{tag}", "w") as handle:
+            handle.write(data.model_dump_json())

@@ -52,6 +52,8 @@ async def app(session_manager, logger, user, server_settings):
     async with session_manager.session() as conn:
         async with conn.begin():
             app = await app_service.create(
+                name="Simons Observatory",
+                api_access=False,
                 domain="https://simonsobs.org",
                 redirect_url="https://simonsobs.org/callback",
                 user=await user_service.read_by_id(user_id=user, conn=conn),

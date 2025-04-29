@@ -37,6 +37,11 @@
     <div class="nes-container with-title is-dark">
       <p class="title">{{user.display_name if user.display_name else "Login Here" }}</p>
       <div style="display:flex;justify-content:flex-start">
+        {% if user.is_authenticated %}
+        <section class="buttonholder">
+          <button type="button" class="nes-btn is-warning" onclick="location.href='{{key_list}}'">Keys</button>
+        </section>
+        {% endif %}
         {% if "admin" in scopes %}
         <section class="buttonholder">
           <button type="button" class="nes-btn is-primary" onclick="location.href='{{user_list}}'">User List</button>
@@ -63,4 +68,5 @@
     </div>
   </footer>
 </body>
+
 </html>

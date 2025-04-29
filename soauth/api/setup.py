@@ -47,6 +47,8 @@ def initial_setup(settings: Settings):
         )
 
         app = App(
+            app_name="SOAuth Internal Service",
+            api_access=False,
             created_by_user_id=user.user_id,
             created_by=user,
             created_at=datetime.now(timezone.utc),
@@ -121,6 +123,8 @@ def example_setup(settings: Settings):
             key_pair_type=settings.key_pair_type, key_password=settings.key_password
         )
         app = App(
+            app_name="SOAuth Internal Service",
+            api_access=False,
             created_by_user_id=user.user_id,
             created_by=user,
             created_at=datetime.now(timezone.utc),
@@ -147,6 +151,8 @@ def example_setup(settings: Settings):
             conn.add_all([new_user, new_group])
 
         second_demo_app = App(
+            app_name="Simons Observatory",
+            api_access=True,
             created_by_user_id=user.user_id,
             created_by=user,
             created_at=datetime.now(timezone.utc),

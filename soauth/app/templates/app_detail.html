@@ -29,11 +29,13 @@
 <section class="section">
   <div class="nes-container with-title">
     <p class="title">App Information</p>
+    <h2>{{app.app_name}}</h2>
     <ul class="nes-list is-disc">
       <li><span class="nes-text is-primary">App ID</span> {{app.app_id}}</li>
       <li><span class="nes-text is-primary">Created by</span> {{app.created_by_user_name}}</li>
       <li><span class="nes-text is-primary">Created at</span> {{app.created_at}}</li>
       <li><span class="nes-text is-primary">Domain</span> {{app.domain}}</li>
+      <li><span class="nes-text is-primary">API Access?</span> {{app.api_access}}</li>
     </ul>
   </div>
 </section>
@@ -46,26 +48,38 @@
       <div class="nes-container with-title display:flex">
         <p class="title">{% if "admin" in scopes %}<a href="{{base_url}}/users/{{user.user_id}}">{{ user.user_name
             }}</a>{% else %}{{ user.user_name }}{% endif %}</p>
-        <div style="display:flex;align-items:flex-end;justify-content:space-between">
-          <ul class="nes-list is-disc" style="flex-shrink:1">
+        <div style="display:flex;align-items:flex-end">
+          <ul class="nes-list is-disc" style="margin-right:auto;margin-bottom:0">
             <li><span class="nes-text is-primary">Key ID</span> {{user.refresh_key_id}}</li>
             <li><span class="nes-text is-primary">Created at</span> {{user.first_authenticated}}</li>
             <li><span class="nes-text is-primary">Last Used</span> {{user.last_authenticated}}</li>
             <li><span class="nes-text is-primary">Expires</span> {{user.login_expires}}</li>
           </ul>
-          {% if "admin" in scopes %}
-          <button class="nes-btn is-error" style="flex-grow:0"
-            onclick="location.href='{{base_url}}/apps/{{app.app_id}}/revoke/{{user.refresh_key_id}}'">Revoke
-            Key</button>
-          {% endif %}
+          <div style="display:flex;flex-direction:column;margin-left:auto;justify-content:space-between">
+            {% if user.api_key %}
+            <div class="nes-badge" style="flex-grow:0;margin-left:auto">
+              <span class="is-success">API</span>
+            </div>
+            {% else %}
+            <div class="nes-badge" style="flex-grow:0;margin-left:auto">
+              <span class="is-warning">Login</span>
+            </div>
+            {%endif %}
+            {% if "admin" in scopes %}
+            <button class="nes-btn is-error" style="flex-grow:0"
+              onclick="location.href='{{base_url}}/apps/{{app.app_id}}/revoke/{{user.refresh_key_id}}'">Revoke
+              Key</button>
+            {% endif %}
+          </div>
         </div>
       </div>
-    </section>
-    {% endfor %}
-    {% else %}
-    No active users.
-    {% endif %}
   </div>
+</section>
+{% endfor %}
+{% else %}
+No active users.
+{% endif %}
+</div>
 </section>
 {% endif %}
 {% endblock %}

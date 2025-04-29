@@ -55,16 +55,26 @@ def app_create_post(
     request: Request,
     templates: TemplateDependency,
     log: LoggerDependency,
+    name: Annotated[str, Form()],
     domain: Annotated[str, Form()],
     redirect: Annotated[str, Form()],
+    api: Annotated[bool | None, Form()] = None,
 ):
     log = log.bind(domain=domain)
+
+    if api is None:
+        api = False
 
     response = handle_request(
         url=f"{request.app.app_detail_url}",
         request=request,
         method="put",
-        params={"domain": domain, "redirect_url": redirect},
+        params={
+            "name": name,
+            "domain": domain,
+            "redirect_url": redirect,
+            "api_access": api,
+        },
     )
 
     log.bind(response=response.json())

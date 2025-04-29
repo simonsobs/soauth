@@ -23,6 +23,7 @@ def setup_templates(settings: Settings):
             base_url=f"{settings.management_hostname}{settings.management_path}",
             user_list=f"{settings.management_hostname}{settings.management_path}/users",
             app_list=f"{settings.management_hostname}{settings.management_path}/apps",
+            key_list=f"{settings.management_hostname}{settings.management_path}/keys",
             logout_url=f"{settings.management_hostname}{settings.management_path}/logout",
             login_url=f"{settings.hostname}/login/{request.app.app_id}",
         )

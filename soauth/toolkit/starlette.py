@@ -122,16 +122,28 @@ class SOAuthCookieBackend(AuthenticationBackend):
             refresh_token_name=self.refresh_token_name,
         )
 
-        if self.access_token_name not in conn.cookies:
+        # Two possibilities: either we have the access token as a cookie, or we
+        # have it as a 'Bearer' token in the headers.
+
+        if "Authorization" in conn.headers:
+            contents = conn.headers["Authorization"].split(" ")
+            if contents[0] != "Bearer":
+                log.debug("tk.starlette.auth.bearer_not_found")
+                raise AuthenticationDecodeError("Bearer token invalid")
+            log.debug("tk.starlette.auth.bearer")
+            access_token = contents[1]
+        elif self.access_token_name in conn.cookies:
+            log.debug("tk.starlette.auth.access_token_in_cookies")
+            access_token = conn.cookies[self.access_token_name]
+        else:
             if self.refresh_token_name in conn.cookies:
                 log.debug("tk.starlette.auth.only_refresh_cookie")
                 raise AuthenticationExpiredError("Token expired")
+
             log.debug("tk.starlette.auth.no_cookies")
             return AuthCredentials([]), SOUser(
                 is_authenticated=False, display_name=None
             )
-
-        access_token = conn.cookies[self.access_token_name]
 
         if access_token is None:
             log.debug("tk.starlette.auth.no_token")

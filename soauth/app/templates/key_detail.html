@@ -1,0 +1,20 @@
+{% extends "core.html" %}
+{% block content %}
+{% if user.is_authenticated %}
+<section class="section">
+  <div class="nes-container with-title">
+    <p class="title">New Key Information</p>
+    <p>Your new API key for <span class="nes-text is-error">{{app_name}}</span>
+      (<a href="{{app_hostname}}">{{app_hostname}}</a>) is displayed in the box below. It will
+      <span class="nes-text is-error">only be shown once</span>, so be careful to copy it now.
+      <span class="nes-text is-primary">SOAuth API keys are continually refreshed by your
+        client</span>; it is important to either use SOAuth-provided clients or understand this process.
+    </p>
+    <div class="nes-field" style="margin-bottom:1em">
+      <label for="key-field">API Key</label>
+      <textarea id="key-field" class="nes-input" readonly rows="8">{{refresh_token}}</textarea>
+    </div>
+  </div>
+</section>
+{% endif %}
+{% endblock %}

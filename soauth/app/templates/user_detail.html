@@ -38,13 +38,24 @@
     {% for app in other_user_logins %}
     <section class="section">
       <div class="nes-container with-title">
-        <p class="title"><a href="{{base_url}}/apps/{{app.app_id}}">{{ app.app_id }}</a></p>
-        <ul class="nes-list is-disc">
-          <li><span class="nes-text is-primary">Key ID</span> {{app.refresh_key_id}}</li>
-          <li><span class="nes-text is-primary">Created at</span> {{app.first_authenticated}}</li>
-          <li><span class="nes-text is-primary">Last Used</span> {{app.last_authenticated}}</li>
-          <li><span class="nes-text is-primary">Expires</span> {{app.login_expires}}</li>
-        </ul>
+        <p class="title"><a href="{{base_url}}/apps/{{app.app_id}}">{{ app.app_name }}</a></p>
+        <div style="display:flex">
+          <ul class="nes-list is-disc">
+            <li><span class="nes-text is-primary">Key ID</span> {{app.refresh_key_id}}</li>
+            <li><span class="nes-text is-primary">Created at</span> {{app.first_authenticated}}</li>
+            <li><span class="nes-text is-primary">Last Used</span> {{app.last_authenticated}}</li>
+            <li><span class="nes-text is-primary">Expires</span> {{app.login_expires}}</li>
+          </ul>
+          {% if app.api_key %}
+          <div class="nes-badge" style="flex-grow:0;margin-left:auto;margin-bottom:auto;">
+            <span class="is-success">API</span>
+          </div>
+          {% else %}
+          <div class="nes-badge" style="flex-grow:0;margin-left:auto;margin-bottom:auto;">
+            <span class="is-warning">Login</span>
+          </div>
+          {%endif %}
+        </div>
       </div>
     </section>
     {% endfor %}

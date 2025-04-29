@@ -100,6 +100,9 @@ def main():
 
         storage_location = Path.home() / ".config/soauth"
         storage_location.mkdir(exist_ok=True, parents=True)
+        tag_location = storage_location / tag
 
-        with open(storage_location / tag, "w") as handle:
+        with open(tag_location, "w") as handle:
             handle.write(data.model_dump_json())
+
+        tag_location.chmod(0o600)

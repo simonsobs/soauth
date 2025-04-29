@@ -106,11 +106,19 @@ async def handle_user(request: Request) -> SOUserWithGrants:
         access_token_name=access_token_name,
     )
 
-    if access_token_name not in request.cookies:
-        log.debug("tk.fastapi.auth.no_cookies")
-        return SOUserWithGrants(is_authenticated=False)
+    # Two possibilities: either we have the access token as a cookie, or we
+    # have it as a 'Bearer' token in the headers.
 
-    access_token = request.cookies[access_token_name]
+    if "Authorization" in request.headers:
+        contents = request.headers["Authorization"].split(" ")
+        if contents[0] != "Bearer":
+            raise KeyDecodeError
+        access_token = contents[1]
+    elif access_token_name in request.cookies:
+        access_token = request.cookies[access_token_name]
+    else:
+        log.debug("tk.fastapi.auth.no_token")
+        return SOUserWithGrants(is_authenticated=False)
 
     if access_token is None:
         log.debug("tk.fastapi.auth.no_token")

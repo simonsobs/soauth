@@ -8,6 +8,7 @@ that point later.
 
 import urllib
 from datetime import datetime, timezone
+from json import JSONDecodeError
 from typing import Any
 
 import httpx
@@ -46,7 +47,10 @@ async def github_api_call(
     if response.status_code not in [200, 204]:
         raise GitHubLoginError(f"Error contacting {url}")
 
-    return response.json()
+    try:
+        return response.json()
+    except JSONDecodeError:
+        return None
 
 
 async def apply_organization_grants(

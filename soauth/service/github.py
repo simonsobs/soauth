@@ -43,32 +43,36 @@ async def github_api_call(
     async with httpx.AsyncClient() as client:
         response = await client.get(url, headers=headers)
 
-    if response.status_code != 200:
+    if response.status_code not in [200, 204]:
         raise GitHubLoginError(f"Error contacting {url}")
 
     return response.json()
 
 
-def apply_organization_grants(
-    organization_info: list[dict[str, any]], user: User, settings: Settings
+async def apply_organization_grants(
+    access_token: str, user: User, settings: Settings, log: FilteringBoundLogger
 ) -> User:
     """
-    Checks whether the user has the correct organization grants given a freshly
-    pulled set of organization info from GitHub. If not, we remedy that.
+    Checks whether the user has the correct organization grants using the GitHub
+    API to query for each in turn.
     """
 
     # Add grants that have the same name as the GitHub organizations that
     # we care about.
     for organization in settings.github_organization_checks:
-        org_found = False
-        for item in organization_info:
-            if item["login"] == organization:
-                org_found = True
-                user.add_grant(organization)
-                break
-
-        if not org_found:
+        # Get the organization info.
+        log = log.bind(organization=organization)
+        try:
+            _ = await github_api_call(
+                github_api_access_token=access_token,
+                url=f"https://api.github.com/orgs/{organization}/members/{user.user_name}",
+            )
+            # If we get a 204, then the user is a member of the organization.
+            await log.ainfo("github.organization_check.success")
+            user.add_grant(organization)
+        except GitHubLoginError:
             user.remove_grant(organization)
+            await log.ainfo("github.organization_check.failure")
 
     return user
 
@@ -251,11 +255,6 @@ class GithubAuthProvider(AuthProvider):
             github_api_access_token=access_token, url="https://api.github.com/user"
         )
 
-        # Attain organization info
-        organization_info = await github_api_call(
-            github_api_access_token=access_token, url=user_info["organizations_url"]
-        )
-
         username = user_info["login"].lower()
 
         log = log.bind(
@@ -302,8 +301,8 @@ class GithubAuthProvider(AuthProvider):
 
         log.bind(gh_last_logged_in=gh_last_logged_in)
 
-        user = apply_organization_grants(
-            organization_info=organization_info, user=user, settings=settings
+        user = await apply_organization_grants(
+            access_token=access_token, user=user, settings=settings, log=log
         )
 
         conn.add(user)

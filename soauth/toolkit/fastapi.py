@@ -45,6 +45,7 @@ from soauth.core.tokens import KeyExpiredError
 from soauth.core.uuid import UUID
 
 from .starlette import (
+    MockSOAuthCookieBackend,
     SOAuthCookieBackend,
     SOUser,
     handle_redirect,
@@ -295,6 +296,34 @@ def global_setup(
 
     app.add_api_route(path="/logout", endpoint=logout)
     app.add_api_route(path="/callback", endpoint=handle_redirect)
+
+    return app
+
+
+def mock_global_setup(
+    app: FastAPI,
+    grants: list[str],
+) -> FastAPI:
+    """
+    Transform the app such that it is ready for authentication (mock).
+    Always returns a user 'test_user', with the given grants. Only works
+    with middleware, the dependencies will not work.
+
+    Parameters
+    ----------
+    app: FastAPI
+        The FastAPI app to hook into.
+    grants: list[str]
+        The list of grants to give the user. This is used to mock the
+        authentication process, and should be used for testing purposes only.
+    """
+
+    app.add_middleware(
+        AuthenticationMiddleware,
+        backend=MockSOAuthCookieBackend(
+            credentials=grants,
+        ),
+    )
 
     return app
 

@@ -181,6 +181,65 @@ class SOAuthCookieBackend(AuthenticationBackend):
         return credentials, user
 
 
+class MockSOAuthCookieBackend(AuthenticationBackend):
+    """
+    A mock authentication middleware backend. Always returns an SOUser
+    with the provided credentials. This can raise two main
+    exceptions:
+
+    soauth.core.tokens.KeyDecodeError
+        If there was a problem decoding the access token. This likely
+        means that it is incompatible with the keys or otherwise needs
+        to be _entirely replaced_ including a new refresh token. You
+        should redirect users to the login URL.
+
+    AuthenticationExpiredError
+        If the access token key is expired. You will need to use the
+        POST endpoint to refresh the key and attempt to re-authenticate.
+
+    To handle these exceptions, we provide synchronous functions defined
+    in the FastAPI file (`key_decode_handler` and `key_expired_handler`). You
+    can use the `on_auth_error` function to handle all these simultaneously.
+    """
+
+    credentials: list[str]
+    user_name: str
+    user_id: UUID
+    full_name: str
+    email: str
+    groups: set[str]
+
+    def __init__(
+        self,
+        credentials: list[str],
+        user_name: str = "test_user",
+        user_id: UUID = UUID("00000000-0000-0000-0000-000000000001"),
+        full_name: str = "Test User",
+        email: str = "test@test.com",
+        groups: set[str] = {"test_user"},
+    ):
+        self.credentials = credentials
+        self.user_name = user_name
+        self.user_id = user_id
+        self.full_name = full_name
+        self.email = email
+        self.groups = groups
+
+    async def authenticate(self, conn: Request):
+        user = SOUser(
+            is_authenticated=True,
+            display_name=self.user_name,
+            user_id=self.user_id,
+            full_name=self.full_name,
+            email=self.email,
+            groups=self.groups,
+        )
+
+        credentials = AuthCredentials(self.credentials)
+
+        return credentials, user
+
+
 def key_expired_handler(request: Request, exc: KeyExpiredError) -> RedirectResponse:
     """
     Handles the KeyExpiredError exception that occurs when the authentication

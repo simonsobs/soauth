@@ -83,3 +83,65 @@ For code API docs (e.g. whatever you get from the docstrings), you can run
 pdoc --docformat=numpy soauth
 ```
 on the command line to bring up the documentation server.
+
+
+Mocks
+-----
+
+SOAuth comes with some mocks for starlette and FastAPI middleware. This can allow
+you to test unit test your application. 
+```python
+from soauth.toolkit.fastapi import mock_global_setup
+from fastapi import FastAPI
+
+app = mock_global_setup(
+    app=FastAPI(),
+    grants=["best", "grant", "ever!"]
+)
+```
+On your request, this will set:
+```python
+request.user
+
+SOUser(
+    is_authenticated=True,
+    display_name="test_user",
+    user_id=UUID("00000000-0000-0000-0000-000000000001"),
+    full_name="Test User",
+    email="test@test.com",
+    groups={"test_user"}
+)
+
+request.auth.scopes
+
+["best", "grant", "ever!"]
+```
+To use this alongside the test client,
+```python
+from fastapi.testclient import TestClient
+from fastapi import Request
+from starlette.authentication import requires
+
+@app.get("/")
+@requires("best")
+def home(request: Request):
+    return {"hello": request.user}
+
+client = TestClient(app)
+print(client.get("/").content)
+```
+which returns:
+```json
+{
+  "hello": {
+    "is_authenticated": true,
+    "display_name": "test_user",
+    "user_id": "00000000-0000-0000-0000-000000000001",
+    "full_name": "Test User",
+    "email": "test@test.com",
+    "groups": [
+      "test_user"
+    ]
+  }
+}
+```

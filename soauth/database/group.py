@@ -19,8 +19,12 @@ class GroupMembership(SQLModel, table=True):
     A record of a user's group membership.
     """
 
-    user_id: Optional[UUID] = Field(primary_key=True, foreign_key="user.user_id")
-    group_id: Optional[UUID] = Field(primary_key=True, foreign_key="group.group_id")
+    user_id: Optional[UUID] = Field(
+        primary_key=True, foreign_key="user.user_id", ondelete="CASCADE"
+    )
+    group_id: Optional[UUID] = Field(
+        primary_key=True, foreign_key="group.group_id", ondelete="CASCADE"
+    )
 
 
 class Group(SQLModel, table=True):
@@ -34,4 +38,5 @@ class Group(SQLModel, table=True):
     members: list["User"] = Relationship(
         back_populates="groups",
         link_model=GroupMembership,
+        sa_relationship_kwargs={"lazy": "selectin"},
     )

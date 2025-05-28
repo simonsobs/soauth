@@ -26,6 +26,7 @@ def setup_templates(settings: Settings):
             key_list=f"{settings.management_hostname}{settings.management_path}/keys",
             logout_url=f"{settings.management_hostname}{settings.management_path}/logout",
             login_url=f"{settings.hostname}/login/{request.app.app_id}",
+            group_list=f"{settings.management_hostname}{settings.management_path}/groups",
         )
 
     def user_and_scope(request: Request):

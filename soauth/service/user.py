@@ -119,8 +119,10 @@ async def delete(user_name: str, conn: AsyncSession, log: FilteringBoundLogger):
 
     user = await read_by_name(user_name=user_name, conn=conn)
     group = (
-        await conn.execute(select(Group).filter(Group.group_name == user_name))
-    ).scalar_one_or_none()
+        (await conn.execute(select(Group).filter(Group.group_name == user_name)))
+        .unique()
+        .scalar_one_or_none()
+    )
 
     log = log.bind(user_id=user.user_id, group_id=group.group_id)
 

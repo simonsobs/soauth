@@ -39,7 +39,7 @@ class Group(SQLModel, table=True):
     members: list["User"] = Relationship(
         back_populates="groups",
         link_model=GroupMembership,
-        sa_relationship_kwargs={"lazy": "selectin"},
+        sa_relationship_kwargs=dict(lazy="joined"),
     )
 
     def to_core(self) -> GroupData:
@@ -49,7 +49,7 @@ class Group(SQLModel, table=True):
         return GroupData(
             group_id=self.group_id,
             group_name=self.group_name,
-            created_by=self.created_by.to_core(),
+            created_by=self.created_by.to_core(include_groups=False),
             created_at=self.created_at,
-            members=[member.to_core() for member in self.members],
+            members=[member.to_core(include_groups=False) for member in self.members],
         )

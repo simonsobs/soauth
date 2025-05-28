@@ -87,12 +87,12 @@ class User(SQLModel, table=True):
 
         self.grants = " ".join([x for x in self.grants.split(" ") if x != grant])
 
-    def to_core(self) -> UserData:
+    def to_core(self, include_groups=True) -> UserData:
         return UserData(
             user_id=self.user_id,
             user_name=self.user_name,
             full_name=self.full_name,
             email=self.email,
             grants=set(self.grants.split(" ")),
-            groups=set(x.group_name for x in self.groups),
+            groups=set(x.group_name for x in self.groups) if include_groups else None,
         )

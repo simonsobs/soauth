@@ -112,7 +112,7 @@ async def get_group_list(
     """
     log = log.bind()
     result = await conn.execute(select(Group))
-    groups = result.scalars().all()
+    groups = result.unique().scalars().all()
     await log.adebug("group.listed", number_of_groups=len(groups))
     return groups
 
@@ -141,7 +141,7 @@ async def read_by_id(
     """
     log = log.bind(group_id=group_id)
     result = await conn.execute(select(Group).where(Group.group_id == group_id))
-    group = result.scalar_one_or_none()
+    group = result.unique().scalar_one_or_none()
     if not group:
         await log.ainfo("group.not_found")
         raise GroupNotFound(f"Group with id {group_id} not found")
@@ -173,7 +173,7 @@ async def read_by_name(
     """
     log = log.bind(group_name=group_name)
     result = await conn.execute(select(Group).where(Group.group_name == group_name))
-    group = result.scalar_one_or_none()
+    group = result.unique().scalar_one_or_none()
     if not group:
         await log.ainfo("group.not_found")
         raise GroupNotFound(f"Group with name {group_name} not found")

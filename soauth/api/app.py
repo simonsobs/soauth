@@ -12,6 +12,7 @@ from .admin import admin_routes
 from .app_manager import app_management_routes
 from .dependencies import SETTINGS
 from .docs import create_protected_docs
+from .groups import group_app
 from .keys import key_management_routes
 from .login import login_app
 
@@ -68,3 +69,4 @@ app.include_router(login_app)
 app.include_router(admin_routes, prefix="/admin")
 app.include_router(app_management_routes, prefix="/apps")
 app.include_router(key_management_routes, prefix="/keys")
+app.include_router(group_app, prefix="/groups")

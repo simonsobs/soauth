@@ -1,0 +1,18 @@
+{% extends "core.html" %}
+{% block content %}
+{% if user.is_authenticated %}
+{% for group in groups %}
+<section class="section">
+  <div class="nes-container with-title">
+    <p class="title">{{group.group_name}}</p>
+    <h4>Users</h4>
+    <div style="display:flex;align-items:flex-start">
+      {% for user in group.members %}
+      <p style="flex-grow:0">{{ user.user_name }}</p>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endfor %}
+{% endif %}
+{%endblock%}

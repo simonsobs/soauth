@@ -91,6 +91,32 @@ async def create(
     return group
 
 
+async def get_group_list(
+    conn: AsyncSession,
+    log: FilteringBoundLogger,
+) -> list[Group]:
+    """
+    Get a list of all groups.
+
+    Parameters
+    ----------
+    conn: AsyncSession
+        The database session.
+    log: FilteringBoundLogger
+        Logger instance.
+
+    Returns
+    -------
+    list[Group]
+        A list of all groups in the database.
+    """
+    log = log.bind()
+    result = await conn.execute(select(Group))
+    groups = result.scalars().all()
+    await log.adebug("group.listed", number_of_groups=len(groups))
+    return groups
+
+
 async def read_by_id(
     group_id: UUID,
     conn: AsyncSession,

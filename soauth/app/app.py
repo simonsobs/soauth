@@ -13,6 +13,7 @@ from soauth.config.settings import Settings
 from soauth.toolkit.fastapi import global_setup
 
 from .apps import router as app_router
+from .groups import router as group_router
 from .keys import router as key_router
 from .users import router as user_router
 
@@ -59,6 +60,10 @@ async def lifespan(app: FastAPI):
     app.app_detail_url = f"{settings.hostname}/apps/app"
     app.key_list_url = f"{settings.hostname}/keys/list"
     app.key_detail_url = f"{settings.hostname}/keys/app"
+    app.group_detail_url = f"{settings.hostname}/groups"
+    app.group_list_url = f"{settings.hostname}/groups/list"
+    app.group_update_url = f"{settings.hostname}/groups/members"
+    app.group_delete_url = f"{settings.hostname}/groups/delete"
     yield
 
 
@@ -90,3 +95,4 @@ template_endpoint(app=app, path="/", template="index.html", log_name="app.home")
 app.include_router(app_router)
 app.include_router(user_router)
 app.include_router(key_router)
+app.include_router(group_router)

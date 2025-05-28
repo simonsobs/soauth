@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Optional
 from sqlalchemy import Column, DateTime
 from sqlmodel import Field, Relationship, SQLModel
 
+from soauth.core.group import GroupData
 from soauth.core.uuid import UUID, uuid7
 
 if TYPE_CHECKING:
@@ -40,3 +41,15 @@ class Group(SQLModel, table=True):
         link_model=GroupMembership,
         sa_relationship_kwargs={"lazy": "selectin"},
     )
+
+    def to_core(self) -> GroupData:
+        """
+        Convert this Group ORM object to a GroupData core object.
+        """
+        return GroupData(
+            group_id=self.group_id,
+            group_name=self.group_name,
+            created_by=self.created_by.to_core(),
+            created_at=self.created_at,
+            members=[member.to_core() for member in self.members],
+        )

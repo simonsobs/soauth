@@ -62,8 +62,7 @@ async def lifespan(app: FastAPI):
     app.key_detail_url = f"{settings.hostname}/keys/app"
     app.group_detail_url = f"{settings.hostname}/groups"
     app.group_list_url = f"{settings.hostname}/groups/list"
-    app.group_update_url = f"{settings.hostname}/groups/members"
-    app.group_delete_url = f"{settings.hostname}/groups/delete"
+    app.group_detail_url = f"{settings.hostname}/groups"
     yield
 
 

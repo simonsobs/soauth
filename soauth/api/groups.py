@@ -5,6 +5,7 @@ Group management.
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
 
 from soauth.api.dependencies import DatabaseDependency, LoggerDependency
 from soauth.core.group import GroupData
@@ -180,6 +181,15 @@ async def delete_group(
     return None
 
 
+class ChangeGroupMembersRequest(BaseModel):
+    """
+    Request model for adding or removing members from a group.
+    """
+
+    add_user_id: UUID | None = None
+    remove_user_id: UUID | None = None
+
+
 @group_app.post(
     "/{group_id}/members",
     summary="Add or remove a member to a group",
@@ -198,13 +208,20 @@ async def change_group_members(
     user: AuthenticatedUserDependency,
     conn: DatabaseDependency,
     log: LoggerDependency,
-    add_user_id: UUID | None = None,
-    remove_user_id: UUID | None = None,
+    content: ChangeGroupMembersRequest,
 ) -> GroupData:
     """
     Add or remove a user from a group.
     """
-    log = log.bind(group_id=group_id, user_id=user.user_id)
+    add_user_id = content.add_user_id
+    remove_user_id = content.remove_user_id
+
+    log = log.bind(
+        group_id=group_id,
+        user_id=user.user_id,
+        add_user_id=add_user_id,
+        remove_user_id=remove_user_id,
+    )
 
     group = await groups_service.read_by_id(group_id=group_id, conn=conn, log=log)
 

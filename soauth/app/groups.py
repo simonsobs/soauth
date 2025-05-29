@@ -20,8 +20,6 @@ def check_scope(request):
 def handle_request(url: str, request: Request, method: str = "get", **kwargs):
     response = httpx.request(method=method, url=url, cookies=request.cookies, **kwargs)
 
-    print(response.content)
-
     try:
         response.raise_for_status()
     except httpx.HTTPStatusError:
@@ -116,5 +114,4 @@ def group_detail(
     response = handle_request(
         url=f"{request.app.group_detail_url}/{group_id}", request=request
     )
-    print(response.json())
     return {"group": response.json()}

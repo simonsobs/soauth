@@ -120,7 +120,7 @@ async def test_create_empty_group(server_settings, session_manager, logger, user
                 log=logger,
             )
 
-            group_content = group.to_core()
+            _ = group.to_core()
             GROUP_ID = group.group_id
 
     # Delete the group

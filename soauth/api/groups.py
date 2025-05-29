@@ -83,7 +83,7 @@ async def get_group_by_id(
         *[member.user_id for member in group.members],
     }
 
-    if ("admin" in user.grants):
+    if "admin" in user.grants:
         allowed_user_ids.add(user.user_id)
 
     if user.user_id not in allowed_user_ids:
@@ -183,7 +183,7 @@ async def delete_group(
             status_code=403, detail="Access denied to delete this group"
         )
 
-    await groups_service.delete(group_id=group.group_id, conn=conn, log=log)
+    await groups_service.delete_group(group_id=group.group_id, conn=conn, log=log)
     await log.ainfo("group.deleted")
 
     return None

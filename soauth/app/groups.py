@@ -115,3 +115,22 @@ def group_detail(
         url=f"{request.app.group_detail_url}/{group_id}", request=request
     )
     return {"group": response.json()}
+
+
+@router.get("/{group_id}/delete")
+@requires("admin")
+def delete_group(
+    group_id: UUID,
+    request: Request,
+    log: LoggerDependency,
+):
+    log = log.bind(group_id=group_id)
+    log.debug("app.admin.group_delete")
+
+    handle_request(
+        url=f"{request.app.group_detail_url}/{group_id}",
+        request=request,
+        method="delete",
+    )
+
+    return RedirectResponse(url=f"{request.app.base_url}/groups", status_code=303)

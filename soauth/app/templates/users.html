@@ -1,28 +1,25 @@
 {% extends "core.html" %}
 {% block content %}
 {% if user.is_authenticated %}
-<div class="nes-container with-title">
-  <p class="title">Users</p>
-  <div class="nes-table-responsive">
-    <table class="nes-table is-bordered is-centered">
-      <thead>
-        <tr>
-          <th class="nes-text is-primary">Username</th>
-          <th class="nes-text is-primary">Name</th>
-          <th class="nes-text is-primary">Email</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for user in users %}
-        <tr>
-          <td><a href="{{base_url}}/users/{{user.user_id}}">{{user.user_name}}</a></td>
-          <td>{{user.full_name}}</td>
-          <td>{{user.email}}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
+<div class="nes-table-responsive">
+  <table class="nes-table is-bordered is-centered">
+    <thead>
+      <tr>
+        <th class="nes-text is-primary">Username</th>
+        <th class="nes-text is-primary">Name</th>
+        <th class="nes-text is-primary">Email</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for user in users %}
+      <tr>
+        <td><a href="{{base_url}}/users/{{user.user_id}}">{{user.user_name}}</a></td>
+        <td>{{user.full_name}}</td>
+        <td>{{user.email}}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
 </div>
 {% endif %}
 {%endblock%}

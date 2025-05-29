@@ -87,13 +87,7 @@ async def get_group_by_id(
         await log.awarn("group.access_denied")
         raise HTTPException(status_code=404, detail="Access denied to this group")
 
-    return GroupData(
-        group_id=group.group_id,
-        group_name=group.group_name,
-        created_by=group.created_by,
-        created_at=group.created_at,
-        members=group.members,
-    )
+    return group.to_core()
 
 
 @group_app.put(

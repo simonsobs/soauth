@@ -144,7 +144,7 @@ async def handle_user(request: Request) -> SOUserWithGrants:
         user_id=user_data.user_id,
         full_name=user_data.full_name,
         email=user_data.email,
-        groups=user_data.groups,
+        groups=user_data.group_names,
         grants=user_data.grants,
     )
 

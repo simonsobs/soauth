@@ -21,10 +21,10 @@
         {% endif %}
       </li>
       <li><span class="nes-text is-primary">Groups</span>
-        {% if other_user.groups %}
+        {% if other_user.group_names %}
         <ul class="nes-list is-circle">
-          {% for group in other_user.groups %}
-          <li>{{ group }}</li>
+          {% for group_name, group_id in zip(other_user.group_names, other_user.group_ids) %}
+          <li><a href="{{base_url}}/groups/{{group_id}}">{{ group_name }}</a></li>
           {% endfor %}
         </ul>
         {% endif %}

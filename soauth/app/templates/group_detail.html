@@ -1,0 +1,72 @@
+{% extends "core.html" %}
+{% block content %}
+{% if user.is_authenticated %}
+<section class="section">
+  <div class="nes-container with-title">
+    <p class="title">Group Information</p>
+    <ul class="nes-list is-disc">
+      <li><span class="nes-text is-primary">Group ID</span> {{group.group_id}}</li>
+      <li><span class="nes-text is-primary">Group name</span> {{group.group_name}}</li>
+      <li><span class="nes-text is-primary">Created by</span> {{group.created_by.user_name}}</li>
+      <li><span class="nes-text is-primary">Created at</span> {{group.created_at}}</li>
+    </ul>
+  </div>
+</section>
+<section class="section">
+  <div class="nes-container with-title">
+    <p class="title">Users</p>
+    <div style="display:flex;align-items:flex-start;flex-wrap:wrap">
+      {% for member in group.members %}
+      <div style="flex-grow:0;padding:0.5em;display:flex;align-items:center;align-content:flex-start;"
+        class="nes-container is-rounded">
+        {% if "admin" in scopes %}
+        <a href="{{base_url}}/users/{{member.user_id}}">{{member.user_name}}</a>
+        <section class="buttonholder" style="flex:1;margin-left:1em;margin-right:0;flex-grow:0;">
+          <button type="button" class="nes-btn is-error"
+            onclick="document.getElementById('remove-user-dialog-{{group.group_id}}-{{member.user_id}}').showModal();">
+            X
+          </button>
+          <dialog class="nes-dialog is-rounded" id="remove-user-dialog-{{group.group_id}}-{{member.user_id}}">
+            <form method="dialog">
+              <h3 class="title">Are you sure?</h3>
+              <p>Proceeding will remove user {{member.user_name}} from group {{group.group_name}}.</p>
+              <menu class="dialog-menu" style="padding-left:0">
+                <button class="nes-btn">Cancel</button>
+                <button class="nes-btn is-error"
+                  onclick="location.href='{{base_url}}/groups/{{ group.group_id }}/remove/{{member.user_id}}'">Remove</button>
+              </menu>
+            </form>
+          </dialog>
+        </section>
+        {% else %}
+        {{ member.user_name }}
+        {% endif %}
+      </div>
+      {% endfor %}
+      {% if "admin" in scopes %}
+      <section class="buttonholder" style="align-self:end;margin-left:auto;margin-right:0">
+        <button type="button" class="nes-btn is-success"
+          onclick="document.getElementById('add-user-dialog-{{group.group_id}}').showModal();">
+          +
+        </button>
+        <dialog class="nes-dialog is-rounded" id="add-user-dialog-{{group.group_id}}">
+          <form method="POST" action="{{base_url}}/groups/{{ group.group_id }}/add">
+            <h3 class="title">Add user</h3>
+            <p>Add a user (by ID) to the group {{group.group_name}}.</p>
+            <div class="nes-field is-inline">
+              <label for="add-user-field">User ID:</label>
+              <input type="text" id="add-user-field" name="user_id" class="nes-input is-success" placeholder="..."
+                style="margin-bottom:1em" required />
+            </div>
+            <button type="button" class="nes-btn"
+              onclick="document.getElementById('add-user-dialog-{{group.group_id}}').close();">Cancel</button>
+            <input class="nes-btn is-error" type="submit" value="Confirm" />
+          </form>
+        </dialog>
+      </section>
+      {%endif%}
+    </div>
+  </div>
+</section>
+{% endif %}
+{% endblock %}

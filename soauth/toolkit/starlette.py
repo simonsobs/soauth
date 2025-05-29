@@ -168,7 +168,7 @@ class SOAuthCookieBackend(AuthenticationBackend):
             user_id=user_data.user_id,
             full_name=user_data.full_name,
             email=user_data.email,
-            groups=user_data.groups,
+            groups=user_data.group_names,
         )
 
         log = log.bind(**user.model_dump())

@@ -13,4 +13,6 @@ class UserData(BaseModel):
     full_name: str | None
     email: str | None
     grants: set[str] | None
-    groups: set[str] | None
+    group_names: list[str] | None
+    # UUIDs are not JSON serializable, so we use strings
+    group_ids: list[str] | None

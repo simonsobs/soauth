@@ -94,5 +94,8 @@ class User(SQLModel, table=True):
             full_name=self.full_name,
             email=self.email,
             grants=set(self.grants.split(" ")),
-            groups=set(x.group_name for x in self.groups) if include_groups else None,
+            group_names=[x.group_name for x in self.groups] if include_groups else None,
+            group_ids=[str(x.group_id) for x in self.groups]
+            if include_groups
+            else None,
         )

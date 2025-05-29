@@ -75,3 +75,18 @@ def remove_user(
     )
 
     return RedirectResponse(url=request.headers["Referer"], status_code=303)
+
+
+@router.get("/{group_id}")
+@templateify(template_name="group_detail.html", log_name="app.group.group_detail")
+def group_detail(
+    group_id: UUID,
+    request: Request,
+    log: LoggerDependency,
+    templates: TemplateDependency,
+):
+    response = handle_request(
+        url=f"{request.app.group_detail_url}/{group_id}", request=request
+    )
+    print(response.json())
+    return {"group": response.json()}

@@ -32,9 +32,12 @@ def setup_templates(settings: Settings):
     def user_and_scope(request: Request):
         return dict(user=request.user, scopes=request.auth.scopes)
 
+    def extra_functions(request: Request):
+        return dict(zip=zip, len=len)
+
     templates = Jinja2Templates(
         directory=__file__.replace("dependencies.py", "templates"),
-        context_processors=[internal_urls, user_and_scope],
+        context_processors=[internal_urls, user_and_scope, extra_functions],
     )
 
     @lru_cache

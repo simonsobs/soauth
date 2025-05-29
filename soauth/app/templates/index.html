@@ -1,49 +1,46 @@
 {% extends "core.html" %}
 {% block content %}
 {% if user.is_authenticated %}
-<div class="nes-container with-title">
-  <p class="title">Data</p>
-  <section>
-    <div class="nes-container with-title">
-      <p class="title">User Information</p>
-      <ul class="nes-list is-disc">
-        <li><span class="nes-text is-primary">Username</span> {{user.display_name}}</li>
-        <li><span class="nes-text is-primary">Full name</span> {{user.full_name}}</li>
-        <li><span class="nes-text is-primary">Email</span> {{user.email}}</li>
-        <li><span class="nes-text is-primary">Grants</span>
-          {% if scopes %}
-          <ul class="nes-list is-circle">
-            {% for grant in scopes %}
-            <li>{{ grant }}</li>
-            {% endfor %}
-          </ul>
-          {% endif %}
-        </li>
-        <li><span class="nes-text is-primary">Groups</span>
-          {% if user.groups %}
-          <ul class="nes-list is-circle">
-            {% for group in user.groups %}
-            <li>{{ group }}</li>
-            {% endfor %}
-          </ul>
-          {% endif %}
-        </li>
-      </ul>
-    </div>
-  </section>
-  <section>
-    <div class="nes-container with-title">
-      <p class="title">Proprietary Data access</p>
-      {% if "simonsobs" in scopes %}
-      <p>You are part of the Simons Observatory GitHub organization, and have proprietary data access.</p>
-      <div style="display:flex;justify-content:center">
-        <img style="margin:1em" width="25%" src="{{base_url}}/apple-touch-icon.png" />
-      </div>
-      {% else %}
-      <p>Unfortunately, you do not have access to proprietary data.</p>
+<section>
+  <div class="nes-container with-title">
+    <p class="title">User Information</p>
+    <ul class="nes-list is-disc">
+      <li><span class="nes-text is-primary">Username</span> {{user.display_name}}</li>
+      <li><span class="nes-text is-primary">Full name</span> {{user.full_name}}</li>
+      <li><span class="nes-text is-primary">Email</span> {{user.email}}</li>
+      {% if scopes %}
+      <li><span class="nes-text is-primary">Grants</span>
+        <ul class="nes-list is-circle">
+          {% for grant in scopes %}
+          <li>{{ grant }}</li>
+          {% endfor %}
+        </ul>
+      </li>
       {% endif %}
+      {% if user.groups %}
+      <li><span class="nes-text is-primary">Groups</span>
+        <ul class="nes-list is-circle">
+          {% for group in user.groups %}
+          <li>{{ group }}</li>
+          {% endfor %}
+        </ul>
+      </li>
+      {% endif %}
+    </ul>
+  </div>
+</section>
+<section>
+  <div class="nes-container with-title">
+    <p class="title">Proprietary Data access</p>
+    {% if "simonsobs" in scopes %}
+    <p>You are part of the Simons Observatory GitHub organization, and have proprietary data access.</p>
+    <div style="display:flex;justify-content:center">
+      <img style="margin:1em" width="25%" src="{{base_url}}/apple-touch-icon.png" />
     </div>
-  </section>
-</div>
+    {% else %}
+    <p>Unfortunately, you do not have access to proprietary data.</p>
+    {% endif %}
+  </div>
+</section>
 {% endif %}
 {% endblock %}

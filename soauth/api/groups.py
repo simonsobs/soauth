@@ -90,6 +90,15 @@ async def get_group_by_id(
     return group.to_core()
 
 
+class GroupCreationRequest(BaseModel):
+    """
+    Request model for creating a new group.
+    """
+
+    group_name: str
+    member_ids: list[UUID] = []
+
+
 @group_app.put(
     "",
     summary="Create a new group",
@@ -105,8 +114,7 @@ async def get_group_by_id(
     },
 )
 async def create_group(
-    group_name: str,
-    member_ids: list[UUID],
+    content: GroupCreationRequest,
     user: AuthenticatedUserDependency,
     conn: DatabaseDependency,
     log: LoggerDependency,
@@ -114,6 +122,9 @@ async def create_group(
     """
     Create a new group.
     """
+    group_name = content.group_name.strip().lower().replace(" ", "_")
+    member_ids = content.member_ids
+
     log = log.bind(
         group_name=group_name, user_id=user.user_id, number_of_members=len(member_ids)
     )

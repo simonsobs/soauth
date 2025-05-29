@@ -20,6 +20,8 @@ def check_scope(request):
 def handle_request(url: str, request: Request, method: str = "get", **kwargs):
     response = httpx.request(method=method, url=url, cookies=request.cookies, **kwargs)
 
+    print(response.content)
+
     try:
         response.raise_for_status()
     except httpx.HTTPStatusError:
@@ -33,6 +35,32 @@ def handle_request(url: str, request: Request, method: str = "get", **kwargs):
 def groups(request: Request, log: LoggerDependency, templates: TemplateDependency):
     response = handle_request(url=request.app.group_list_url, request=request)
     return {"groups": response.json()}
+
+
+@router.post("/create")
+@requires("admin")
+def create_group(
+    group_name: Annotated[str, Form()],
+    request: Request,
+    log: LoggerDependency,
+):
+    log = log.bind(user_id=request.user.user_id, group_name=group_name)
+    log.debug("app.admin.group_create")
+
+    response = handle_request(
+        url=request.app.group_detail_url,
+        request=request,
+        method="PUT",
+        json={
+            "group_name": group_name,
+            "member_ids": [str(request.user.user_id)],
+        },
+    )
+
+    return RedirectResponse(
+        url=f"{request.app.base_url}/groups/{response.json()['group_id']}",
+        status_code=303,
+    )
 
 
 @router.post("/{group_id}/add")

@@ -15,3 +15,26 @@
 {% endfor %}
 {% endif %}
 {%endblock%}
+{% block extrafooter %}
+{% if "admin" in scopes %}
+<section class="buttonholder" style="margin:1em">
+  <button type="button" class="nes-btn is-success"
+    onclick="document.getElementById('create-group-dialog').showModal();">
+    +
+  </button>
+  <dialog class="nes-dialog is-rounded" id="create-group-dialog">
+    <form method="POST" action="{{base_url}}/groups/create">
+      <h3 class="title">Create a new Group</h3>
+      <div class="nes-field is-inline">
+        <label for="group-name-field">Group name</label>
+        <input type="text" id="group-name-field" name="group_name" class="nes-input is-success" placeholder="..."
+          style="margin-bottom:1em" required />
+      </div>
+      <button type="button" class="nes-btn"
+        onclick="document.getElementById('create-group-dialog').close();">Cancel</button>
+      <input class="nes-btn is-error" type="submit" value="Confirm" />
+    </form>
+  </dialog>
+</section>
+{% endif %}
+{% endblock %}

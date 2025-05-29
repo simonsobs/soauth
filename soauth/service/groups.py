@@ -94,6 +94,7 @@ async def create(
 async def get_group_list(
     conn: AsyncSession,
     log: FilteringBoundLogger,
+    for_user: UUID | None = None,
 ) -> list[Group]:
     """
     Get a list of all groups.
@@ -110,8 +111,14 @@ async def get_group_list(
     list[Group]
         A list of all groups in the database.
     """
-    log = log.bind()
-    result = await conn.execute(select(Group))
+    log = log.bind(for_user=for_user)
+    if for_user:
+        result = await conn.execute(
+            select(Group).join(Group.members).where(Group.members.any(user_id=for_user))
+        )
+    else:
+        result = await conn.execute(select(Group))
+
     groups = result.unique().scalars().all()
     await log.adebug("group.listed", number_of_groups=len(groups))
     return groups

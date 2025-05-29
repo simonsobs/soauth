@@ -10,7 +10,6 @@ from pydantic import BaseModel
 from soauth.api.dependencies import DatabaseDependency, LoggerDependency
 from soauth.core.group import GroupData
 from soauth.service import groups as groups_service
-from soauth.service import user as user_service
 from soauth.toolkit.fastapi import AuthenticatedUserDependency
 
 group_app = APIRouter(tags=["Group Management"])
@@ -39,14 +38,12 @@ async def list_groups(
     log = log.bind(user_id=user.user_id)
 
     if "admin" in user.grants:
-        groups = await groups_service.get_group_list(conn=conn, log=log)
-        await log.adebug("group.list_all")
+        for_user = None
     else:
-        # Actually go via the user themselves
-        groups = (
-            await user_service.read_by_id(user_id=user.user_id, conn=conn, log=log)
-        ).groups
-        await log.adebug("group.list_user_groups")
+        for_user = user.user_id
+
+    groups = await groups_service.get_group_list(conn=conn, log=log, for_user=for_user)
+    await log.adebug("group.list_all")
 
     return [g.to_core() for g in groups]
 

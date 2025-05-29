@@ -124,11 +124,17 @@ async def delete(user_name: str, conn: AsyncSession, log: FilteringBoundLogger):
         .scalar_one_or_none()
     )
 
-    log = log.bind(user_id=user.user_id, group_id=group.group_id)
+    log = log.bind(user_id=user.user_id)
+
+    if group is not None:
+        log = log.bind(group_id=group.group_id)
+    else:
+        log = log.bind(group_id=None)
 
     with conn.no_autoflush:
         await conn.delete(user)
-        await conn.delete(group)
+        if group is not None:
+            await conn.delete(group)
 
     await log.ainfo("user.deleted")
 

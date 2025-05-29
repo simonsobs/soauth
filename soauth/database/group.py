@@ -33,7 +33,7 @@ class Group(SQLModel, table=True):
 
     group_name: str = Field(unique=True)
     created_by_user_id: UUID = Field(foreign_key="user.user_id")
-    created_by: "User" = Relationship()
+    created_by: "User" = Relationship(sa_relationship_kwargs=dict(lazy="joined"))
     created_at: datetime = Field(sa_column=Column(DateTime(timezone=True)))
 
     members: list["User"] = Relationship(

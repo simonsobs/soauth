@@ -106,3 +106,24 @@ async def test_create_group(server_settings, session_manager, logger, user):
                 group = await groups_service.read_by_id(
                     group_id=GROUP_ID, conn=conn, log=logger
                 )
+
+
+@pytest.mark.asyncio(loop_scope="session")
+async def test_create_empty_group(server_settings, session_manager, logger, user):
+    async with session_manager.session() as conn:
+        async with conn.begin():
+            group = await groups_service.create(
+                group_name="test_new_group",
+                created_by_user_id=user,
+                member_ids=[],
+                conn=conn,
+                log=logger,
+            )
+
+            group_content = group.to_core()
+            GROUP_ID = group.group_id
+
+    # Delete the group
+    async with session_manager.session() as conn:
+        async with conn.begin():
+            await groups_service.delete_group(group_id=GROUP_ID, conn=conn, log=logger)

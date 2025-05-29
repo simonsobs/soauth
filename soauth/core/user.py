@@ -12,5 +12,5 @@ class UserData(BaseModel):
     user_name: str
     full_name: str | None
     email: str | None
-    grants: set[str]
+    grants: set[str] | None
     groups: set[str] | None

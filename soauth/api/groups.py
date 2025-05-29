@@ -83,7 +83,10 @@ async def get_group_by_id(
         *[member.user_id for member in group.members],
     }
 
-    if ("admin" not in user.grants) or (user.user_id not in allowed_user_ids):
+    if ("admin" in user.grants):
+        allowed_user_ids.add(user.user_id)
+
+    if user.user_id not in allowed_user_ids:
         await log.awarn("group.access_denied")
         raise HTTPException(status_code=404, detail="Access denied to this group")
 

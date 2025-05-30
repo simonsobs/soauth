@@ -11,6 +11,7 @@
         <li><span class="nes-text is-primary">Created by</span> {{group.created_by.user_name}}</li>
         <li><span class="nes-text is-primary">Created at</span> {{group.created_at}}</li>
       </ul>
+      {% if "admin" in scopes %}
       <section class="buttonholder" style="margin-top:auto;margin-left:auto">
         <button type="button" class="nes-btn is-error"
           onclick="document.getElementById('delete-group-dialog').showModal();">
@@ -30,6 +31,7 @@
           </form>
         </dialog>
       </section>
+      {% endif %}
     </div>
   </div>
 </section>
@@ -38,7 +40,7 @@
     <p class="title">Users</p>
     <div style="display:flex;align-items:flex-start;flex-wrap:wrap">
       {% for member in group.members %}
-      <div style="flex-grow:0;padding:0.5em;display:flex;align-items:center;align-content:flex-start;"
+      <div style="flex-grow:0;padding:0.5em;margin-right:0.5em;display:flex;align-items:center;align-content:flex-start;"
         class="nes-container is-rounded">
         {% if "admin" in scopes %}
         <a href="{{base_url}}/users/{{member.user_id}}">{{member.user_name}}</a>

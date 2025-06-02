@@ -90,7 +90,7 @@ You should set the redirect URL to `{SOAUTH_HOSTNAME}/github`.
 
 - `SOAUTH_GITHUB_CLIENT_ID`, the client ID
 - `SOAUTH_GITHUB_CLIENT_SECRET`, the client secret
-- `SOAUTH_REDIRECT_URI`, whatever you told GitHub to redirect to
+- `SOAUTH_GITHUB_REDIRECT_URI`, whatever you told GitHub to redirect to
 - `SOAUTH_GITHUB_ORGANIZATION_CHECKS`, a list of strings for github orgs to
    check against. If users are part of these organizations, they will be given
    grants with the same value as the organization name. For example, setting

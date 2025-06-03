@@ -21,6 +21,14 @@ both, we provide a helper function `global_setup` that provides:
 - Middleware for decoding access tokens and refreshing them.
 - API routes for logouts and redirect handling from the main SOAuth application.
 
+Specifically, it adds two GET routers on your application:
+
+- `/callback` which handles the callback from the main SOAuth server.
+- `/logout` which handles all logout (essentially just removing cookies).
+
+As such, you don't need to implement the callback or logout functionality yourself,
+just sending users to these pre-existing endpoints will work.
+
 The examples below use a number of constants that are explained when we discuss
 registration of your app.
 

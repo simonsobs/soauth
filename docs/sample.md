@@ -44,8 +44,7 @@ add exception handlers (which we won't cover until the end here, see
 [the bottom section](create.md) in the app creation documentation) for
 things like 401/403 authorization errors.
 
-Now, let's add a way for users to login (and get access tokens and refresh
-keys):
+Now, let's add a way for users to login (and get security and state tokens for both access and refresh):
 ```python
 from fastapi import Request
 from fastapi.responses import HTMLResponse

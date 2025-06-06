@@ -36,10 +36,11 @@ application is running at `myapp.org`, the authentication flow works as follows:
 - The user's browser is then redirected back to your application, towards the
   `myapp.org/callback` endpoint, along with yet another code.
 - Your server then handles this request by exchanging this code with the
-  `soauth.org/code` endpoint. The response to this request is two tokens:
-  an `access_token`, and a `refresh_token`. It also includes the `redirect`
-  url which was pulled from your user's browser when they initially were directed
+  `soauth.org/code` endpoint. The response to this request is two sets of tokens:
+  The **security cookies** (`access_token` and `refresh_token`) are set as HttpOnly and
+  **state info cookies** (`valid_access_token` and `valid_refresh_token`) that your frontend JavaScript can read. It also includes the `redirect` url which was pulled from your user's browser when they initially were directed
   to the login page.
+- The state cookies contain no sensitive information—just simple string value "True" to tell your frontend application about the current authentication status.
 - Your server sets the `access_token` and `refresh_token` as cookies, which
   are included in every request to the server.
 
@@ -96,8 +97,27 @@ In practice:
 When this process takes place, the old refresh token is expired on the server-side, meaning
 it can never be used again. This helps protect against stolen credential attacks.
 
+The state cookies are carefully synchronized with their secure counterparts:
+- `valid_access_token` expires at the same time as the `access_token`.
+- `valid_refresh_token` expires at the same time as the `refresh_token`.
+- Both are automatically updated during refresh operations.
+- Both are removed when the user logs out.
+
+Frontend State Awareness
+------------------------
+
+While the server side handles all authentication decisions using the secure HttpOnly cookies, The **JavaScript-readable state cookies** help your frontend application understand the current authentication state without making API calls.
+
+These state cookies work alongside the secure authentication system:
+
+**JavaScript-readable cookies:**  
+- `valid_access_token`: If exists indicates whether the current access token is valid (value set to "True")
+- `valid_refresh_token`: If exists indicates whether the user can obtain a new access token (value set to "True")
+
+
 **Next**: [setup an app](create.md)
 
 [^1]: Note the use here of `referrerpolicy="no-referrer-when-downgrade"`; if this is not used
       the full path of your client is not sent to the authentication server, and the eventual
       redirect won't work.
+

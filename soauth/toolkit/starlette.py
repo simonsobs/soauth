@@ -121,6 +121,7 @@ class SOAuthCookieBackend(AuthenticationBackend):
             access_token_name=self.access_token_name,
             refresh_token_name=self.refresh_token_name,
         )
+    
 
         # Two possibilities: either we have the access token as a cookie, or we
         # have it as a 'Bearer' token in the headers.
@@ -317,6 +318,21 @@ def key_expired_handler(request: Request, exc: KeyExpiredError) -> RedirectRespo
         expires=content.refresh_token_expires,
     )
 
+    response.set_cookie(
+        key="valid_refresh_token",
+        value="True",
+        expires=content.refresh_token_expires,
+        httponly=False,
+    )
+
+    response.set_cookie(
+        key="validate_access_token",
+        value="True",
+        expires=content.access_token_expires,
+        httponly=False, 
+    )
+
+
     log.info("tk.starlette.expired.refreshed")
 
     return response
@@ -347,7 +363,8 @@ def key_decode_handler(request: Request, exc: KeyDecodeError) -> RedirectRespons
 
     response.delete_cookie(access_token_name)
     response.delete_cookie(refresh_token_name)
-
+    response.delete_cookie("valid_refresh_token")
+    response.delete_cookie("validate_access_token")
     log.info("tk.starlette.decode.redirecting")
 
     return response
@@ -429,6 +446,20 @@ async def handle_redirect(code: str, state: str, request: Request) -> RedirectRe
         httponly=True,
     )
 
+    response.set_cookie(
+        key="valid_refresh_token", 
+        value="True",
+        expires=content.refresh_token_expires,
+        httponly=False,
+    )
+
+    response.set_cookie(
+        key="validate_access_token",
+        value="True",
+        expires=content.access_token_expires,
+        httponly=False,
+    )
+
     return response
 
 
@@ -456,5 +487,7 @@ async def logout(request: Request) -> RedirectResponse:
 
     response.delete_cookie(refresh_token_name)
     response.delete_cookie(access_token_name)
+    response.delete_cookie("valid_refresh_token")
+    response.delete_cookie("validate_access_token")
 
     return response

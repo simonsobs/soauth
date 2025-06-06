@@ -16,4 +16,5 @@ class GroupData(BaseModel):
     group_name: str
     created_by: UserData
     created_at: datetime
+    grants: set[str] | None
     members: list[UserData]

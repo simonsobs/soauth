@@ -319,7 +319,7 @@ def key_expired_handler(request: Request, exc: KeyExpiredError) -> RedirectRespo
     )
 
     response.set_cookie(
-        key="LoggedIn",
+        key="valid_refresh_token",
         value="True",
         expires=content.refresh_token_expires,
         httponly=False,
@@ -363,7 +363,7 @@ def key_decode_handler(request: Request, exc: KeyDecodeError) -> RedirectRespons
 
     response.delete_cookie(access_token_name)
     response.delete_cookie(refresh_token_name)
-    response.delete_cookie("LoggedIn")
+    response.delete_cookie("valid_refresh_token")
     response.delete_cookie("validate_access_token")
     log.info("tk.starlette.decode.redirecting")
 
@@ -447,7 +447,7 @@ async def handle_redirect(code: str, state: str, request: Request) -> RedirectRe
     )
 
     response.set_cookie(
-        key="LoggedIn", 
+        key="valid_refresh_token", 
         value="True",
         expires=content.refresh_token_expires,
         httponly=False,
@@ -487,7 +487,7 @@ async def logout(request: Request) -> RedirectResponse:
 
     response.delete_cookie(refresh_token_name)
     response.delete_cookie(access_token_name)
-    response.delete_cookie("LoggedIn")
+    response.delete_cookie("valid_refresh_token")
     response.delete_cookie("validate_access_token")
 
     return response

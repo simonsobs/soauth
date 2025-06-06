@@ -70,3 +70,5 @@ period where they will still have access to protected resources. This latency
 is set by the expiry time of an access token (by default, 8 hours). This is
 true of any grant or group membership within soauth, and not just those
 moderated by membership of GitHub organizations.
+
+**Next**: [API keys](api_keys.md)

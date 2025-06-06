@@ -41,6 +41,38 @@ class Group(SQLModel, table=True):
         link_model=GroupMembership,
         sa_relationship_kwargs=dict(lazy="joined"),
     )
+    grants: str = Field(default="")
+
+
+    def has_grant(self, grant: str) -> bool:
+        """
+        Check if this group posseses the grant `grant`.
+        """
+        if self.grants is None:
+            return False
+        return grant in self.grants.split(" ")
+
+    def add_grant(self, grant: str):
+        """
+        Add a grant to the list this group possesses.
+        """
+        if self.has_grant(grant):
+            return
+
+        if self.grants is None:
+            self.grants = f"{grant}"
+            return
+
+        self.grants += f" {grant}"
+
+    def remove_grant(self, grant: str):
+        """
+        Remove a grant from the list this user possesses.
+        """
+        if not self.has_grant(grant):
+            return
+
+        self.grants = " ".join([x for x in self.grants.split(" ") if x != grant])
 
     def to_core(self) -> GroupData:
         """
@@ -51,5 +83,6 @@ class Group(SQLModel, table=True):
             group_name=self.group_name,
             created_by=self.created_by.to_core(include_groups=False),
             created_at=self.created_at,
+            grants=set(self.grants.split(" ")),
             members=[member.to_core(include_groups=False) for member in self.members],
         )

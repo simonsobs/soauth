@@ -93,13 +93,33 @@ class User(SQLModel, table=True):
 
         self.grants = " ".join([x for x in self.grants.split(" ") if x != grant])
 
+    def get_effective_grants(self) -> set[str]:
+        """Get all grants from user + all groups they're members of."""
+        all_grants = set()
+        
+        # Add user's individual grants
+        if self.grants:
+            all_grants.update(self.grants.split())
+        
+        # Add grants from all groups
+        for group in self.groups:
+            if group.grants:
+                all_grants.update(group.grants.split())
+        
+        return set(all_grants)
+
+    def has_effective_grant(self, grant: str) -> bool:
+        """Check if user has grant either individually or through groups."""
+        return grant in self.get_effective_grants()
+
     def to_core(self, include_groups=True) -> UserData:
+        effective_grants = self.get_effective_grants()
         return UserData(
             user_id=self.user_id,
             user_name=self.user_name,
             full_name=self.full_name,
             email=self.email,
-            grants=set(self.grants.split(" ")),
+            grants=effective_grants,
             group_names=[x.group_name for x in self.groups] if include_groups else None,
             group_ids=[str(x.group_id) for x in self.groups]
             if include_groups

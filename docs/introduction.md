@@ -40,7 +40,7 @@ application is running at `myapp.org`, the authentication flow works as follows:
   The **security cookies** (`access_token` and `refresh_token`) are set as HttpOnly and
   **state info cookies** (`valid_access_token` and `valid_refresh_token`) that your frontend JavaScript can read. It also includes the `redirect` url which was pulled from your user's browser when they initially were directed
   to the login page.
-- The state cookies contain no sensitive information—just simple boolean state "True" to tell your frontend application about the current authentication status.
+- The state cookies contain no sensitive information—just simple string value "True" to tell your frontend application about the current authentication status.
 - Your server sets the `access_token` and `refresh_token` as cookies, which
   are included in every request to the server.
 

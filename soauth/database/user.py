@@ -53,6 +53,8 @@ class User(SQLModel, table=True):
         """
         Check if this user posseses the grant `grant`.
         """
+        grant = grant.strip().lower().replace(" ", "_")
+
         if self.grants is None:
             return False
         return grant in self.grants.split(" ")
@@ -65,6 +67,8 @@ class User(SQLModel, table=True):
         Note that all changes to the local copy of this data (as performed by
         this function) must be committed to the database separately.
         """
+        grant = grant.strip().lower().replace(" ", "_")
+
         if self.has_grant(grant):
             return
 
@@ -82,6 +86,8 @@ class User(SQLModel, table=True):
         Note that all changes to the local copy of this data (as performed by
         this function) must be committed to the database separately.
         """
+        grant = grant.strip().lower().replace(" ", "_")
+
         if not self.has_grant(grant):
             return
 

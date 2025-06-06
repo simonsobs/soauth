@@ -5,6 +5,7 @@ Service layer for users
 from datetime import datetime, timezone
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from structlog.typing import FilteringBoundLogger
 
@@ -15,6 +16,10 @@ from soauth.database.user import User
 
 
 class UserNotFound(Exception):
+    pass
+
+
+class UserExistsError(Exception):
     pass
 
 
@@ -30,11 +35,19 @@ async def create(
     Creates a user, if they do not exist.
     """
 
+    user_name = user_name.strip().lower().replace(" ", "_")
+
     log = log.bind(user_name=user_name, email=email, grants=grants)
 
     current_time = datetime.now(timezone.utc)
 
-    user = User(user_name=user_name, email=email, grants=grants, full_name=full_name)
+    try:
+        user = User(
+            user_name=user_name, email=email, grants=grants, full_name=full_name
+        )
+    except IntegrityError:
+        await log.ainfo("user.create.exists")
+        raise UserExistsError(f"User with user name {user_name} already exists")
 
     group = Group(
         group_name=user_name,
@@ -64,6 +77,8 @@ async def read_by_id(user_id: UUID, conn: AsyncSession) -> User:
 
 
 async def read_by_name(user_name: str, conn: AsyncSession) -> User:
+    user_name = user_name.strip().lower().replace(" ", "_")
+
     query = select(User).filter(User.user_name == user_name)
     res = (await conn.execute(query)).unique().scalar_one_or_none()
 
@@ -85,6 +100,8 @@ async def get_user_list(conn: AsyncSession) -> list[UserData]:
 async def add_grant(
     user_name: str, grant: str, conn: AsyncSession, log: FilteringBoundLogger
 ) -> User:
+    user_name = user_name.strip().lower().replace(" ", "_")
+
     log = log.bind(user_name=user_name, grant=grant)
     user = await read_by_name(user_name=user_name, conn=conn)
     log = log.bind(user_id=user.user_id)
@@ -100,6 +117,8 @@ async def add_grant(
 async def remove_grant(
     user_name: str, grant: str, conn: AsyncSession, log: FilteringBoundLogger
 ) -> User:
+    user_name = user_name.strip().lower().replace(" ", "_")
+
     log = log.bind(user_name=user_name, grant=grant)
     user = await read_by_name(user_name=user_name, conn=conn)
     log = log.bind(user_id=user.user_id)
@@ -116,6 +135,7 @@ async def delete(user_name: str, conn: AsyncSession, log: FilteringBoundLogger):
     """
     Deletes both the 'User' and 'Group' model.
     """
+    user_name = user_name.strip().lower().replace(" ", "_")
 
     user = await read_by_name(user_name=user_name, conn=conn)
     group = (

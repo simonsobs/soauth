@@ -18,6 +18,7 @@ from structlog.typing import FilteringBoundLogger
 from soauth.config.settings import Settings
 from soauth.database.login import LoginRequest
 from soauth.database.user import User
+from soauth.service.groups import add_member_by_name, remove_member_by_name
 from soauth.service.provider import AuthProvider, BaseLoginError
 from soauth.service.user import UserNotFound, read_by_name
 from soauth.service.user import create as create_user
@@ -54,11 +55,16 @@ async def github_api_call(
 
 
 async def apply_organization_grants(
-    access_token: str, user: User, settings: Settings, log: FilteringBoundLogger
+    access_token: str,
+    user: User,
+    settings: Settings,
+    conn: AsyncSession,
+    log: FilteringBoundLogger,
 ) -> User:
     """
     Checks whether the user has the correct organization grants using the GitHub
-    API to query for each in turn.
+    API to query for each in turn. Also adds or removes the user from the group
+    with the same name as the organization.
     """
 
     # Add grants that have the same name as the GitHub organizations that
@@ -74,8 +80,20 @@ async def apply_organization_grants(
             # If we get a 204, then the user is a member of the organization.
             await log.ainfo("github.organization_check.success")
             user.add_grant(organization)
+            await add_member_by_name(
+                group_name=organization,
+                user_id=user.user_id,
+                conn=conn,
+                log=log,
+            )
         except GitHubLoginError:
             user.remove_grant(organization)
+            await remove_member_by_name(
+                group_name=organization,
+                user_id=user.user_id,
+                conn=conn,
+                log=log,
+            )
             await log.ainfo("github.organization_check.failure")
 
     return user
@@ -306,7 +324,7 @@ class GithubAuthProvider(AuthProvider):
         log.bind(gh_last_logged_in=gh_last_logged_in)
 
         user = await apply_organization_grants(
-            access_token=access_token, user=user, settings=settings, log=log
+            access_token=access_token, user=user, settings=settings, conn=conn, log=log
         )
 
         conn.add(user)

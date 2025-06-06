@@ -50,6 +50,8 @@ async def create(
         If a group with this name already exists.
     """
 
+    group_name = group_name.strip().lower().replace(" ", "_")
+
     log = log.bind(
         group_name=group_name,
         user_id=created_by_user_id,
@@ -178,6 +180,7 @@ async def read_by_name(
     GroupNotFound
         If the group does not exist.
     """
+    group_name = group_name.strip().lower().replace(" ", "_")
     log = log.bind(group_name=group_name)
     result = await conn.execute(select(Group).where(Group.group_name == group_name))
     group = result.unique().scalar_one_or_none()
@@ -186,6 +189,39 @@ async def read_by_name(
         raise GroupNotFound(f"Group with name {group_name} not found")
     await log.adebug("group.found")
     return group
+
+
+async def add_member_by_name(
+    group_name: str,
+    user_id: UUID,
+    conn: AsyncSession,
+    log: FilteringBoundLogger,
+) -> Group:
+    """
+    Add a user to a group by group name.
+
+    Parameters
+    ----------
+    group_name: str
+        The name of the group.
+    user_id: UUID
+        The ID of the user to add.
+    conn: AsyncSession
+        The database session.
+    log: FilteringBoundLogger
+        Logger instance.
+
+    Raises
+    ------
+    GroupNotFound
+        If the group does not exist.
+    user_service.UserNotFound
+        If the user does not exist.
+    """
+    group_name = group_name.strip().lower().replace(" ", "_")
+    log = log.bind(group_name=group_name, user_id=user_id)
+    group = await read_by_name(group_name, conn, log)
+    return await add_member(group.group_id, user_id, conn, log)
 
 
 async def add_member(
@@ -225,6 +261,39 @@ async def add_member(
     else:
         await log.ainfo("group.user_already_member")
     return group
+
+
+async def remove_member_by_name(
+    group_name: str,
+    user_id: UUID,
+    conn: AsyncSession,
+    log: FilteringBoundLogger,
+) -> Group:
+    """
+    Remove a user from a group by group name.
+
+    Parameters
+    ----------
+    group_name: str
+        The name of the group.
+    user_id: UUID
+        The ID of the user to remove.
+    conn: AsyncSession
+        The database session.
+    log: FilteringBoundLogger
+        Logger instance.
+
+    Raises
+    ------
+    GroupNotFound
+        If the group does not exist.
+    user_service.UserNotFound
+        If the user does not exist.
+    """
+    group_name = group_name.strip().lower().replace(" ", "_")
+    log = log.bind(group_name=group_name, user_id=user_id)
+    group = await read_by_name(group_name, conn, log)
+    return await remove_member(group.group_id, user_id, conn, log)
 
 
 async def remove_member(

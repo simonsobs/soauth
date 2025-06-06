@@ -162,4 +162,4 @@ def redirect_to_login(request: Request, exc):
 app.add_exception_handler(403, redirect_to_login)
 ```
 
-**Next**: [API keys](api_keys.md)
+**Next**: [Organization Checks](organizations.md)

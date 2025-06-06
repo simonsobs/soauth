@@ -6,11 +6,13 @@ from importlib.metadata import version
 
 from fastapi import FastAPI
 
+from soauth.service.user import UserExistsError
+from soauth.service.user import create as create_user
 from soauth.toolkit.fastapi import add_exception_handlers
 
 from .admin import admin_routes
 from .app_manager import app_management_routes
-from .dependencies import SETTINGS
+from .dependencies import DATABASE_MANAGER, SETTINGS, logger
 from .docs import create_protected_docs
 from .groups import group_app
 from .keys import key_management_routes
@@ -47,6 +49,22 @@ async def lifespan(app: FastAPI):
 
     if isinstance(app.public_key, str):
         app.public_key = app.public_key.encode("utf-8")
+
+    # Ensure that the groups for the app are created
+    for organization in settings.github_organization_checks:
+        try:
+            async with DATABASE_MANAGER.session() as session:
+                async with session.begin():
+                    await create_user(
+                        user_name=organization,
+                        email="",
+                        full_name=organization,
+                        grants=organization,
+                        conn=session,
+                        log=logger(),
+                    )
+        except UserExistsError:
+            pass
 
     yield
 

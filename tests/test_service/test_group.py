@@ -48,7 +48,6 @@ async def test_create_group(server_settings, session_manager, logger, user):
             assert group.members[0].user_id == user
             assert group.grants == "test_grant"
 
-
     # Read by name
     async with session_manager.session() as conn:
         async with conn.begin():
@@ -61,7 +60,6 @@ async def test_create_group(server_settings, session_manager, logger, user):
             assert len(group.members) == 1
             assert group.members[0].user_id == user
             assert group.grants == "test_grant"
-
 
     # Create a second user and add them to the group, test they live there
     # remove them, and then delete the user.
@@ -121,7 +119,6 @@ async def test_create_group(server_settings, session_manager, logger, user):
             )
             assert not group.has_grant("test_grant")
             assert group.has_grant("new_grant")
-            
 
     # Delete the group
     async with session_manager.session() as conn:

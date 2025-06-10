@@ -121,7 +121,6 @@ class SOAuthCookieBackend(AuthenticationBackend):
             access_token_name=self.access_token_name,
             refresh_token_name=self.refresh_token_name,
         )
-    
 
         # Two possibilities: either we have the access token as a cookie, or we
         # have it as a 'Bearer' token in the headers.
@@ -329,9 +328,8 @@ def key_expired_handler(request: Request, exc: KeyExpiredError) -> RedirectRespo
         key="validate_access_token",
         value="True",
         expires=content.access_token_expires,
-        httponly=False, 
+        httponly=False,
     )
-
 
     log.info("tk.starlette.expired.refreshed")
 
@@ -447,7 +445,7 @@ async def handle_redirect(code: str, state: str, request: Request) -> RedirectRe
     )
 
     response.set_cookie(
-        key="valid_refresh_token", 
+        key="valid_refresh_token",
         value="True",
         expires=content.refresh_token_expires,
         httponly=False,

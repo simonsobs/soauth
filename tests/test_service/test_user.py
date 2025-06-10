@@ -65,7 +65,9 @@ async def test_create_user(server_settings, session_manager, logger):
 
 
 @pytest.mark.asyncio(loop_scope="session")
-async def test_user_effective_grants_with_group(server_settings, session_manager, logger):
+async def test_user_effective_grants_with_group(
+    server_settings, session_manager, logger
+):
     async with session_manager.session() as conn:
         async with conn.begin():
             # Create a new user

@@ -48,6 +48,8 @@ class Group(SQLModel, table=True):
         """
         Check if this group posseses the grant `grant`.
         """
+        grant = grant.strip().lower().replace(" ", "_")
+
         if self.grants is None:
             return False
         return grant in self.grants.split(" ")
@@ -56,6 +58,8 @@ class Group(SQLModel, table=True):
         """
         Add a grant to the list this group possesses.
         """
+        grant = grant.strip().lower().replace(" ", "_")
+        
         if self.has_grant(grant):
             return
 
@@ -69,6 +73,7 @@ class Group(SQLModel, table=True):
         """
         Remove a grant from the list this user possesses.
         """
+        grant = grant.strip().lower().replace(" ", "_")
         if not self.has_grant(grant):
             return
 

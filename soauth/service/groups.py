@@ -45,6 +45,7 @@ async def create(
     members: list[UUID]
         The list of users who should initially be in the group.
     grants: str
+        A space separated string of grants to assign to the group.
         
 
     Raises

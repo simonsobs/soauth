@@ -12,37 +12,16 @@
         <li><span class="nes-text is-primary">Created at</span> {{group.created_at}}</li>
         {% if group.grants and group.grants | length > 0 %}
         <li><span class="nes-text is-primary">Grants</span>
-        <ul class="nes-list is-circle">
-          {% for grant in group.grants %}
-          {% if grant %}
-          <li>{{ grant }}</li>
+          <ul class="nes-list is-circle">
+            {% for grant in group.grants %}
+            {% if grant %}
+            <li>{{ grant }}</li>
+            {% endif %}
+            {% endfor %}
+          </ul>
           {% endif %}
-          {% endfor %}
-        </ul>
-        {% endif %}
-      </li>
+        </li>
       </ul>
-      {% if "admin" in scopes %}
-      <section class="buttonholder" style="margin-top:auto;margin-left:auto">
-        <button type="button" class="nes-btn is-error"
-          onclick="document.getElementById('delete-group-dialog').showModal();">
-          Delete Group
-        </button>
-        <dialog class="nes-dialog is-rounded" id="delete-group-dialog">
-          <form method="dialog">
-            <h3 class="title">Are you sure?</h3>
-            <p>Proceeding will <span class="nes-text is-primary">(in an unrecoverable way)</span>
-              delete the group <span class="nes-text is-error">{{group.group_name}}
-                ({{group.group_id}})</span>.</p>
-            <menu class="dialog-menu" style="padding-left:0">
-              <button class="nes-btn">Cancel</button>
-              <button class="nes-btn is-error"
-                onclick="location.href='{{base_url}}/groups/{{group.group_id}}/delete'">Delete</button>
-            </menu>
-          </form>
-        </dialog>
-      </section>
-      {% endif %}
     </div>
   </div>
 </section>
@@ -51,7 +30,8 @@
     <p class="title">Users</p>
     <div style="display:flex;align-items:flex-start;flex-wrap:wrap">
       {% for member in group.members %}
-      <div style="flex-grow:0;padding:0.5em;margin-right:0.5em;display:flex;align-items:center;align-content:flex-start;"
+      <div
+        style="flex-grow:0;padding:0.5em;margin-right:0.5em;display:flex;align-items:center;align-content:flex-start;"
         class="nes-container is-rounded">
         {% if "admin" in scopes %}
         <a href="{{base_url}}/users/{{member.user_id}}">{{member.user_name}}</a>
@@ -102,5 +82,87 @@
     </div>
   </div>
 </section>
+{% if "admin" in scopes %}
+<section class="section">
+  <div class="nes-container with-title">
+    <p class="title">Group Management</p>
+    <div style="display: flex">
+      <section class="buttonholder">
+        <button type="button" class="nes-btn is-error"
+          onclick="document.getElementById('delete-user-dialog').showModal();">
+          Delete Group
+        </button>
+        <dialog class="nes-dialog is-rounded" id="delete-user-dialog">
+          <form method="dialog">
+            <h3 class="title">Are you sure?</h3>
+            <p>Proceeding will <span class="nes-text is-primary">(in an unrecoverable way)</span> delete the group <span
+                class="nes-text is-error">{{group.group_name}}</span>.</p>
+            <menu class="dialog-menu" style="padding-left:0">
+              <button class="nes-btn">Cancel</button>
+              <button class="nes-btn is-error"
+                onclick="location.href='{{base_url}}/groups/{{group.group_id}}/delete'">Confirm</button>
+            </menu>
+          </form>
+        </dialog>
+      </section>
+      <section class="buttonholder">
+        <button type="button" class="nes-btn is-success"
+          onclick="document.getElementById('add-grant-dialog').showModal();">
+          Add Grant
+        </button>
+        <dialog class="nes-dialog is-rounded" id="add-grant-dialog">
+          <form method="POST" action="{{base_url}}/groups/{{group.group_id}}/grant_add">
+            <h3 class="title">Add Grant</h3>
+            <p>Add any grant you wish to add to <span class="nes-text is-error">{{group.group_name}}</span>. <span
+                class="nes-text is-warning">No whitespace is allowed in grant
+                names</span>. Users in this group will have to refresh their
+              access tokens (either by logging out and back in, manually
+              requesting a refresh through their application, or waiting for
+              the natural refresh cycle) for changes to take effect.</p>
+            <div class="nes-field is-inline">
+              <label for="add-grant-field">Grant:</label>
+              <input type="text" id="add-grant-field" name="grant" class="nes-input is-success" placeholder="..."
+                style="margin-bottom:1em" required />
+            </div>
+            <button type="button" class="nes-btn"
+              onclick="document.getElementById('add-grant-dialog').close();">Cancel</button>
+            <input class="nes-btn is-error" type="submit" value="Confirm" />
+          </form>
+        </dialog>
+      </section>
+      <section class="buttonholder">
+        <button type="button" class="nes-btn is-warning"
+          onclick="document.getElementById('remove-grant-dialog').showModal();">
+          Remove Grant
+        </button>
+        <dialog class="nes-dialog is-rounded" id="remove-grant-dialog">
+          <form method="POST" action="{{base_url}}/groups/{{group.group_id}}/grant_remove">
+            <h3 class="title">Remove Grant</h3>
+            <p>Select the grant you wish to remove from <span class="nes-text is-error">{{group.group_name}}</span>.
+              Users in this group will have to refresh their access tokens
+              (either by logging out and back in, manually requesting a refresh
+              through their application, or waiting for the natural refresh
+              cycle) for changes to take effect.
+            </p>
+            <div style="padding:2em">
+              {% for grant in group.grants %}
+              {% if grant %}
+              <label style="display:block">
+                <input type="radio" class="nes-radio" name="grant" value="{{grant}}" required />
+                <span>{{grant}}</span>
+              </label>
+              {% endif %}
+              {% endfor %}
+            </div>
+            <button type="button" class="nes-btn"
+              onclick="document.getElementById('remove-grant-dialog').close();">Cancel</button>
+            <input class="nes-btn is-error" type="submit" value="Confirm" />
+          </form>
+        </dialog>
+      </section>
+    </div>
+  </div>
+</section>
+{% endif %}
 {% endif %}
 {% endblock %}

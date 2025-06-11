@@ -100,7 +100,6 @@ class GroupCreationRequest(BaseModel):
     grants: str = ""
 
 
-
 @group_app.put(
     "",
     summary="Create a new group",
@@ -129,7 +128,10 @@ async def create_group(
     grants = content.grants.strip()
 
     log = log.bind(
-        group_name=group_name, user_id=user.user_id, number_of_members=len(member_ids), grants=grants
+        group_name=group_name,
+        user_id=user.user_id,
+        number_of_members=len(member_ids),
+        grants=grants,
     )
 
     if "admin" not in user.grants:

@@ -26,10 +26,14 @@ if (not settings.create_files) and settings.create_example_app_and_user:
 
         content = response.json()
 
-        app_id = content["authentication_app_id"]
-        public_key = content["authentication_public_key"]
-        key_type = content["authentication_key_type"]
-        client_secret = content["authentication_client_secret"]
+        try:
+            app_id = content["authentication_app_id"]
+            public_key = content["authentication_public_key"]
+            key_type = content["authentication_key_type"]
+            client_secret = content["authentication_client_secret"]
+        except KeyError:
+            print(content)
+            exit(1)
 else:
     # Read from files.
     with open(settings.app_id_filename, "r") as handle:

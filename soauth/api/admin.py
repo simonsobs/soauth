@@ -6,14 +6,13 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 
+from soauth.core.group import GroupData
 from soauth.core.models import (
-    GroupDetailResponse,
     ModifyGroupContent,
     ModifyUserContent,
     UserDetailResponse,
 )
 from soauth.core.uuid import UUID
-from soauth.core.group import GroupData
 from soauth.service import groups as group_service
 from soauth.service import refresh as refresh_service
 from soauth.service import user as user_service
@@ -195,7 +194,7 @@ async def revoke_key(
 
 
 @admin_routes.post(
-    "/group/{user_id}",
+    "/group/{group_id}",
     summary="Modify group grants",
     description=(
         "Add or remove grants for a group. All members of the group will "
@@ -217,13 +216,13 @@ async def modify_group(
 
     group = await group_service.read_by_id(group_id=group_id, conn=conn, log=log)
 
-    if (grant := content.grant_add):
+    if grant := content.grant_add:
         await group_service.add_grant(
             group_name=group.group_name, grant=grant, conn=conn, log=log
         )
         log = log.bind(added_grant=grant)
 
-    if (grant := content.grant_remove):
+    if grant := content.grant_remove:
         await group_service.remove_grant(
             group_name=group.group_name, grant=grant, conn=conn, log=log
         )

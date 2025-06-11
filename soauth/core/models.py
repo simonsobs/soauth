@@ -44,15 +44,18 @@ class AppDetailResponse(BaseModel):
     app: AppData
     users: list[LoggedInUserData]
 
+
 class ModifyGroupContent(BaseModel):
     grant_add: str | None = None
     grant_remove: str | None = None
+
 
 class GroupDetailResponse(BaseModel):
     group: GroupData
     member_count: int
     group_grants: list[str]
-    
+
+
 class ModifyUserContent(BaseModel):
     grant_add: str | None = None
     grant_remove: str | None = None

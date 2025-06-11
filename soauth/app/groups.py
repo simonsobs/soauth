@@ -148,23 +148,21 @@ def add_grant(
 ):
     log = log.bind(group_id=group_id, grant_add_field=grant)
     log.debug("app.admin.group_grant_add")
-    
+
     if " " in grant or grant == "":
         return RedirectResponse(
-            url=f"{request.app.base_url}/groups/{group_id}", 
-            status_code=303
+            url=f"{request.app.base_url}/groups/{group_id}", status_code=303
         )
-    
+
     handle_request(
         url=f"{request.app.group_grant_update_url}/{group_id}",
         request=request,
         method="post",
         json={"grant_add": grant},
     )
-    
+
     return RedirectResponse(
-        url=f"{request.app.base_url}/groups/{group_id}", 
-        status_code=303
+        url=f"{request.app.base_url}/groups/{group_id}", status_code=303
     )
 
 
@@ -178,21 +176,19 @@ def remove_grant(
 ):
     log = log.bind(group_id=group_id, grant_remove_field=grant)
     log.debug("app.admin.group_grant_remove")
-    
+
     if " " in grant or grant == "":
         return RedirectResponse(
-            url=f"{request.app.base_url}/groups/{group_id}", 
-            status_code=303
+            url=f"{request.app.base_url}/groups/{group_id}", status_code=303
         )
-    
+
     handle_request(
         url=f"{request.app.group_grant_update_url}/{group_id}",
         request=request,
         method="post",
         json={"grant_remove": grant},
     )
-    
+
     return RedirectResponse(
-        url=f"{request.app.base_url}/groups/{group_id}", 
-        status_code=303
+        url=f"{request.app.base_url}/groups/{group_id}", status_code=303
     )

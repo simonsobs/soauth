@@ -6,8 +6,8 @@ from datetime import datetime
 
 from pydantic import BaseModel
 
-from soauth.core.user import UserData
 from soauth.core.group import GroupData
+from soauth.core.user import UserData
 from soauth.core.uuid import UUID
 
 from .app import AppData, LoggedInUserData

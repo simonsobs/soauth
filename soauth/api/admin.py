@@ -6,11 +6,16 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 
-from soauth.core.models import ModifyUserContent, UserDetailResponse, ModifyGroupContent, GroupDetailResponse
+from soauth.core.models import (
+    GroupDetailResponse,
+    ModifyGroupContent,
+    ModifyUserContent,
+    UserDetailResponse,
+)
 from soauth.core.uuid import UUID
+from soauth.service import groups as group_service
 from soauth.service import refresh as refresh_service
 from soauth.service import user as user_service
-from soauth.service import groups as group_service
 from soauth.toolkit.fastapi import SOUserWithGrants, handle_authenticated_user
 
 from .dependencies import DatabaseDependency, LoggerDependency

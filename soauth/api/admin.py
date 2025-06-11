@@ -13,6 +13,7 @@ from soauth.core.models import (
     UserDetailResponse,
 )
 from soauth.core.uuid import UUID
+from soauth.core.group import GroupData
 from soauth.service import groups as group_service
 from soauth.service import refresh as refresh_service
 from soauth.service import user as user_service
@@ -193,38 +194,6 @@ async def revoke_key(
     return
 
 
-@admin_routes.get(
-    "/group/{group_id}",
-    summary="Get group details",
-    description=(
-        "Retrieve detailed information about a group, including its grants "
-        "and member count. Requires `admin` grant."
-    ),
-    responses={
-        200: {"description": "Group details returned successfully."},
-        401: {"description": "Unauthorized to access this endpoint."},
-    },
-)
-async def group_detail(
-    group_id: UUID,
-    admin_user: AdminUser,
-    conn: DatabaseDependency,
-    log: LoggerDependency,
-) -> GroupDetailResponse:
-    log = log.bind(admin_user=admin_user, requested_group_id=group_id)
-    
-    group = await group_service.read_by_id(group_id=group_id, conn=conn, log=log)
-    group_data = group.to_core()
-    group_grants = list(set(group.grants.split()) if group.grants else [])
-    
-    await log.ainfo("api.admin.group_detail")
-    
-    return GroupDetailResponse(
-        group=group_data,
-        members_count=len(group.members),
-        group_grants=group_grants,
-    )
-
 @admin_routes.post(
     "/group/{user_id}",
     summary="Modify group grants",
@@ -243,18 +212,18 @@ async def modify_group(
     admin_user: AdminUser,
     conn: DatabaseDependency,
     log: LoggerDependency,
-) -> group_service.GroupData:
+) -> GroupData:
     log = log.bind(admin_user=admin_user, requested_group_id=group_id)
 
-    group = await group_service.read_by_id(group_id=group_id, conn=conn)
+    group = await group_service.read_by_id(group_id=group_id, conn=conn, log=log)
 
-    if (grant := content.grant_add) is not None:
+    if (grant := content.grant_add):
         await group_service.add_grant(
             group_name=group.group_name, grant=grant, conn=conn, log=log
         )
         log = log.bind(added_grant=grant)
 
-    if (grant := content.grant_remove) is not None:
+    if (grant := content.grant_remove):
         await group_service.remove_grant(
             group_name=group.group_name, grant=grant, conn=conn, log=log
         )

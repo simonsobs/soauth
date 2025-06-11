@@ -87,6 +87,6 @@ class Group(SQLModel, table=True):
             group_name=self.group_name,
             created_by=self.created_by.to_core(include_groups=False),
             created_at=self.created_at,
-            grants=set(self.grants.split(" ")),
+            grants={x for x in self.grants.split(" ") if x},
             members=[member.to_core(include_groups=False) for member in self.members],
         )

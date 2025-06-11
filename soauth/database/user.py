@@ -99,13 +99,13 @@ class User(SQLModel, table=True):
 
         # Add user's individual grants
         if self.grants:
-            all_grants.update(self.grants.split())
+            all_grants.update({x for x in self.grants.split() if x})
 
         # Add grants from all groups
         if include_groups:
             for group in self.groups:
                 if group.grants:
-                    all_grants.update(group.grants.split())
+                    all_grants.update({x for x in group.grants.split() if x})
 
         return all_grants
 

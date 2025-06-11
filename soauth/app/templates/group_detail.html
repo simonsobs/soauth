@@ -10,6 +10,17 @@
         <li><span class="nes-text is-primary">Group name</span> {{group.group_name}}</li>
         <li><span class="nes-text is-primary">Created by</span> {{group.created_by.user_name}}</li>
         <li><span class="nes-text is-primary">Created at</span> {{group.created_at}}</li>
+        {% if group.grants and group.grants | length > 0 %}
+        <li><span class="nes-text is-primary">Grants</span>
+        <ul class="nes-list is-circle">
+          {% for grant in group.grants %}
+          {% if grant %}
+          <li>{{ grant }}</li>
+          {% endif %}
+          {% endfor %}
+        </ul>
+        {% endif %}
+      </li>
       </ul>
       {% if "admin" in scopes %}
       <section class="buttonholder" style="margin-top:auto;margin-left:auto">

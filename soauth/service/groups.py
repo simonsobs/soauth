@@ -9,7 +9,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from structlog.typing import FilteringBoundLogger
-
+from soauth.core.group import GroupData
 from soauth.core.uuid import UUID
 from soauth.database.group import Group
 

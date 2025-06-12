@@ -4,6 +4,8 @@ This does not require any access to the database, and purely uses the
 soauth authentication scheme. It is packed purely for simplicity.
 """
 
+from json.decoder import JSONDecodeError
+
 import httpx
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
@@ -24,15 +26,15 @@ if (not settings.create_files) and settings.create_example_app_and_user:
     with httpx.Client() as client:
         response = client.get(f"{settings.hostname}/developer_details")
 
-        content = response.json()
-
         try:
+            content = response.json()
+
             app_id = content["authentication_app_id"]
             public_key = content["authentication_public_key"]
             key_type = content["authentication_key_type"]
             client_secret = content["authentication_client_secret"]
-        except KeyError:
-            print(content)
+        except (KeyError, JSONDecodeError):
+            print(response.content)
             exit(1)
 else:
     # Read from files.

@@ -5,6 +5,7 @@ FastAPI app
 from importlib.metadata import version
 
 from fastapi import FastAPI
+from sqlalchemy.exc import IntegrityError
 
 from soauth.service.user import UserExistsError
 from soauth.service.user import create as create_user
@@ -63,7 +64,7 @@ async def lifespan(app: FastAPI):
                         conn=session,
                         log=logger(),
                     )
-        except UserExistsError:
+        except (UserExistsError, IntegrityError):
             pass
 
     yield

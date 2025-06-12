@@ -6,8 +6,14 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 
-from soauth.core.models import ModifyUserContent, UserDetailResponse
+from soauth.core.group import GroupData
+from soauth.core.models import (
+    ModifyGroupContent,
+    ModifyUserContent,
+    UserDetailResponse,
+)
 from soauth.core.uuid import UUID
+from soauth.service import groups as group_service
 from soauth.service import refresh as refresh_service
 from soauth.service import user as user_service
 from soauth.toolkit.fastapi import SOUserWithGrants, handle_authenticated_user
@@ -185,3 +191,43 @@ async def revoke_key(
     await refresh_service.expire_refresh_key_by_id(key_id=key_id, conn=conn)
     await log.ainfo("api.admin.key_revoked")
     return
+
+
+@admin_routes.post(
+    "/group/{group_id}",
+    summary="Modify group grants",
+    description=(
+        "Add or remove grants for a group. All members of the group will "
+        "inherit these grants. Requires `admin` grant."
+    ),
+    responses={
+        200: {"description": "Group grants modified successfully."},
+        401: {"description": "Unauthorized to access this endpoint."},
+    },
+)
+async def modify_group(
+    content: ModifyGroupContent,
+    group_id: UUID,
+    admin_user: AdminUser,
+    conn: DatabaseDependency,
+    log: LoggerDependency,
+) -> GroupData:
+    log = log.bind(admin_user=admin_user, requested_group_id=group_id)
+
+    group = await group_service.read_by_id(group_id=group_id, conn=conn, log=log)
+
+    if grant := content.grant_add:
+        await group_service.add_grant(
+            group_name=group.group_name, grant=grant, conn=conn, log=log
+        )
+        log = log.bind(added_grant=grant)
+
+    if grant := content.grant_remove:
+        await group_service.remove_grant(
+            group_name=group.group_name, grant=grant, conn=conn, log=log
+        )
+        log = log.bind(removed_grant=grant)
+
+    await log.ainfo("api.admin.modify_group")
+
+    return group.to_core()

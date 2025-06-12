@@ -39,10 +39,11 @@ def groups(request: Request, log: LoggerDependency, templates: TemplateDependenc
 @requires("admin")
 def create_group(
     group_name: Annotated[str, Form()],
+    grants: Annotated[str, Form()],
     request: Request,
     log: LoggerDependency,
 ):
-    log = log.bind(user_id=request.user.user_id, group_name=group_name)
+    log = log.bind(user_id=request.user.user_id, group_name=group_name, grants=grants)
     log.debug("app.admin.group_create")
 
     response = handle_request(
@@ -52,6 +53,7 @@ def create_group(
         json={
             "group_name": group_name,
             "member_ids": [str(request.user.user_id)],
+            "grants": grants,
         },
     )
 
@@ -134,3 +136,59 @@ def delete_group(
     )
 
     return RedirectResponse(url=f"{request.app.base_url}/groups", status_code=303)
+
+
+@router.post("/{group_id}/grant_add")
+@requires("admin")
+def add_grant(
+    grant: Annotated[str, Form()],
+    group_id: UUID,
+    request: Request,
+    log: LoggerDependency,
+):
+    log = log.bind(group_id=group_id, grant_add_field=grant)
+    log.debug("app.admin.group_grant_add")
+
+    if " " in grant or grant == "":
+        return RedirectResponse(
+            url=f"{request.app.base_url}/groups/{group_id}", status_code=303
+        )
+
+    handle_request(
+        url=f"{request.app.group_grant_update_url}/{group_id}",
+        request=request,
+        method="post",
+        json={"grant_add": grant},
+    )
+
+    return RedirectResponse(
+        url=f"{request.app.base_url}/groups/{group_id}", status_code=303
+    )
+
+
+@router.post("/{group_id}/grant_remove")
+@requires("admin")
+def remove_grant(
+    grant: Annotated[str, Form()],
+    group_id: UUID,
+    request: Request,
+    log: LoggerDependency,
+):
+    log = log.bind(group_id=group_id, grant_remove_field=grant)
+    log.debug("app.admin.group_grant_remove")
+
+    if " " in grant or grant == "":
+        return RedirectResponse(
+            url=f"{request.app.base_url}/groups/{group_id}", status_code=303
+        )
+
+    handle_request(
+        url=f"{request.app.group_grant_update_url}/{group_id}",
+        request=request,
+        method="post",
+        json={"grant_remove": grant},
+    )
+
+    return RedirectResponse(
+        url=f"{request.app.base_url}/groups/{group_id}", status_code=303
+    )

@@ -28,6 +28,7 @@ async def create(
     group_name: str,
     created_by_user_id: UUID,
     member_ids: list[UUID],
+    grants: str,
     conn: AsyncSession,
     log: FilteringBoundLogger,
 ) -> Group:
@@ -43,6 +44,9 @@ async def create(
         group.
     members: list[UUID]
         The list of users who should initially be in the group.
+    grants: str
+        A space separated string of grants to assign to the group.
+
 
     Raises
     ------
@@ -56,6 +60,7 @@ async def create(
         group_name=group_name,
         user_id=created_by_user_id,
         number_of_members=len(member_ids),
+        grants=grants,
     )
 
     try:
@@ -76,6 +81,7 @@ async def create(
             created_by=created_by,
             created_at=datetime.now(tz=timezone.utc),
             members=list(members),
+            grants=grants,
         )
         conn.add(group)
         await conn.flush()
@@ -360,3 +366,69 @@ async def delete_group(
     log = log.bind(group_id=group_id)
     await conn.execute(delete(Group).where(Group.group_id == group_id))
     await log.ainfo("group.deleted")
+
+
+async def add_grant(
+    group_name: str,
+    grant: str,
+    conn: AsyncSession,
+    log: FilteringBoundLogger,
+) -> Group:
+    """
+    Add a grant to a group.
+
+    Parameters
+    ----------
+    group_name: str
+        The name of the group.
+    grant: str
+        The grant to add.
+    conn: AsyncSession
+        The database session.
+    log: FilteringBoundLogger
+        Logger instance.
+
+    Raises
+    ------
+    GroupNotFound
+        If the group does not exist.
+    """
+    log = log.bind(group_name=group_name, grant=grant)
+    group = await read_by_name(group_name, conn, log)
+    group.add_grant(grant)
+    await conn.flush()
+    await log.ainfo("group.grant_added")
+    return group
+
+
+async def remove_grant(
+    group_name: str,
+    grant: str,
+    conn: AsyncSession,
+    log: FilteringBoundLogger,
+) -> Group:
+    """
+    Remove a grant from a group.
+
+    Parameters
+    ----------
+    group_name: str
+        The name of the group.
+    grant: str
+        The grant to remove.
+    conn: AsyncSession
+        The database session.
+    log: FilteringBoundLogger
+        Logger instance.
+
+    Raises
+    ------
+    GroupNotFound
+        If the group does not exist.
+    """
+    log = log.bind(group_name=group_name, grant=grant)
+    group = await read_by_name(group_name, conn, log)
+    group.remove_grant(grant)
+    await conn.flush()
+    await log.ainfo("group.grant_removed")
+    return group

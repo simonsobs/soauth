@@ -26,10 +26,14 @@ if (not settings.create_files) and settings.create_example_app_and_user:
 
         content = response.json()
 
-        app_id = content["authentication_app_id"]
-        public_key = content["authentication_public_key"]
-        key_type = content["authentication_key_type"]
-        client_secret = content["authentication_client_secret"]
+        try:
+            app_id = content["authentication_app_id"]
+            public_key = content["authentication_public_key"]
+            key_type = content["authentication_key_type"]
+            client_secret = content["authentication_client_secret"]
+        except KeyError:
+            print(content)
+            exit(1)
 else:
     # Read from files.
     with open(settings.app_id_filename, "r") as handle:
@@ -62,7 +66,7 @@ async def lifespan(app: FastAPI):
     app.key_detail_url = f"{settings.hostname}/keys/app"
     app.group_detail_url = f"{settings.hostname}/groups"
     app.group_list_url = f"{settings.hostname}/groups/list"
-    app.group_detail_url = f"{settings.hostname}/groups"
+    app.group_grant_update_url = f"{settings.hostname}/admin/group"
     yield
 
 

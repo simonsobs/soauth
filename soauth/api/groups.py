@@ -97,6 +97,7 @@ class GroupCreationRequest(BaseModel):
 
     group_name: str
     member_ids: list[UUID] = []
+    grants: str = ""
 
 
 @group_app.put(
@@ -124,9 +125,13 @@ async def create_group(
     """
     group_name = content.group_name.strip().lower().replace(" ", "_")
     member_ids = content.member_ids
+    grants = content.grants.strip()
 
     log = log.bind(
-        group_name=group_name, user_id=user.user_id, number_of_members=len(member_ids)
+        group_name=group_name,
+        user_id=user.user_id,
+        number_of_members=len(member_ids),
+        grants=grants,
     )
 
     if "admin" not in user.grants:
@@ -139,6 +144,7 @@ async def create_group(
         member_ids=set(member_ids).union(
             {user.user_id}
         ),  # Ensure creator is always a member
+        grants=grants,
         conn=conn,
         log=log,
     )

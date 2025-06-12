@@ -54,7 +54,7 @@ def main():
                 "SOAUTH_DATABASE_DB": container.dbname,
                 "SOAUTH_DATABASE_ECHO": "False",
                 "SOAUTH_CREATE_EXAMPLE_APP_AND_USER": "True",
-                "soauth_host_development_only_endpoint": "True",
+                "SOAUTH_HOST_DEVELOPMENT_ONLY_ENDPOINT": "True",
             }
 
             background_process = Process(target=run_server, kwargs=environment)

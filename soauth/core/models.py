@@ -6,6 +6,7 @@ from datetime import datetime
 
 from pydantic import BaseModel
 
+from soauth.core.group import GroupData
 from soauth.core.user import UserData
 from soauth.core.uuid import UUID
 
@@ -42,6 +43,17 @@ class AppRefreshResponse(BaseModel):
 class AppDetailResponse(BaseModel):
     app: AppData
     users: list[LoggedInUserData]
+
+
+class ModifyGroupContent(BaseModel):
+    grant_add: str | None = None
+    grant_remove: str | None = None
+
+
+class GroupDetailResponse(BaseModel):
+    group: GroupData
+    member_count: int
+    group_grants: list[str]
 
 
 class ModifyUserContent(BaseModel):

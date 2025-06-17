@@ -18,8 +18,6 @@ from soauth.database.user import User
 from soauth.service import user as user_service
 
 
-
-
 class AppNotFound(Exception):
     pass
 

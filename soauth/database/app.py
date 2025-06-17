@@ -49,6 +49,8 @@ class App(SQLModel, table=True):
         """
         if not self.visibility_grant:
             return True
+        if "admin" in user_grant:
+            return True
         return self.visibility_grant in user_grant
 
 

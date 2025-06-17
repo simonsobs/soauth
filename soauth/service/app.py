@@ -15,6 +15,9 @@ from soauth.core.random import client_secret
 from soauth.core.uuid import UUID
 from soauth.database.app import App
 from soauth.database.user import User
+from soauth.service import user as user_service
+
+
 
 
 class AppNotFound(Exception):
@@ -25,6 +28,7 @@ async def create(
     name: str,
     domain: str,
     redirect_url: str,
+    visibility_grant: str,
     api_access: bool,
     user: User,
     settings: Settings,
@@ -34,6 +38,7 @@ async def create(
     log = log.bind(
         user_id=user.user_id,
         domain=domain,
+        visibility_grant=visibility_grant,
         key_pair_type=settings.key_pair_type,
         name=name,
         api_access=api_access,
@@ -50,6 +55,7 @@ async def create(
         created_by=user,
         created_at=datetime.now(timezone.utc),
         domain=domain,
+        visibility_grant=visibility_grant,
         redirect_url=redirect_url,
         key_pair_type=settings.key_pair_type,
         public_key=public_key,
@@ -66,6 +72,7 @@ async def create(
 
 async def get_app_list(
     created_by_user_id: UUID | None,
+    user_name: str,
     conn: AsyncSession,
     require_api_access: bool = False,
 ) -> list[AppData]:
@@ -83,8 +90,8 @@ async def get_app_list(
         query = query.filter_by(api_access=True)
 
     res = await conn.execute(query)
-
-    return [x.to_core() for x in res.scalars().unique().all()]
+    user_details = await user_service.read_by_name(user_name=user_name, conn=conn)
+    return [x.to_core() for x in res.scalars().unique().all() if x.has_visibility_grant(user_details.get_effective_grants())]
 
 
 async def read_by_id(app_id: UUID, conn: AsyncSession) -> App:

@@ -17,6 +17,7 @@ class AppData(BaseModel):
     created_by_user_name: str | None
     created_at: datetime
     domain: str
+    visibility_grant: str
 
 
 class LoggedInUserData(BaseModel):

@@ -52,6 +52,7 @@ async def create_app(
     name: str,
     domain: str,
     redirect_url: str,
+    visibility_grant: str,
     api_access: bool,
     user: AppManagerUser,
     conn: DatabaseDependency,
@@ -66,6 +67,7 @@ async def create_app(
         name=name,
         domain=domain,
         redirect_url=redirect_url,
+        visibility_grant=visibility_grant,
         api_access=api_access,
         user=database_user,
         settings=settings,
@@ -100,7 +102,7 @@ async def apps(
 ) -> list[AppData]:
     log = log.bind(user=user)
     created_by = None if "admin" in user.grants else user.user_id
-    result = await app_service.get_app_list(created_by, conn=conn)
+    result = await app_service.get_app_list(created_by_user_id = created_by, user_name = user.display_name, conn=conn)
     log.bind(number_of_apps=len(result))
     await log.ainfo("api.appmanager.apps")
     return result

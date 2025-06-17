@@ -57,6 +57,7 @@ def app_create_post(
     log: LoggerDependency,
     name: Annotated[str, Form()],
     domain: Annotated[str, Form()],
+    visibility_grant: Annotated[str, Form()],
     redirect: Annotated[str, Form()],
     api: Annotated[bool | None, Form()] = None,
 ):
@@ -73,6 +74,7 @@ def app_create_post(
             "name": name,
             "domain": domain,
             "redirect_url": redirect,
+            "visibility_grant": visibility_grant,
             "api_access": api,
         },
     )

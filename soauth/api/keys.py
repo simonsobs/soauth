@@ -85,7 +85,7 @@ async def list(
 ) -> list[AppDetailResponse]:
     # In theory we can chain these futures, but not worth it.
     app_list = await app_service.get_app_list(
-        created_by_user_id=None, conn=conn, require_api_access=False
+        created_by_user_id=None, user_name=user.display_name , conn=conn, require_api_access=False
     )
 
     login_list = await refresh_service.get_all_logins_for_user(

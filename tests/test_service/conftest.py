@@ -56,6 +56,7 @@ async def app(session_manager, logger, user, server_settings):
                 api_access=False,
                 domain="https://simonsobs.org",
                 redirect_url="https://simonsobs.org/callback",
+                visibility_grant="",
                 user=await user_service.read_by_id(user_id=user, conn=conn),
                 settings=server_settings,
                 conn=conn,

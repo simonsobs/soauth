@@ -30,6 +30,7 @@ class App(SQLModel, table=True):
     created_at: datetime = Field(sa_column=Column(DateTime(timezone=True)))
 
     domain: str
+    visibility_grant: str | None = None
 
     key_pair_type: str
     # Note that the 'public key' is not really public - it should
@@ -40,6 +41,17 @@ class App(SQLModel, table=True):
 
     client_secret: str = Field(default_factory=client_secret)
     redirect_url: str
+
+    def has_visibility_grant(self, user_grant: set[str]) -> bool:
+        """
+        Check if the user has the visibility grant.
+        required to make the app visibile during key creation.
+        """
+        if not self.visibility_grant:
+            return True
+        if "admin" in user_grant:
+            return True
+        return self.visibility_grant in user_grant
 
     def to_core(self) -> AppData:
         return AppData(
@@ -52,4 +64,5 @@ class App(SQLModel, table=True):
             ),
             created_at=self.created_at,
             domain=self.domain,
+            visibility_grant=self.visibility_grant,
         )

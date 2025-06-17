@@ -84,13 +84,29 @@ async def list(
     user: AuthenticatedUserDependency,
 ) -> list[AppDetailResponse]:
     # In theory we can chain these futures, but not worth it.
+    database_user = await user_service.read_by_id(user_id=user.user_id, conn=conn)
+
+    log = log.bind(user_id=database_user.user_id, user_name=database_user.user_name)
+
     app_list = await app_service.get_app_list(
-        created_by_user_id=None, conn=conn, require_api_access=False
+        created_by_user_id=None, user=database_user, conn=conn, require_api_access=False
+    )
+
+    log = log.bind(
+        number_of_apps=len(app_list),
+        app_list=[x.app_name for x in app_list],
     )
 
     login_list = await refresh_service.get_all_logins_for_user(
         user_id=user.user_id, conn=conn, log=log
     )
+
+    log = log.bind(
+        number_of_logins=len(login_list),
+        login_list=[f"{y.app_id} ({y.app_name})" for y in login_list],
+    )
+
+    await log.ainfo("api.key_management.list")
 
     return [
         AppDetailResponse(app=x, users=[y for y in login_list if y.app_id == x.app_id])

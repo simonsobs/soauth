@@ -25,6 +25,7 @@ async def create(
     name: str,
     domain: str,
     redirect_url: str,
+    visibility_grant: str,
     api_access: bool,
     user: User,
     settings: Settings,
@@ -34,6 +35,7 @@ async def create(
     log = log.bind(
         user_id=user.user_id,
         domain=domain,
+        visibility_grant=visibility_grant,
         key_pair_type=settings.key_pair_type,
         name=name,
         api_access=api_access,
@@ -50,6 +52,7 @@ async def create(
         created_by=user,
         created_at=datetime.now(timezone.utc),
         domain=domain,
+        visibility_grant=visibility_grant,
         redirect_url=redirect_url,
         key_pair_type=settings.key_pair_type,
         public_key=public_key,
@@ -66,6 +69,7 @@ async def create(
 
 async def get_app_list(
     created_by_user_id: UUID | None,
+    user: User,
     conn: AsyncSession,
     require_api_access: bool = False,
 ) -> list[AppData]:
@@ -82,9 +86,31 @@ async def get_app_list(
     if require_api_access:
         query = query.filter_by(api_access=True)
 
+    grants = user.get_effective_grants()
+
+    if "admin" not in grants:
+        query = query.filter(
+            App.visibility_grant.in_(grants) | App.visibility_grant.is_(None)
+        )
+
     res = await conn.execute(query)
 
-    return [x.to_core() for x in res.scalars().unique().all()]
+    # Check again, make sure our results do really have the right visibility
+    # grant.
+
+    apps = res.unique().scalars().all()
+
+    for app in apps:
+        if "admin" not in grants and app.visibility_grant not in grants:
+            if app.visibility_grant is None:
+                continue
+
+            raise AppNotFound(
+                f"User {user.user_name} does not have visibility grant "
+                f"{app.visibility_grant} for app {app.app_name}."
+            )
+
+    return [app.to_core() for app in apps]
 
 
 async def read_by_id(app_id: UUID, conn: AsyncSession) -> App:

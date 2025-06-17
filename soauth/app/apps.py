@@ -58,23 +58,30 @@ def app_create_post(
     name: Annotated[str, Form()],
     domain: Annotated[str, Form()],
     redirect: Annotated[str, Form()],
+    visibility_grant: Annotated[str | None, Form()] = None,
     api: Annotated[bool | None, Form()] = None,
 ):
-    log = log.bind(domain=domain)
-
     if api is None:
         api = False
+
+    if not visibility_grant:
+        visibility_grant = None
+
+    content = {
+        "name": name,
+        "domain": domain,
+        "redirect_url": redirect,
+        "visibility_grant": visibility_grant,
+        "api_access": api,
+    }
+
+    log = log.bind(**content)
 
     response = handle_request(
         url=f"{request.app.app_detail_url}",
         request=request,
         method="put",
-        params={
-            "name": name,
-            "domain": domain,
-            "redirect_url": redirect,
-            "api_access": api,
-        },
+        json=content,
     )
 
     log.bind(response=response.json())

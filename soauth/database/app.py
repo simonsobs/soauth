@@ -30,7 +30,7 @@ class App(SQLModel, table=True):
     created_at: datetime = Field(sa_column=Column(DateTime(timezone=True)))
 
     domain: str
-    visibility_grant: str = Field(default="")
+    visibility_grant: str | None = None
 
     key_pair_type: str
     # Note that the 'public key' is not really public - it should
@@ -52,7 +52,6 @@ class App(SQLModel, table=True):
         if "admin" in user_grant:
             return True
         return self.visibility_grant in user_grant
-
 
     def to_core(self) -> AppData:
         return AppData(

@@ -15,7 +15,6 @@ from soauth.core.random import client_secret
 from soauth.core.uuid import UUID
 from soauth.database.app import App
 from soauth.database.user import User
-from soauth.service import user as user_service
 
 
 class AppNotFound(Exception):
@@ -70,7 +69,7 @@ async def create(
 
 async def get_app_list(
     created_by_user_id: UUID | None,
-    user_name: str,
+    user: User,
     conn: AsyncSession,
     require_api_access: bool = False,
 ) -> list[AppData]:
@@ -87,9 +86,31 @@ async def get_app_list(
     if require_api_access:
         query = query.filter_by(api_access=True)
 
+    grants = user.get_effective_grants()
+
+    if "admin" not in grants:
+        query = query.filter(
+            App.visibility_grant.in_(grants) | App.visibility_grant.is_(None)
+        )
+
     res = await conn.execute(query)
-    user_details = await user_service.read_by_name(user_name=user_name, conn=conn)
-    return [x.to_core() for x in res.scalars().unique().all() if x.has_visibility_grant(user_details.get_effective_grants())]
+
+    # Check again, make sure our results do really have the right visibility
+    # grant.
+
+    apps = res.unique().scalars().all()
+
+    for app in apps:
+        if "admin" not in grants and app.visibility_grant not in grants:
+            if app.visibility_grant is None:
+                continue
+
+            raise AppNotFound(
+                f"User {user.user_name} does not have visibility grant "
+                f"{app.visibility_grant} for app {app.app_name}."
+            )
+
+    return [app.to_core() for app in apps]
 
 
 async def read_by_id(app_id: UUID, conn: AsyncSession) -> App:

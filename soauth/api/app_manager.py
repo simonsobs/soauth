@@ -5,6 +5,7 @@ Endpoints for managing Apps created in the identity system.
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from pydantic import BaseModel
 
 from soauth.core.app import AppData
 from soauth.core.models import AppDetailResponse, AppRefreshResponse
@@ -36,6 +37,14 @@ AppManagerUser = Annotated[SOUserWithGrants, Depends(handle_app_manager_user)]
 app_management_routes = APIRouter(tags=["App Management"])
 
 
+class AppCreationRequest(BaseModel):
+    name: str
+    domain: str
+    redirect_url: str
+    visibility_grant: str | None = None
+    api_access: bool = False
+
+
 @app_management_routes.put(
     "/app",
     summary="Create a new application",
@@ -49,26 +58,22 @@ app_management_routes = APIRouter(tags=["App Management"])
     },
 )
 async def create_app(
-    name: str,
-    domain: str,
-    redirect_url: str,
-    visibility_grant: str,
-    api_access: bool,
+    model: AppCreationRequest,
     user: AppManagerUser,
     conn: DatabaseDependency,
     settings: SettingsDependency,
     log: LoggerDependency,
 ) -> AppRefreshResponse:
-    log = log.bind(user=user, domain=domain)
+    log = log.bind(user=user, creation_request=model)
     # Note: the 'user' as given by the auth system is not the same as our database
     # user, it's re-created from the webtoken.
     database_user = await user_service.read_by_id(user_id=user.user_id, conn=conn)
     app = await app_service.create(
-        name=name,
-        domain=domain,
-        redirect_url=redirect_url,
-        visibility_grant=visibility_grant,
-        api_access=api_access,
+        name=model.name,
+        domain=model.domain,
+        redirect_url=model.redirect_url,
+        visibility_grant=model.visibility_grant,
+        api_access=model.api_access,
         user=database_user,
         settings=settings,
         conn=conn,
@@ -102,7 +107,10 @@ async def apps(
 ) -> list[AppData]:
     log = log.bind(user=user)
     created_by = None if "admin" in user.grants else user.user_id
-    result = await app_service.get_app_list(created_by_user_id = created_by, user_name = user.display_name, conn=conn)
+    database_user = await user_service.read_by_id(user_id=user.user_id, conn=conn)
+    result = await app_service.get_app_list(
+        created_by_user_id=created_by, user=database_user, conn=conn
+    )
     log.bind(number_of_apps=len(result))
     await log.ainfo("api.appmanager.apps")
     return result

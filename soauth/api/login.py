@@ -50,14 +50,30 @@ async def login(
     log: LoggerDependency,
     provider: AuthProviderDependency,
     app_id: UUID = Path(..., description="The app ID to authenticate against."),
+    next: str | None = Query(
+        None,
+        description=(
+            "Optional URL to redirect to after login. If not provided, the user will be redirected "
+            "to the app's main page or the `Referer` header."
+        ),
+    ),
 ) -> RedirectResponse:
     try:
         app = await app_service.read_by_id(app_id=app_id, conn=conn)
     except app_service.AppNotFound:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail=f"App {app_id} not found")
 
+    if next is not None:
+        redirect_to = next
+    elif request.headers.get("Referer", None) is not None:
+        redirect_to = request.headers["Referer"]
+    else:
+        redirect_to = None
+
+    log = log.bind(redirect_to_after_login=redirect_to, app_id=app_id)
+
     login_request = await login_service.create(
-        app=app, redirect_to=request.headers.get("Referer", None), conn=conn, log=log
+        app=app, redirect_to=redirect_to, conn=conn, log=log
     )
 
     redirect_url = await provider.redirect(

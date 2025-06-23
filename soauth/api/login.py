@@ -53,7 +53,7 @@ async def login(
     next: str | None = Query(
         None,
         description=(
-            "Optional URL to redirect to after login. If not provided, the user will be redirected "
+            "Optional path to redirect to after login. If not provided, the user will be redirected "
             "to the app's main page or the `Referer` header."
         ),
     ),
@@ -64,7 +64,7 @@ async def login(
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail=f"App {app_id} not found")
 
     if next is not None:
-        redirect_to = next
+        redirect_to = f"{app.domain}/{next}"
     elif request.headers.get("Referer", None) is not None:
         redirect_to = request.headers["Referer"]
     else:

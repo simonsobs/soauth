@@ -233,6 +233,7 @@ async def code(
     return KeyRefreshResponse(
         access_token=key_content.access_token,
         refresh_token=key_content.refresh_token,
+        profile_data=key_content.profile_data,
         access_token_expires=key_content.access_token_expires,
         refresh_token_expires=key_content.refresh_token_expires,
         redirect=redirect,

@@ -332,20 +332,9 @@ def key_expired_handler(request: Request, exc: KeyExpiredError) -> RedirectRespo
         httponly=False,
     )
 
-
-    user_data = decode_access_token(
-        encrypted_access_token=content.access_token,
-        public_key=request.app.public_key,
-        key_pair_type=request.app.key_pair_type,
-    )
-    profile_data = {
-        "username":user_data.user_name,
-        "full_name":user_data.full_name,
-        "profile_image":user_data.profile_image,
-    }
     response.set_cookie(
         key="profile_data",
-        value=json.dumps(profile_data),
+        value=json.dumps(content.profile_data),
         expires=content.access_token_expires,
         httponly=False,
     )
@@ -479,19 +468,9 @@ async def handle_redirect(code: str, state: str, request: Request) -> RedirectRe
         httponly=False,
     )
 
-    user_data = decode_access_token(
-        encrypted_access_token=content.access_token,
-        public_key=request.app.public_key,
-        key_pair_type=request.app.key_pair_type,
-    )
-    profile_data = {
-        "username":user_data.user_name,
-        "full_name":user_data.full_name,
-        "profile_image":user_data.profile_image,
-    }
     response.set_cookie(
         key="profile_data",
-        value=json.dumps(profile_data),
+        value=json.dumps(content.profile_data),
         expires=content.access_token_expires,
         httponly=False,
     )

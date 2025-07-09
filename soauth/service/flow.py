@@ -13,6 +13,7 @@ from soauth.core.uuid import UUID
 from soauth.database.app import App
 from soauth.database.user import User
 from soauth.service.provider import AuthProvider
+from soauth.service.user import read_by_id
 
 from .auth import create_auth_key
 from .refresh import (
@@ -81,10 +82,16 @@ async def primary(
         refresh_key=refresh_key, settings=settings, conn=conn
     )
     await log.ainfo("primary.auth_key_created")
+    profile_data = {
+        "username": user.user_name,
+        "full_name": user.full_name,
+        "profile_image": user.gh_profile_image_url,
+    }
 
     return KeyRefreshResponse(
         access_token=encoded_auth_key,
         refresh_token=encoded_refresh_key,
+        profile_data=profile_data,
         access_token_expires=auth_key_expires,
         refresh_token_expires=refresh_key.expires_at,
     )
@@ -164,12 +171,17 @@ async def secondary(
     )
 
     await log.ainfo("secondary.auth_key_created")
-
+    user_data = await read_by_id(user_id=refresh_key.user_id, conn=conn)
+    profile_data = {"username": user_data.user_name,
+            "full_name": user_data.full_name,
+            "profile_image": user_data.gh_profile_image_url,
+        }
     return KeyRefreshResponse(
         access_token=encoded_auth_key,
         refresh_token=encoded_refresh_key,
         access_token_expires=auth_key_expires,
         refresh_token_expires=refresh_key.expires_at,
+        profile_data=profile_data,
     )
 
 

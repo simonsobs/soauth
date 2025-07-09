@@ -36,6 +36,7 @@ There is a global setup function that can be used defined in the `fastapi.py`
 file, for FastAPI services.
 """
 import json
+
 import httpx
 from pydantic import BaseModel, Field
 from starlette import status

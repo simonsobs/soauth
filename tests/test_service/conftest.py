@@ -29,6 +29,7 @@ async def user(session_manager, logger):
                 user_name="admin",
                 email="admin@simonsobservatory.org",
                 full_name="Admin User",
+                profile_image=None,
                 grants="admin",
                 conn=conn,
                 log=logger,

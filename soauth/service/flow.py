@@ -82,11 +82,7 @@ async def primary(
         refresh_key=refresh_key, settings=settings, conn=conn
     )
     await log.ainfo("primary.auth_key_created")
-    profile_data = {
-        "username": user.user_name,
-        "full_name": user.full_name,
-        "profile_image": user.gh_profile_image_url,
-    }
+    profile_data = user.to_public_profile_data()
 
     return KeyRefreshResponse(
         access_token=encoded_auth_key,
@@ -171,11 +167,8 @@ async def secondary(
     )
 
     await log.ainfo("secondary.auth_key_created")
-    user_data = await read_by_id(user_id=refresh_key.user_id, conn=conn)
-    profile_data = {"username": user_data.user_name,
-            "full_name": user_data.full_name,
-            "profile_image": user_data.gh_profile_image_url,
-        }
+    user = await read_by_id(user_id=refresh_key.user_id, conn=conn)
+    profile_data = user.to_public_profile_data()
     return KeyRefreshResponse(
         access_token=encoded_auth_key,
         refresh_token=encoded_refresh_key,

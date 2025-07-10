@@ -114,6 +114,13 @@ class User(SQLModel, table=True):
         """Check if user has grant either individually or through groups."""
         return grant in self.get_effective_grants()
     
+    def to_public_profile_data(self) -> dict[str, str | None]:
+        """Convert user data to public profile format."""
+        return {
+            "username": self.user_name,
+            "full_name": self.full_name,
+            "profile_image": self.gh_profile_image_url,
+        }
 
     def to_core(self, include_groups=True) -> UserData:
         return UserData(

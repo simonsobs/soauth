@@ -29,6 +29,7 @@ class User(SQLModel, table=True):
 
     gh_access_token: str | None = None
     # gh_refresh_token: str | None = None
+    gh_profile_image_url: str | None = None
     gh_last_logged_in: datetime | None = Field(
         sa_column=Column(DateTime(timezone=True)), default=None
     )
@@ -112,6 +113,14 @@ class User(SQLModel, table=True):
     def has_effective_grant(self, grant: str) -> bool:
         """Check if user has grant either individually or through groups."""
         return grant in self.get_effective_grants()
+    
+    def to_public_profile_data(self) -> dict[str, str | None]:
+        """Convert user data to public profile format."""
+        return {
+            "username": self.user_name,
+            "full_name": self.full_name,
+            "profile_image": self.gh_profile_image_url,
+        }
 
     def to_core(self, include_groups=True) -> UserData:
         return UserData(
@@ -124,4 +133,5 @@ class User(SQLModel, table=True):
             group_ids=[str(x.group_id) for x in self.groups]
             if include_groups
             else None,
+            profile_image=self.gh_profile_image_url,
         )

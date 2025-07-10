@@ -35,6 +35,7 @@ cookies, and `logout` handles the case of revoking a user's access token.
 There is a global setup function that can be used defined in the `fastapi.py`
 file, for FastAPI services.
 """
+import json
 
 import httpx
 from pydantic import BaseModel, Field
@@ -301,7 +302,7 @@ def key_expired_handler(request: Request, exc: KeyExpiredError) -> RedirectRespo
             return response
 
         content = KeyRefreshResponse.model_validate_json(response.content)
-
+    
     response = RedirectResponse(request.url, status_code=302)
 
     response.set_cookie(
@@ -327,6 +328,13 @@ def key_expired_handler(request: Request, exc: KeyExpiredError) -> RedirectRespo
     response.set_cookie(
         key="validate_access_token",
         value="True",
+        expires=content.access_token_expires,
+        httponly=False,
+    )
+
+    response.set_cookie(
+        key="profile_data",
+        value=json.dumps(content.profile_data),
         expires=content.access_token_expires,
         httponly=False,
     )
@@ -363,6 +371,8 @@ def key_decode_handler(request: Request, exc: KeyDecodeError) -> RedirectRespons
     response.delete_cookie(refresh_token_name)
     response.delete_cookie("valid_refresh_token")
     response.delete_cookie("validate_access_token")
+    response.delete_cookie("profile_data")
+
     log.info("tk.starlette.decode.redirecting")
 
     return response
@@ -458,6 +468,13 @@ async def handle_redirect(code: str, state: str, request: Request) -> RedirectRe
         httponly=False,
     )
 
+    response.set_cookie(
+        key="profile_data",
+        value=json.dumps(content.profile_data),
+        expires=content.access_token_expires,
+        httponly=False,
+    )
+
     return response
 
 
@@ -487,5 +504,5 @@ async def logout(request: Request) -> RedirectResponse:
     response.delete_cookie(access_token_name)
     response.delete_cookie("valid_refresh_token")
     response.delete_cookie("validate_access_token")
-
+    response.delete_cookie("profile_data")
     return response

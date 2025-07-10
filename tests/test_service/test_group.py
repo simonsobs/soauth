@@ -69,6 +69,7 @@ async def test_create_group(server_settings, session_manager, logger, user):
                 user_name="test_user2",
                 email="asfasdf@salsdfasd.com",
                 full_name="Test User 2",
+                profile_image=None,
                 grants="",
                 conn=conn,
                 log=logger,

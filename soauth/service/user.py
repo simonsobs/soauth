@@ -27,6 +27,7 @@ async def create(
     user_name: str,
     email: str,
     full_name: str,
+    profile_image: str | None,
     grants: str,
     conn: AsyncSession,
     log: FilteringBoundLogger,
@@ -43,7 +44,8 @@ async def create(
 
     try:
         user = User(
-            user_name=user_name, email=email, grants=grants, full_name=full_name
+            user_name=user_name, email=email, grants=grants, full_name=full_name,
+            gh_profile_image_url=profile_image,
         )
     except IntegrityError:
         await log.ainfo("user.create.exists")

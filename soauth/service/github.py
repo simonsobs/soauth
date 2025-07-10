@@ -278,9 +278,10 @@ class GithubAuthProvider(AuthProvider):
         )
 
         username = user_info["login"].lower()
-
+        profile_image = user_info["avatar_url"]
         log = log.bind(
-            user_name=username, email=user_info["email"], full_name=user_info["name"]
+            user_name=username, email=user_info["email"], full_name=user_info["name"],
+            profile_image=profile_image,
         )
 
         user_email = user_info["email"]
@@ -304,12 +305,14 @@ class GithubAuthProvider(AuthProvider):
             user = await read_by_name(user_name=username, conn=conn)
             user.email = user_email
             user.full_name = user_info["name"]
+            user.gh_profile_image_url = profile_image
             log = log.bind(user_read=True, user_created=False)
         except UserNotFound:
             user = await create_user(
                 user_name=username,
                 email=user_email,
                 full_name=user_info["name"],
+                profile_image=profile_image,
                 grants="",
                 conn=conn,
                 log=log,
@@ -317,7 +320,6 @@ class GithubAuthProvider(AuthProvider):
             log = log.bind(user_created=True, user_read=False)
 
         log.bind(user_id=user.user_id)
-
         user.gh_access_token = access_token
         user.gh_last_logged_in = gh_last_logged_in
 

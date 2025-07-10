@@ -16,9 +16,11 @@ from .app import AppData, LoggedInUserData
 class KeyRefreshResponse(BaseModel):
     access_token: str
     refresh_token: str
+    profile_data: dict[str, str | None]
     redirect: str | None = None
     access_token_expires: datetime
     refresh_token_expires: datetime
+
 
 
 class APIKeyCreationResponse(BaseModel):

@@ -60,6 +60,7 @@ async def lifespan(app: FastAPI):
                         user_name=organization,
                         email="",
                         full_name=organization,
+                        profile_image=None,
                         grants=organization,
                         conn=session,
                         log=logger(),

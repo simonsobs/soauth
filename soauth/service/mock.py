@@ -48,6 +48,7 @@ class MockProvider(AuthProvider):
                 user_name=self.user_name,
                 email=self.email,
                 full_name=self.full_name,
+                profile_image=None,
                 grants=self.grants,
                 conn=conn,
                 log=log,

@@ -3,11 +3,13 @@ One-stop functionality for decoding access tokens
 """
 
 from pydantic import ValidationError
+from cachetools import cached, TTLCache
 
 from soauth.core.tokens import KeyDecodeError, reconstruct_payload
 from soauth.core.user import UserData
 
 
+@cached(cache=TTLCache(maxsize=256, ttl=600))
 def decode_access_token(
     encrypted_access_token: str | bytes, public_key: str | bytes, key_pair_type: str
 ) -> UserData:

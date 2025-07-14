@@ -113,7 +113,7 @@ class User(SQLModel, table=True):
     def has_effective_grant(self, grant: str) -> bool:
         """Check if user has grant either individually or through groups."""
         return grant in self.get_effective_grants()
-    
+
     def to_public_profile_data(self) -> dict[str, str | None]:
         """Convert user data to public profile format."""
         return {

@@ -2,8 +2,8 @@
 One-stop functionality for decoding access tokens
 """
 
+from cachetools import TTLCache, cached
 from pydantic import ValidationError
-from cachetools import cached, TTLCache
 
 from soauth.core.tokens import KeyDecodeError, reconstruct_payload
 from soauth.core.user import UserData

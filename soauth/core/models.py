@@ -22,7 +22,6 @@ class KeyRefreshResponse(BaseModel):
     refresh_token_expires: datetime
 
 
-
 class APIKeyCreationResponse(BaseModel):
     app_name: str
     app_id: UUID

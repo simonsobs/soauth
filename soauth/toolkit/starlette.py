@@ -35,6 +35,7 @@ cookies, and `logout` handles the case of revoking a user's access token.
 There is a global setup function that can be used defined in the `fastapi.py`
 file, for FastAPI services.
 """
+
 import json
 
 import httpx
@@ -302,7 +303,7 @@ def key_expired_handler(request: Request, exc: KeyExpiredError) -> RedirectRespo
             return response
 
         content = KeyRefreshResponse.model_validate_json(response.content)
-    
+
     response = RedirectResponse(request.url, status_code=302)
 
     response.set_cookie(

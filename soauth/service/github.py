@@ -280,7 +280,9 @@ class GithubAuthProvider(AuthProvider):
         username = user_info["login"].lower()
         profile_image = user_info["avatar_url"]
         log = log.bind(
-            user_name=username, email=user_info["email"], full_name=user_info["name"],
+            user_name=username,
+            email=user_info["email"],
+            full_name=user_info["name"],
             profile_image=profile_image,
         )
 

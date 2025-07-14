@@ -44,7 +44,10 @@ async def create(
 
     try:
         user = User(
-            user_name=user_name, email=email, grants=grants, full_name=full_name,
+            user_name=user_name,
+            email=email,
+            grants=grants,
+            full_name=full_name,
             gh_profile_image_url=profile_image,
         )
     except IntegrityError:

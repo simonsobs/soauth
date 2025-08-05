@@ -28,4 +28,5 @@ Table of Contents
 - [Organization Checks](organizations.md)
 - [API Keys](api_keys.md)
 - [Hosting SOAuth](hosting.md)
+- [Consumer Mode](consume.md)
 - [Developing SOAuth](developing.md)

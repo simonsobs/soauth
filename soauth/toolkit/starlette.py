@@ -48,7 +48,7 @@ from starlette.authentication import (
 )
 from starlette.exceptions import HTTPException
 from starlette.requests import Request
-from starlette.responses import RedirectResponse
+from starlette.responses import RedirectResponse, Response
 from structlog import get_logger
 
 from soauth.core.auth import KeyDecodeError, decode_access_token
@@ -102,6 +102,7 @@ class SOAuthCookieBackend(AuthenticationBackend):
     key_pair_type: str
     access_token_name: str = "access_token"
     refresh_token_name: str = "refresh_token"
+    use_refresh_token: bool = True
 
     def __init__(
         self,
@@ -109,11 +110,13 @@ class SOAuthCookieBackend(AuthenticationBackend):
         key_pair_type: str,
         access_token_name: str = "access_token",
         refresh_token_name: str = "refresh_token",
+        use_refresh_token: bool = True,
     ):
         self.public_key = public_key
         self.key_pair_type = key_pair_type
         self.access_token_name = access_token_name
         self.refresh_token_name = refresh_token_name
+        self.use_refresh_token = use_refresh_token
 
     async def authenticate(self, conn: Request):
         log = get_logger()
@@ -122,6 +125,7 @@ class SOAuthCookieBackend(AuthenticationBackend):
             client=conn.client,
             access_token_name=self.access_token_name,
             refresh_token_name=self.refresh_token_name,
+            use_refresh_token=self.use_refresh_token,
         )
 
         # Two possibilities: either we have the access token as a cookie, or we
@@ -138,7 +142,7 @@ class SOAuthCookieBackend(AuthenticationBackend):
             log.debug("tk.starlette.auth.access_token_in_cookies")
             access_token = conn.cookies[self.access_token_name]
         else:
-            if self.refresh_token_name in conn.cookies:
+            if self.refresh_token_name in conn.cookies and self.use_refresh_token:
                 log.debug("tk.starlette.auth.only_refresh_cookie")
                 raise AuthenticationExpiredError("Token expired")
 
@@ -259,6 +263,7 @@ def key_expired_handler(request: Request, exc: KeyExpiredError) -> RedirectRespo
 
     refresh_token_name = getattr(request.app, "refresh_token_name", "refresh_token")
     access_token_name = getattr(request.app, "access_token_name", "access_token")
+    use_refresh_token = getattr(request.app, "use_refresh_token", True)
 
     refresh_key = request.cookies[refresh_token_name]
 
@@ -267,9 +272,10 @@ def key_expired_handler(request: Request, exc: KeyExpiredError) -> RedirectRespo
         orginal_url=request.url,
         refresh_token_name=refresh_token_name,
         access_token_name=access_token_name,
+        use_refresh_token=use_refresh_token,
     )
 
-    if refresh_key is None:
+    if refresh_key is None or not use_refresh_token:
         log.info("tk.starlette.expired.no_token")
         raise KeyDecodeError("You do not have a refresh token, go get one!")
 
@@ -327,7 +333,7 @@ def key_expired_handler(request: Request, exc: KeyExpiredError) -> RedirectRespo
     )
 
     response.set_cookie(
-        key="validate_access_token",
+        key="valid_access_token",
         value="True",
         expires=content.access_token_expires,
         httponly=False,
@@ -356,12 +362,14 @@ def key_decode_handler(request: Request, exc: KeyDecodeError) -> RedirectRespons
 
     refresh_token_name = getattr(request.app, "refresh_token_name", "refresh_token")
     access_token_name = getattr(request.app, "access_token_name", "access_token")
+    use_refresh_token = getattr(request.app, "use_refresh_token", True)
 
     log = get_logger()
     log = log.bind(
         orginal_url=request.url,
         refresh_token_name=refresh_token_name,
         access_token_name=access_token_name,
+        use_refresh_token=use_refresh_token,
     )
 
     response = RedirectResponse(url=request.app.login_url, status_code=302)
@@ -369,10 +377,10 @@ def key_decode_handler(request: Request, exc: KeyDecodeError) -> RedirectRespons
     log = log.bind(redirect_to=request.app.login_url)
 
     response.delete_cookie(access_token_name)
+    response.delete_cookie("valid_access_token")
+    response.delete_cookie("profile_data")
     response.delete_cookie(refresh_token_name)
     response.delete_cookie("valid_refresh_token")
-    response.delete_cookie("validate_access_token")
-    response.delete_cookie("profile_data")
 
     log.info("tk.starlette.decode.redirecting")
 
@@ -395,6 +403,10 @@ def on_auth_error(request: Request, exc: Exception):
     else:
         # By default, let's just redirect them and delete their cookies.
         return key_expired_handler(request=request, exc=exc)
+
+
+def transform_auth_error(request: Request, exc: Exception):
+    return Response("Authentication error", status_code=status.HTTP_401_UNAUTHORIZED)
 
 
 async def handle_redirect(code: str, state: str, request: Request) -> RedirectResponse:
@@ -441,33 +453,34 @@ async def handle_redirect(code: str, state: str, request: Request) -> RedirectRe
 
     refresh_token_name = getattr(request.app, "refresh_token_name", "refresh_token")
     access_token_name = getattr(request.app, "access_token_name", "access_token")
+    use_refresh_token = getattr(request.app, "use_refresh_token", True)
 
+    response.set_cookie(
+        key="valid_access_token",
+        value="True",
+        expires=content.access_token_expires,
+        httponly=False,
+    )
     response.set_cookie(
         key=access_token_name,
         value=content.access_token,
         expires=content.access_token_expires,
         httponly=True,
     )
-    response.set_cookie(
-        key=refresh_token_name,
-        value=content.refresh_token,
-        expires=content.refresh_token_expires,
-        httponly=True,
-    )
 
-    response.set_cookie(
-        key="valid_refresh_token",
-        value="True",
-        expires=content.refresh_token_expires,
-        httponly=False,
-    )
-
-    response.set_cookie(
-        key="validate_access_token",
-        value="True",
-        expires=content.access_token_expires,
-        httponly=False,
-    )
+    if use_refresh_token:
+        response.set_cookie(
+            key="valid_refresh_token",
+            value="True",
+            expires=content.refresh_token_expires,
+            httponly=False,
+        )
+        response.set_cookie(
+            key=refresh_token_name,
+            value=content.refresh_token,
+            expires=content.refresh_token_expires,
+            httponly=True,
+        )
 
     response.set_cookie(
         key="profile_data",
@@ -497,13 +510,16 @@ async def logout(request: Request) -> RedirectResponse:
 
     refresh_token_name = getattr(request.app, "refresh_token_name", "refresh_token")
     access_token_name = getattr(request.app, "access_token_name", "access_token")
+    use_refresh_token = getattr(request.app, "use_refresh_token", True)
 
-    if cookie := request.cookies.get(refresh_token_name, None):
-        httpx.post(request.app.expire_url, json={"refresh_token": cookie})
+    if use_refresh_token:
+        if cookie := request.cookies.get(refresh_token_name, None):
+            httpx.post(request.app.expire_url, json={"refresh_token": cookie})
 
     response.delete_cookie(refresh_token_name)
     response.delete_cookie(access_token_name)
     response.delete_cookie("valid_refresh_token")
-    response.delete_cookie("validate_access_token")
+    response.delete_cookie("valid_access_token")
     response.delete_cookie("profile_data")
+
     return response

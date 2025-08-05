@@ -53,6 +53,7 @@ from .starlette import (
     key_expired_handler,
     logout,
     on_auth_error,
+    transform_auth_error,
 )
 
 
@@ -60,7 +61,7 @@ class SOUserWithGrants(SOUser):
     grants: set[str] = Field(default_factory=set)
 
 
-def add_exception_handlers(app: FastAPI) -> FastAPI:
+def add_exception_handlers(app: FastAPI, allow_refresh: bool = True) -> FastAPI:
     """
     Adds exception handlers for authentication. To use these, you must:
 
@@ -73,6 +74,10 @@ def add_exception_handlers(app: FastAPI) -> FastAPI:
 
     - Set `app.refresh_token_name` to change the cookie name for the refresh token
     - Set `app.access_token_name` to change the cookie name for the access token
+
+    If you do not wish to allow automatic refreshing of the keys by the application
+    (e.g. you are running in 'consumer' mode where only 401 or 200s are allowed),
+    you can set allow_refresh = False.
     """
     app.add_exception_handler(KeyDecodeError, key_decode_handler)
     app.add_exception_handler(KeyExpiredError, key_expired_handler)
@@ -179,6 +184,8 @@ def global_setup(
     public_key: str,
     key_pair_type: str,
     add_middleware: bool = True,
+    handle_exceptions: bool = True,
+    use_refresh_token: bool = True,
 ) -> FastAPI:
     """
     Transform the app such that it is ready for authentication. Can either add middleware
@@ -207,6 +214,13 @@ def global_setup(
         This allows for the use of starlette's `@requries()` (against user grants), and
         access to `request.user` and `request.auth.scopes`. Alternatively, you can use
         the dependencies defined in this file.
+    handle_exceptions: bool = True,
+        If this is used, we automatically handle expired/broken credentials via the server
+        itself (including using refresh tokens). If it is not, you are left on your own
+        to handle the resulting 400-level errors.
+    use_refresh_token: bool = True,
+        Whether or not to set and use the refresh token cookie. Otherwise your users will
+        need to round-trip to the identity server every time the access token expires.
 
     Example
     -------
@@ -274,6 +288,7 @@ def global_setup(
     app.authentication_url = authentication_base_url
     app.client_secret = client_secret
     app.app_id = app_id
+    app.use_refresh_token = use_refresh_token
 
     app.public_key = public_key.encode("utf-8")
     app.key_pair_type = key_pair_type
@@ -289,9 +304,11 @@ def global_setup(
         app.add_middleware(
             AuthenticationMiddleware,
             backend=SOAuthCookieBackend(
-                public_key=app.public_key, key_pair_type=app.key_pair_type
+                public_key=app.public_key,
+                key_pair_type=app.key_pair_type,
+                use_refresh_token=use_refresh_token,
             ),
-            on_error=on_auth_error,
+            on_error=on_auth_error if handle_exceptions else transform_auth_error,
         )
 
     app.add_api_route(path="/logout", endpoint=logout)

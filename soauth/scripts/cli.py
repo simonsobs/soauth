@@ -31,9 +31,10 @@ def main():
         register = sys.argv[1] == "register"
         dev = sys.argv[2] == "dev"
         prod = sys.argv[2] == "prod"
+        consume = sys.argv[2] == "consume"
     except IndexError:
         print(
-            "Only supported command is soauth run dev, soauth run prod, or soauth setup {username}"
+            "Only supported command is soauth run dev, soauth run prod, soauth run consume, or soauth setup {username}"
         )
         exit(1)
 
@@ -78,7 +79,8 @@ def main():
         background_process.start()
         time.sleep(1)
         uvicorn.run("soauth.app.app:app", host="0.0.0.0", port=8001)
-
+    if run and consume:
+        uvicorn.run("soauth.toolkit.consumer:app", host="0.0.0.0", port=8002)
     if setup:
         from soauth.api.setup import initial_setup
         from soauth.config.settings import Settings

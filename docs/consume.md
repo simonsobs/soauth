@@ -17,6 +17,23 @@ This server runs on port 8002 and does two main things:
 2. Hosts an endpoint, `/introspect`, that takes the cookies in the request and 
    returns a 200 code if the tokens are good, and a 401 if they are bad.
 
+Configuration
+-------------
+
+You will need to [create an app](create.md) at the main `soauth` server site. Then, you will
+need the following environment variables set:
+
+- `SOAUTH_APP_BASE_URL` - the base URL for your consumer app, e.g.
+  `https://nersc.simonsobs.org/auth`.
+- `SOAUTH_AUTHENTICATION_BASE_URL` - the base URL for the auth service, e.g.
+  `https://identity.simonsobservatory.org`
+- `SOAUTH_APP_ID` - the APP ID from the `soauth` UI.
+- `SOAUTH_CLIENT_SECRET` - the client secret from the `soauth` UI.
+- `SOAUTH_PUBLIC_KEY` - the public key from the `soauth` UI.
+- `SOAUTH_KEY_PAIR_TYPE` - the key pair type from the `soauth` UI.
+- `SOAUTH_REQUIRED_GRANT` - the grant from `soauth` that you require to have access to this
+  service.
+
 Using with Nginx
 ----------------
 

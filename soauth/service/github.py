@@ -321,11 +321,11 @@ class GithubAuthProvider(AuthProvider):
             )
             log = log.bind(user_created=True, user_read=False)
 
-        log.bind(user_id=user.user_id)
+        log = log.bind(user_id=user.user_id)
         user.gh_access_token = access_token
         user.gh_last_logged_in = gh_last_logged_in
 
-        log.bind(gh_last_logged_in=gh_last_logged_in)
+        log = log.bind(gh_last_logged_in=gh_last_logged_in)
 
         user = await apply_organization_grants(
             access_token=access_token, user=user, settings=settings, conn=conn, log=log

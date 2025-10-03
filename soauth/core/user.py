@@ -5,6 +5,7 @@ A shared user object that is serialized.
 from pydantic import BaseModel
 
 from soauth.core.uuid import UUID
+from soauth.core.members import MembershipDetailsData
 
 
 class UserData(BaseModel):
@@ -17,3 +18,4 @@ class UserData(BaseModel):
     group_names: list[str] | None
     # UUIDs are not JSON serializable, so we use strings
     group_ids: list[str] | None
+    membership: MembershipDetailsData | None = None

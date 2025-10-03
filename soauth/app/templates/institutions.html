@@ -1,0 +1,55 @@
+{% extends "core.html" %}
+{% block content %}
+{% if user.is_authenticated %}
+{% for institution in institutions %}
+<section class="section">
+  <div class="nes-container with-title">
+    <p class="title"><a href="{{base_url}}/institutions/{{institution.institution_id}}">{{institution.institution_name}}</a></p>
+    <ul class="nes-list is-disc">
+      <li><span class="nes-text is-primary">Unit</span> {{ institution.unit_name }}</li>
+      <li><span class="nes-text is-primary">Role</span> {{ institution.role }}</li>
+    </ul>
+  </div>
+</section>
+{% endfor %}
+{% endif %}
+{% endblock %}
+{% block extrafooter %}
+{% if "admin" in scopes %}
+<section class="buttonholder" style="margin:1em">
+  <button type="button" class="nes-btn is-success"
+    onclick="document.getElementById('create-institution-dialog').showModal();">
+    +
+  </button>
+  <dialog class="nes-dialog is-rounded" id="create-institution-dialog">
+    <form method="POST" action="{{base_url}}/institutions/create">
+      <h3 class="title">Add a new institution</h3>
+      <div class="nes-field">
+        <label for="institution-name-field">Name</label>
+        <input type="text" id="institution-name-field" name="institution_name" class="nes-input is-success" placeholder="e.g. University of Pennsylvania"
+          style="margin-bottom:1em" required />
+      </div>
+      <div class="nes-field">
+        <label for="unit-name-field">Unit</label>
+        <input type="text" id="unit-name-field" name="unit_name" class="nes-input is-success" placeholder="e.g. School of Arts and Sciences"
+          style="margin-bottom:1em" required />
+      </div>
+      <div class="nes-field">
+        <label for="publication-text-field">Publication Text</label>
+        <input type="text" id="publication-text-field" name="publication_text" class="nes-input is-success" placeholder="e.g. full address"
+          style="margin-bottom:1em" required />
+      </div>
+      <div class="nes-field">
+        <label for="role-field">Role</label>
+        <input type="text" id="role-field" name="role" class="nes-input is-success" placeholder="e.g. member"
+          style="margin-bottom:1em" required />
+      </div>
+
+      <button type="button" class="nes-btn"
+        onclick="document.getElementById('create-institution-dialog').close();">Cancel</button>
+      <input class="nes-btn is-error" type="submit" value="Confirm" />
+    </form>
+  </dialog>
+</section>
+{% endif %}
+{% endblock %}

@@ -122,3 +122,40 @@ def remove_grant(
     return RedirectResponse(
         url=f"{request.app.base_url}/users/{user_id}", status_code=303
     )
+
+
+@router.post("/{user_id}/promote")
+@requires("admin")
+def promote_user(
+    user_id: UUID,
+    request: Request,
+    log: LoggerDependency,
+    first_name: Annotated[str, Form()],
+    last_name: Annotated[str, Form()],
+    email: Annotated[str, Form()],
+    status: Annotated[str, Form()],
+    confluence: Annotated[str | None, Form()] = None,
+    website: Annotated[str | None, Form()] = None,
+    orcid: Annotated[str | None, Form()] = None,
+):
+    log = log.bind(user_id=user_id)
+    log.debug("app.admin.user_promote")
+
+    handle_request(
+        url=f"{request.app.institution_detail_url}/promote/{user_id}",
+        request=request,
+        method="post",
+        json={
+            "first_name": first_name,
+            "last_name": last_name,
+            "email": email,
+            "status": status,
+            "confluence": confluence,
+            "website": website,
+            "orcid": orcid,
+        },
+    )
+
+    return RedirectResponse(
+        url=f"{request.app.base_url}/users/{user_id}", status_code=303
+    )

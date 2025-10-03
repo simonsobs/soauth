@@ -47,17 +47,22 @@
         {% endif %}
         {% if "admin" in scopes %}
         <section class="buttonholder">
-          <button type="button" class="nes-btn is-primary" onclick="location.href='{{user_list}}'">User List</button>
+          <button type="button" class="nes-btn is-primary" onclick="location.href='{{user_list}}'">Users</button>
         </section>
         {% endif %}
         {% if "admin" in scopes or "appmanager" in scopes %}
         <section class="buttonholder">
-          <button type="button" class="nes-btn is-primary" onclick="location.href='{{app_list}}'">App List</button>
+          <button type="button" class="nes-btn is-primary" onclick="location.href='{{app_list}}'">Apps</button>
         </section>
         {% endif %}
+        {% if "admin" in scopes or "membership" in scopes %}
+        <section class="buttonholder">
+          <button type="button" class="nes-btn is-primary" onclick="location.href='{{institution_list}}'">Institutions</button>
+        </section>
+        {%endif%}
         {% if user.is_authenticated %}
         <section class="buttonholder" style="order:-1">
-          <button type="button" class="nes-btn is-success" onclick="location.href='{{base_url}}'">Home</button>
+          <button type="button" class="nes-btn is-success" onclick="location.href='{{app_list}}'">Home</button>
         </section>
         <section class="buttonholder" style="margin-left:auto">
           <button type="button" class="nes-btn is-error" onclick="location.href='{{logout_url}}'">Logout</button>

@@ -3,7 +3,7 @@ ORM for user information.
 """
 
 from datetime import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from sqlalchemy import Column, DateTime
 from sqlmodel import Field, Relationship, SQLModel
@@ -11,6 +11,7 @@ from sqlmodel import Field, Relationship, SQLModel
 from soauth.core.user import UserData
 from soauth.core.uuid import UUID, uuid7
 from soauth.database.group import GroupMembership
+from soauth.database.members import UserInstitutionalMembership, MembershipDetails
 
 if TYPE_CHECKING:
     from .app import App
@@ -47,6 +48,9 @@ class User(SQLModel, table=True):
         link_model=GroupMembership,
         sa_relationship_kwargs=dict(lazy="joined"),
     )
+
+    institutions: list["UserInstitutionalMembership"] = Relationship(back_populates="user")
+    membership: Optional["MembershipDetails"] = Relationship(back_populates="user", sa_relationship_kwargs=dict(lazy="joined"))
 
     managed_apps: list["App"] = Relationship(back_populates="created_by")
 
@@ -134,4 +138,5 @@ class User(SQLModel, table=True):
             if include_groups
             else None,
             profile_image=self.gh_profile_image_url,
+            membership=self.membership.to_core() if self.membership else None,
         )

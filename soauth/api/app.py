@@ -18,6 +18,7 @@ from .docs import create_protected_docs
 from .groups import group_app
 from .keys import key_management_routes
 from .login import login_app
+from .members import membership_app
 
 settings = SETTINGS()
 
@@ -90,3 +91,4 @@ app.include_router(admin_routes, prefix="/admin")
 app.include_router(app_management_routes, prefix="/apps")
 app.include_router(key_management_routes, prefix="/keys")
 app.include_router(group_app, prefix="/groups")
+app.include_router(membership_app, prefix="/membership")

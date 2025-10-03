@@ -1,0 +1,71 @@
+{% extends "core.html" %}
+{% block content %}
+{% if user.is_authenticated %}
+<section class="section">
+  <div class="nes-container with-title">
+    <p class="title">Institution Information</p>
+    <div style="display:flex">
+      <ul class="nes-list is-disc" style="margin-bottom:0">
+        <li><span class="nes-text is-primary">Institution ID</span> {{institution.institution_id}}</li>
+        <li><span class="nes-text is-primary">Institution name</span> {{institution.institution_name}}</li>
+        <li><span class="nes-text is-primary">Unit Name</span> {{institution.unit_name}}</li>
+        <li><span class="nes-text is-primary">Role</span> {{institution.role}}</li>
+        <li><span class="nes-text is-primary">Publication Text</span> {{institution.publication_text}}</li>
+    </div>
+  </div>
+</section>
+<section>
+  <div class="nes-container with-title">
+    <p class="title">Members</p>
+    {% if members|length == 0 %}
+    <p>No members found for this institution.</p>
+    {% else %}
+    <table class="nes-table is-bordered is-centered", style="margin-bottom:1em">
+      <thead>
+        <tr>
+          <th>User</th>
+          <th>Name</th>
+          <th>Member Since</th>
+          <th>Member Until</th>
+          <th>Current Member</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for member in members %}
+        <tr>
+          <td><a href="{{user_list}}/{{member.user_id}}">{{member.user_name}}</a></td>
+          <td>{{member.first_name}} {{member.last_name}}</td>
+          <td>{{member.institutional_member_since}}</td>
+          <td>{{member.institutional_member_until}}</td>
+          <td>{{"Yes" if member.institutional_current_member else "No"}}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+    {% if "admin" in scopes %}
+      <section class="buttonholder" style="align-self:end;margin-left:auto;margin-right:0">
+        <button type="button" class="nes-btn is-success"
+          onclick="document.getElementById('add-user-dialog-{{institution.institution_id}}').showModal();">
+          +
+        </button>
+        <dialog class="nes-dialog is-rounded" id="add-user-dialog-{{institution.institution_id}}">
+          <form method="POST" action="{{base_url}}/institutions/{{ institution.institution_id }}/add">
+            <h3 class="title">Add user</h3>
+            <p>Add a user (by ID) to the institution {{institution.institution_name}}.</p>
+            <div class="nes-field is-inline">
+              <label for="add-user-field">User ID:</label>
+              <input type="text" id="add-user-field" name="user_id" class="nes-input is-success" placeholder="..."
+                style="margin-bottom:1em" required />
+            </div>
+            <button type="button" class="nes-btn"
+              onclick="document.getElementById('add-user-dialog-{{institution.institution_id}}').close();">Cancel</button>
+            <input class="nes-btn is-error" type="submit" value="Confirm" />
+          </form>
+        </dialog>
+      </section>
+      {%endif%}
+  </div>
+</section>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,46 @@
+"""\
+Membership models.
+"""
+
+from datetime import datetime
+from pydantic import BaseModel
+
+from soauth.core.uuid import UUID
+
+
+class InstitutionData(BaseModel):
+    institution_id: UUID | None = None
+    institution_name: str
+    unit_name: str
+    publication_text: str
+    role: str | None = None
+
+
+class MembershipDetailsData(BaseModel):
+    membership_details_id: UUID
+    member_since: datetime | None = None
+    member_until: datetime | None = None
+    status: str | None = None
+    first_name: str | None = None
+    last_name: str | None = None
+    email: str | None = None
+    country: str | None = None
+    confluence: str | None = None
+    website: str | None = None
+    orcid: str | None = None
+
+
+class InstitutionalMembershipData(BaseModel):
+    user_id: UUID
+    institution_id: UUID
+    user_name: str
+
+    first_name: str
+    last_name: str
+
+    membership_details: MembershipDetailsData
+
+    institutional_member_since: datetime
+    institutional_member_until: datetime | None = None
+    
+    institutional_current_member: bool

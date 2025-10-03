@@ -18,6 +18,7 @@ from .apps import router as app_router
 from .groups import router as group_router
 from .keys import router as key_router
 from .users import router as user_router
+from .institutions import router as institutions_router
 
 settings = Settings()
 
@@ -69,6 +70,8 @@ async def lifespan(app: FastAPI):
     app.group_detail_url = f"{settings.hostname}/groups"
     app.group_list_url = f"{settings.hostname}/groups/list"
     app.group_grant_update_url = f"{settings.hostname}/admin/group"
+    app.institution_detail_url = f"{settings.hostname}/membership"
+    app.institution_list_url = f"{settings.hostname}/membership/list"
     yield
 
 
@@ -101,3 +104,4 @@ app.include_router(app_router)
 app.include_router(user_router)
 app.include_router(key_router)
 app.include_router(group_router)
+app.include_router(institutions_router)

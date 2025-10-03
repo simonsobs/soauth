@@ -32,6 +32,26 @@
     </ul>
   </div>
 </section>
+{% if other_user.membership %}
+<section class="section"></section>
+<section class="section">
+  <div class="nes-container with-title">
+    <p class="title">Membership Information</p>
+    <ul class="nes-list is-disc">
+      <li><span class="nes-text is-primary">Membership Details ID</span> {{other_user.membership.membership_details_id}}</li>
+      <li><span class="nes-text is-primary">Status</span> {{other_user.membership.status}}</li>
+      <li><span class="nes-text is-primary">Member since</span> {{other_user.membership.member_since}}</li>
+      <li><span class="nes-text is-primary">Member until</span> {{other_user.membership.member_until}}</li>
+      <li><span class="nes-text is-primary">First name</span> {{other_user.membership.first_name}}</li>
+      <li><span class="nes-text is-primary">Last name</span> {{other_user.membership.last_name}}</li>
+      <li><span class="nes-text is-primary ">Email</span> {{other_user.membership.email}}</li>
+      <li><span class="nes-text is-primary">Confluence</span> {{other_user.membership.confluence}}</li>
+      <li><span class="nes-text is-primary">Website</span> {{other_user.membership.website}}</li>
+      <li><span class="nes-text is-primary">ORCID</span> {{other_user.membership.orcid}}</li>
+    </ul>
+  </div>
+</section>
+{% endif %}
 <section class="section">
   <div class="nes-container with-title">
     <p class="title">Active Apps</p>
@@ -138,6 +158,59 @@
           </form>
         </dialog>
       </section>
+      {% if not other_user.membership %}
+      <section class="buttonholder">
+        <button type="button" class="nes-btn is-success"
+          onclick="document.getElementById('promote-user-dialog').showModal();">
+          Promote to Member          
+        </button>
+        <dialog class="nes-dialog is-rounded" id="promote-user-dialog">
+          <form method="POST" action="{{base_url}}/users/{{other_user.user_id}}/promote">
+            <h3 class="title">Promote</h3>
+            <p>This form promotes users to members, conferring membership for them. It does not
+            automatically provide access to downstream services.</p>
+            <div class="nes-field is-inline">
+              <label for="first-name-field">First name:</label>
+              <input type="text" id="first-name-field" name="first_name" class="nes-input is-success" value="{{other_user.full_name.split(' ')[0]}}"
+                style="margin-bottom:1em" required />
+            </div>
+            <div class="nes-field is-inline">
+              <label for="last-name-field">Last name:</label>
+              <input type="text" id="last-name-field" name="last_name" class="nes-input is-success" value="{{other_user.full_name.split(' ')[-1]}}"
+                style="margin-bottom:1em" required />
+            </div>
+            <div class="nes-field is-inline">
+              <label for="email-field">Email:</label>
+              <input type="email" id="email-field" name="email" class="nes-input is-success" value="{{other_user.email}}"
+                style="margin-bottom:1em" required />
+            </div>
+            <div class="nes-field is-inline">
+              <label for="status-field">Status:</label>
+              <input type="text" id="status-field" name="status" class="nes-input is-success" placeholder="e.g. junior"
+                style="margin-bottom:1em" required />
+            </div>
+            <div class="nes-field is-inline">
+              <label for="website-field">Website:</label>
+              <input type="url" id="website-field" name="website" class="nes-input is-success" placeholder="https://simonsobservatory.org"
+                style="margin-bottom:1em" />
+            </div>
+            <div class="nes-field is-inline">
+              <label for="orcid-field">ORCID:</label>
+              <input type="text" id="orcid-field" name="orcid" class="nes-input is-success" placeholder="0000-0000-0000-0000"
+                style="margin-bottom:1em" />
+            </div>
+            <div class="nes-field is-inline">
+              <label for="confluence-field">Confluence:</label>
+              <input type="text" id="confluence-field" name="confluence" class="nes-input is-success"
+                style="margin-bottom:1em" />
+            </div>
+            <button type="button" class="nes-btn"
+              onclick="document.getElementById('promote-user-dialog').close();">Cancel</button>
+            <input class="nes-btn is-error" type="submit" value="Confirm" />
+          </form>
+        </dialog>
+      </section>
+      {% endif %}
     </div>
   </div>
 </section>

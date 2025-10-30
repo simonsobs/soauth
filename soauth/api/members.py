@@ -256,3 +256,40 @@ async def promote_user_to_member(
 
     return None
 
+
+@membership_app.post(
+    "/{institution_id}/affiliate_member/{user_id}",
+    summary="Add an affiliated person to an institution",
+    description="Add a user as affiliated wtih an institution, only available to either "
+    "admins or users with the membership grant.",
+    responses={
+        200: {"description": "User added as member."},
+        401: {"description": "Unauthorized."},
+        404: {"description": "Institution or user not found."},
+        400: {"description": "User is not a member."},
+    })
+async def affiliate_member_to_institution(
+    institution_id: UUID,
+    user_id: UUID,
+    user: AuthenticatedUserDependency,
+    conn: DatabaseDependency,
+    log: LoggerDependency,
+) -> None:
+    """
+    Affiliate a member to an institution; different from setting their primary membership institution.
+    """
+    log = log.bind(user_id=user.user_id, institution_id=institution_id, new_member_id=user_id)
+
+    if "admin" not in user.grants and "membership" not in user.grants:
+        await log.awarning("institution.affiliate_member_unauthorized", institution_id=institution_id)
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    await membership_service.affiliate_member_with_institution(
+        institution_id=institution_id,
+        user_id=user_id,
+        conn=conn,
+        log=log
+    )
+    await log.ainfo("institution.member_affiliated")
+
+    return None

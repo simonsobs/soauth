@@ -4,7 +4,7 @@ Service layer implementing membership-related logic.
 
 from datetime import datetime
 from sqlalchemy import select
-from soauth.database.members import Institution, MembershipDetails, UserInstitutionalMembership, UserIsNotMember, InstitutionNotFound
+from soauth.database.members import Institution, MembershipDetails, UserInstitutionalAffiliation, UserInstitutionalMembership, UserIsNotMember, InstitutionNotFound
 from soauth.database.user import User
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -244,3 +244,79 @@ async def update_membership_details(
     await log.ainfo("membership.updated")
 
     return new_membership
+
+
+async def get_member_affiliations(
+    user_id: UUID,
+    conn: AsyncSession,
+    log: FilteringBoundLogger,
+    return_previous: bool = True,
+) -> list[UserInstitutionalAffiliation]:
+    """
+    Check what institutions a user is affiliated with.
+    """
+    stmt = select(UserInstitutionalAffiliation)
+    stmt = stmt.filter_by(user_id=user_id)
+
+    log = log.bind(user_id=user_id)
+
+    if not return_previous:
+        stmt = stmt.filter_by(currently_affiliated=True)
+
+    result = await conn.execute(stmt)
+    affiliations = result.unique().scalars().all()
+
+    await log.ainfo("get_affiliations.complete", number_of_affiliations=len(result))
+
+    return affiliations
+
+
+async def affiliate_member_with_institution(
+    institution_id: UUID,
+    user_id: UUID,
+    conn: AsyncSession,
+    log: FilteringBoundLogger
+) -> None:
+    """
+    Add a user as affiliated with an institution.
+    """
+
+    log = log.bind(institution_id=institution_id, user_id=user_id)
+
+    user = await user_service.read_by_id(user_id=user_id, conn=conn)
+
+    if not user.membership:
+        await log.ainfo("affiliate_member.user_not_member")
+        raise UserIsNotMember(
+            f"User {user.user_id} is not a member"
+        )
+    
+    affiliations = await get_member_affiliations(
+        user_id=user_id, conn=conn, log=log, return_previous=False
+    )
+
+    max_ordering = 0
+
+    for affiliated_institution in affiliations:
+        if affiliated_institution.institution_id == institution_id:
+            await log.awarning("affiliate_member.user_already_affiliated", affiliation_id=affiliated_institution.affiliation_id)
+            raise ValueError(
+                f"User {user_id} already affiliated with {institution_id}"
+            )
+        
+        max_ordering = max(max_ordering, affiliated_institution.ordering)
+
+    affiliation = UserInstitutionalAffiliation(
+        institution_id=institution_id,
+        user_id=user_id,
+        affiliated_since=datetime.now(),
+        currently_affiliated=True,
+        ordering=max_ordering + 1
+    )
+
+    conn.add(affiliation)
+    await conn.flush()
+
+    await log.ainfo("affiliation.member_added")
+
+    return affiliation

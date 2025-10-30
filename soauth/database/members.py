@@ -86,17 +86,20 @@ class UserInstitutionalMembership(SQLModel, table=True):
 class UserInstitutionalAffiliation(SQLModel, table=True):
     __tablename__ = "user_institutional_affiliation"
 
+    affiliation_id: UUID = Field(primary_key=True, default_factory=uuid7)
+
     institution_id: Optional[UUID] = Field(
-        primary_key=True, foreign_key="institution.institution_id", ondelete="CASCADE"
+        foreign_key="institution.institution_id", ondelete="CASCADE"
     )
     user_id: Optional[UUID] = Field(
-        primary_key=True, foreign_key="user.user_id", ondelete="CASCADE"
+        foreign_key="user.user_id", ondelete="CASCADE"
     )
 
     institution: "Institution" = Relationship(back_populates="members")
     user: "User" = Relationship(back_populates="institutions")
 
     affiliated_since: datetime = Field(default_factory=datetime.now)
+    affiliated_until: datetime | None = None
 
     currently_affiliated: bool = True
     ordering: int | None = 0

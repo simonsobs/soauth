@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Optional
 from soauth.core.members import MembershipDetailsData
 
 
-from soauth.core.members import InstitutionData, InstitutionalMembershipData
+from soauth.core.members import InstitutionData, InstitutionalMembershipData, InstitutionalAffiliationData
 
 if TYPE_CHECKING:
     from .user import User
@@ -69,9 +69,7 @@ class UserInstitutionalMembership(SQLModel, table=True):
 
     current_member: bool = True
 
-    def to_core(self) -> "InstitutionalMembershipData":
-        from soauth.core.members import InstitutionalMembershipData
-
+    def to_core(self) -> InstitutionalMembershipData:
         return InstitutionalMembershipData(
             user_id=self.user_id,
             institution_id=self.institution_id,
@@ -83,7 +81,41 @@ class UserInstitutionalMembership(SQLModel, table=True):
             institutional_member_until=self.member_until,
             institutional_current_member=self.current_member,
         )
+    
 
+class UserInstitutionalAffiliation(SQLModel, table=True):
+    __tablename__ = "user_institutional_affiliation"
+
+    institution_id: Optional[UUID] = Field(
+        primary_key=True, foreign_key="institution.institution_id", ondelete="CASCADE"
+    )
+    user_id: Optional[UUID] = Field(
+        primary_key=True, foreign_key="user.user_id", ondelete="CASCADE"
+    )
+
+    institution: "Institution" = Relationship(back_populates="members")
+    user: "User" = Relationship(back_populates="institutions")
+
+    affiliated_since: datetime = Field(default_factory=datetime.now)
+
+    currently_affiliated: bool = True
+    ordering: int | None = 0
+
+    def to_core(self) -> InstitutionalAffiliationData:
+        return InstitutionalAffiliationData(
+            user_id=self.user_id,
+            institution_id=self.institution_id,
+            user_name=self.user.user_name,
+            first_name=self.user.membership.first_name,
+            last_name=self.user.membership.last_name,
+            institution_name=self.institution.institution_name,
+            unit_name=self.institution.unit_name,
+            publication_text=self.institution.publication_text,
+            affiliated_since=self.affiliated_since,
+            currently_affiliated=self.currently_affiliated,
+            ordering=self.ordering,
+        )
+    
 
 class MembershipDetails(SQLModel, table=True):
     __tablename__ = "membership_details"

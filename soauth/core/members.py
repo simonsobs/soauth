@@ -3,7 +3,7 @@ Membership models.
 """
 
 from datetime import datetime
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator, model_validator
 
 from soauth.core.uuid import UUID
 
@@ -44,3 +44,30 @@ class InstitutionalMembershipData(BaseModel):
     institutional_member_until: datetime | None = None
     
     institutional_current_member: bool
+
+
+class InstitutionalAffiliationData(BaseModel):
+    user_id: UUID
+    institution_id: UUID
+
+    user_name: str
+
+    first_name: str
+    last_name: str
+
+    instituion_name: str
+    unit_name: str
+    publication_text: str
+
+    affiliated_since: datetime
+
+    currently_affiliated: bool
+    ordering: int | None = None
+
+    @model_validator(mode="after")
+    def check_ordering(self):
+        if self.currently_affiliated and self.ordering is None:
+            raise ValueError("If 'currently_affiliated' is True, 'ordering' must be an integer.")
+        if not self.currently_affiliated and self.ordering is not None:
+            raise ValueError("If 'currently_affiliated' is False, 'ordering' must be None.")
+        return self

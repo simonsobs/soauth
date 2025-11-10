@@ -297,7 +297,7 @@ def key_expired_handler(request: Request, exc: KeyExpiredError) -> RedirectRespo
             return response
 
         if response.status_code != 200:
-            log = log.bind(status_code=response.status_code, content=response.json())
+            log = log.bind(status_code=response.status_code, content=response.content)
             log.info("tk.starlette.expired.cannot_refresh_key")
 
             # Best thing we can do is send them back where they came from, and make them run

@@ -56,6 +56,7 @@ def main():
                 "SOAUTH_DATABASE_ECHO": "False",
                 "SOAUTH_CREATE_EXAMPLE_APP_AND_USER": "True",
                 "SOAUTH_HOST_DEVELOPMENT_ONLY_ENDPOINT": "True",
+                "SOAUTH_ACCESS_KEY_EXPIRY": "00:01:00",
             }
 
             background_process = Process(target=run_server, kwargs=environment)

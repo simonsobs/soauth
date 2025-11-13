@@ -16,9 +16,9 @@ from soauth.toolkit.fastapi import global_setup
 
 from .apps import router as app_router
 from .groups import router as group_router
+from .institutions import router as institutions_router
 from .keys import router as key_router
 from .users import router as user_router
-from .institutions import router as institutions_router
 
 settings = Settings()
 

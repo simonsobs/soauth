@@ -4,8 +4,8 @@ A shared user object that is serialized.
 
 from pydantic import BaseModel
 
-from soauth.core.uuid import UUID
 from soauth.core.members import MembershipDetailsData
+from soauth.core.uuid import UUID
 
 
 class UserData(BaseModel):

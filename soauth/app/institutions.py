@@ -30,7 +30,9 @@ def handle_request(url: str, request: Request, method: str = "get", **kwargs):
 
 @router.get("")
 @templateify(template_name="institutions.html", log_name="app.admin.institutions")
-def institutions(request: Request, log: LoggerDependency, templates: TemplateDependency):
+def institutions(
+    request: Request, log: LoggerDependency, templates: TemplateDependency
+):
     response = handle_request(url=request.app.institution_list_url, request=request)
     return {"institutions": response.json()}
 
@@ -45,10 +47,15 @@ def create_institution(
     request: Request,
     log: LoggerDependency,
 ):
-    log = log.bind(user_id=request.user.user_id, institution_name=institution_name, unit_name=unit_name, role=role)
+    log = log.bind(
+        user_id=request.user.user_id,
+        institution_name=institution_name,
+        unit_name=unit_name,
+        role=role,
+    )
     log.debug("app.admin.institution_create")
 
-    response = handle_request(
+    handle_request(
         url=request.app.institution_detail_url,
         request=request,
         method="PUT",
@@ -92,10 +99,12 @@ def add_member(
     request: Request,
     log: LoggerDependency,
 ):
-    log = log.bind(user_id=request.user.user_id, institution_id=institution_id, add_user_id=user_id)
+    log = log.bind(
+        user_id=request.user.user_id, institution_id=institution_id, add_user_id=user_id
+    )
     log.debug("app.admin.institution_add_member")
 
-    response = handle_request(
+    handle_request(
         url=f"{request.app.institution_detail_url}/{institution_id}/add_member/{user_id}",
         request=request,
         method="POST",

@@ -11,7 +11,11 @@ from sqlmodel import Field, Relationship, SQLModel
 from soauth.core.user import UserData
 from soauth.core.uuid import UUID, uuid7
 from soauth.database.group import GroupMembership
-from soauth.database.members import UserInstitutionalAffiliation, UserInstitutionalMembership, MembershipDetails
+from soauth.database.members import (
+    MembershipDetails,
+    UserInstitutionalAffiliation,
+    UserInstitutionalMembership,
+)
 
 if TYPE_CHECKING:
     from .app import App
@@ -49,9 +53,15 @@ class User(SQLModel, table=True):
         sa_relationship_kwargs=dict(lazy="joined"),
     )
 
-    institutions: list["UserInstitutionalMembership"] = Relationship(back_populates="user")
-    affiliations: list["UserInstitutionalAffiliation"] = Relationship(back_populates="user")
-    membership: Optional["MembershipDetails"] = Relationship(back_populates="user", sa_relationship_kwargs=dict(lazy="joined"))
+    institutions: list["UserInstitutionalMembership"] = Relationship(
+        back_populates="user"
+    )
+    affiliations: list["UserInstitutionalAffiliation"] = Relationship(
+        back_populates="user"
+    )
+    membership: Optional["MembershipDetails"] = Relationship(
+        back_populates="user", sa_relationship_kwargs=dict(lazy="joined")
+    )
 
     managed_apps: list["App"] = Relationship(back_populates="created_by")
 

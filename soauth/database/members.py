@@ -3,13 +3,17 @@ Membership information.
 """
 
 from datetime import datetime
-from sqlmodel import Field, Relationship, SQLModel
-from soauth.core.uuid import UUID, uuid7
 from typing import TYPE_CHECKING, Optional
-from soauth.core.members import MembershipDetailsData
 
+from sqlmodel import Field, Relationship, SQLModel
 
-from soauth.core.members import InstitutionData, InstitutionalMembershipData, InstitutionalAffiliationData
+from soauth.core.members import (
+    InstitutionalAffiliationData,
+    InstitutionalMembershipData,
+    InstitutionData,
+    MembershipDetailsData,
+)
+from soauth.core.uuid import UUID, uuid7
 
 if TYPE_CHECKING:
     from .user import User
@@ -25,7 +29,7 @@ class InstitutionNotFound(Exception):
 
 class Institution(SQLModel, table=True):
     __tablename__ = "institution"
-    
+
     institution_id: UUID = Field(primary_key=True, default_factory=uuid7)
 
     institution_name: str
@@ -80,12 +84,12 @@ class UserInstitutionalMembership(SQLModel, table=True):
             user_name=self.user.user_name,
             first_name=self.user.membership.first_name,
             last_name=self.user.membership.last_name,
-            membership_details=self.user.membership.to_core(), # Do not need to guard against None because must be membership to have an institutional membership
+            membership_details=self.user.membership.to_core(),  # Do not need to guard against None because must be membership to have an institutional membership
             institutional_member_since=self.member_since,
             institutional_member_until=self.member_until,
             institutional_current_member=self.current_member,
         )
-    
+
 
 class UserInstitutionalAffiliation(SQLModel, table=True):
     __tablename__ = "user_institutional_affiliation"
@@ -95,9 +99,7 @@ class UserInstitutionalAffiliation(SQLModel, table=True):
     institution_id: Optional[UUID] = Field(
         foreign_key="institution.institution_id", ondelete="CASCADE"
     )
-    user_id: Optional[UUID] = Field(
-        foreign_key="user.user_id", ondelete="CASCADE"
-    )
+    user_id: Optional[UUID] = Field(foreign_key="user.user_id", ondelete="CASCADE")
 
     institution: "Institution" = Relationship(back_populates="affiliates")
     user: "User" = Relationship(back_populates="affiliations")
@@ -122,7 +124,7 @@ class UserInstitutionalAffiliation(SQLModel, table=True):
             currently_affiliated=self.currently_affiliated,
             ordering=self.ordering,
         )
-    
+
 
 class MembershipDetails(SQLModel, table=True):
     __tablename__ = "membership_details"

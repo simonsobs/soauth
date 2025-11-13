@@ -3,17 +3,23 @@ Service layer implementing membership-related logic.
 """
 
 from datetime import datetime
+
 from sqlalchemy import select
-from soauth.database.members import Institution, MembershipDetails, UserInstitutionalAffiliation, UserInstitutionalMembership, UserIsNotMember, InstitutionNotFound
-from soauth.database.user import User
-
 from sqlalchemy.ext.asyncio import AsyncSession
-from structlog.typing import FilteringBoundLogger
 from sqlalchemy.orm import selectinload
-
-from . import user as user_service
+from structlog.typing import FilteringBoundLogger
 
 from soauth.core.uuid import UUID
+from soauth.database.members import (
+    Institution,
+    InstitutionNotFound,
+    MembershipDetails,
+    UserInstitutionalAffiliation,
+    UserInstitutionalMembership,
+    UserIsNotMember,
+)
+
+from . import user as user_service
 
 
 async def create_institution(
@@ -22,7 +28,7 @@ async def create_institution(
     publication_text: str,
     role: str | None,
     conn: AsyncSession,
-    log: FilteringBoundLogger
+    log: FilteringBoundLogger,
 ) -> Institution:
     """
     Create a new institution entry.
@@ -45,39 +51,36 @@ async def create_institution(
         institution_name=institution_name,
         unit_name=unit_name,
         publication_text=publication_text,
-        role=role
+        role=role,
     )
 
     conn.add(institution)
     await conn.flush()
 
-    await log.ainfo("institution.created", institution_id=str(institution.institution_id))
+    await log.ainfo(
+        "institution.created", institution_id=str(institution.institution_id)
+    )
     return institution
 
 
 async def get_institution_list(
-    conn: AsyncSession,
-    log: FilteringBoundLogger
+    conn: AsyncSession, log: FilteringBoundLogger
 ) -> list[Institution]:
     """
     Get a list of all institutions.
     """
 
-    result = await conn.execute(
-        select(Institution)
-    )
+    result = await conn.execute(select(Institution))
 
     institutions = result.unique().scalars().all()
 
     log.info("institution.listed", number_of_institutions=len(institutions))
 
-    return institutions 
+    return institutions
 
 
 async def read_by_id(
-    institution_id: UUID,
-    conn: AsyncSession,
-    log: FilteringBoundLogger
+    institution_id: UUID, conn: AsyncSession, log: FilteringBoundLogger
 ) -> Institution | None:
     """
     Read an institution by its ID.
@@ -85,15 +88,15 @@ async def read_by_id(
 
     log = log.bind(institution_id=institution_id)
 
-    result = await conn.execute(select(Institution).where(Institution.institution_id == institution_id))
+    result = await conn.execute(
+        select(Institution).where(Institution.institution_id == institution_id)
+    )
 
     institution = result.scalar_one_or_none()
 
     if institution is None:
         log.awarning("institution.not_found")
-        raise InstitutionNotFound(
-            f"Institution {institution_id} not found"
-        )
+        raise InstitutionNotFound(f"Institution {institution_id} not found")
 
     await log.ainfo("institution.read")
 
@@ -101,10 +104,7 @@ async def read_by_id(
 
 
 async def add_member_to_institution(
-    institution_id: UUID,
-    user_id: UUID,
-    conn: AsyncSession,
-    log: FilteringBoundLogger
+    institution_id: UUID, user_id: UUID, conn: AsyncSession, log: FilteringBoundLogger
 ) -> None:
     """
     Add a user as a member to an institution.
@@ -117,9 +117,7 @@ async def add_member_to_institution(
 
     if not user.membership:
         await log.ainfo("add_member.user_not_member")
-        raise UserIsNotMember(
-            f"User {user.user_id} is not a member"
-        )
+        raise UserIsNotMember(f"User {user.user_id} is not a member")
 
     membership = UserInstitutionalMembership(
         institution=institution,
@@ -134,9 +132,7 @@ async def add_member_to_institution(
 
 
 async def get_membership_list_of_institution(
-    institution_id: UUID,
-    conn: AsyncSession,
-    log: FilteringBoundLogger
+    institution_id: UUID, conn: AsyncSession, log: FilteringBoundLogger
 ) -> list[UserInstitutionalMembership]:
     """
     Get a list of all members of an institution.
@@ -145,11 +141,9 @@ async def get_membership_list_of_institution(
     log = log.bind(institution_id=institution_id)
 
     result = await conn.execute(
-        select(UserInstitutionalMembership).where(
-            UserInstitutionalMembership.institution_id == institution_id
-        ).options(
-            selectinload(UserInstitutionalMembership.user)
-        )
+        select(UserInstitutionalMembership)
+        .where(UserInstitutionalMembership.institution_id == institution_id)
+        .options(selectinload(UserInstitutionalMembership.user))
     )
 
     memberships = result.unique().scalars().all()
@@ -157,7 +151,7 @@ async def get_membership_list_of_institution(
     log.info("institution.members_listed", number_of_members=len(memberships))
 
     return memberships
-    
+
 
 async def update_user_to_be_member(
     user_id: UUID,
@@ -170,10 +164,9 @@ async def update_user_to_be_member(
     orcid: str | None,
     conn: AsyncSession,
     log: FilteringBoundLogger,
-
 ):
     log = log.bind(user_id=user_id, first_name=first_name, last_name=last_name)
-    
+
     user = await user_service.read_by_id(user_id=user_id, conn=conn)
 
     member_details = MembershipDetails(
@@ -210,7 +203,7 @@ async def update_membership_details(
     website: str | None,
     orcid: str | None,
     conn: AsyncSession,
-    log: FilteringBoundLogger
+    log: FilteringBoundLogger,
 ):
     log = log.bind(user_id=user_id)
 
@@ -218,10 +211,8 @@ async def update_membership_details(
 
     if not user.membership:
         await log.awarning("update_membership.not_a_member")
-        raise UserIsNotMember(
-            f"User {user_id} is not a member"
-        )
-    
+        raise UserIsNotMember(f"User {user_id} is not a member")
+
     new_membership = user.membership.update(
         member_since=member_since,
         member_until=member_until,
@@ -272,10 +263,7 @@ async def get_member_affiliations(
 
 
 async def affiliate_member_with_institution(
-    institution_id: UUID,
-    user_id: UUID,
-    conn: AsyncSession,
-    log: FilteringBoundLogger
+    institution_id: UUID, user_id: UUID, conn: AsyncSession, log: FilteringBoundLogger
 ) -> None:
     """
     Add a user as affiliated with an institution.
@@ -287,10 +275,8 @@ async def affiliate_member_with_institution(
 
     if not user.membership:
         await log.ainfo("affiliate_member.user_not_member")
-        raise UserIsNotMember(
-            f"User {user.user_id} is not a member"
-        )
-    
+        raise UserIsNotMember(f"User {user.user_id} is not a member")
+
     affiliations = await get_member_affiliations(
         user_id=user_id, conn=conn, log=log, return_previous=False
     )
@@ -299,11 +285,12 @@ async def affiliate_member_with_institution(
 
     for affiliated_institution in affiliations:
         if affiliated_institution.institution_id == institution_id:
-            await log.awarning("affiliate_member.user_already_affiliated", affiliation_id=affiliated_institution.affiliation_id)
-            raise ValueError(
-                f"User {user_id} already affiliated with {institution_id}"
+            await log.awarning(
+                "affiliate_member.user_already_affiliated",
+                affiliation_id=affiliated_institution.affiliation_id,
             )
-        
+            raise ValueError(f"User {user_id} already affiliated with {institution_id}")
+
         max_ordering = max(max_ordering, affiliated_institution.ordering)
 
     affiliation = UserInstitutionalAffiliation(
@@ -311,7 +298,7 @@ async def affiliate_member_with_institution(
         user_id=user_id,
         affiliated_since=datetime.now(),
         currently_affiliated=True,
-        ordering=max_ordering + 1
+        ordering=max_ordering + 1,
     )
 
     conn.add(affiliation)
@@ -323,10 +310,7 @@ async def affiliate_member_with_institution(
 
 
 async def unaffiliate_member_from_institution(
-    institution_id: UUID,
-    user_id: UUID,
-    conn: AsyncSession,
-    log: FilteringBoundLogger
+    institution_id: UUID, user_id: UUID, conn: AsyncSession, log: FilteringBoundLogger
 ) -> None:
     """
     Remove a user's affiliation with an institution.
@@ -349,7 +333,7 @@ async def unaffiliate_member_from_institution(
             found_removed_affiliation = True
 
             continue
-        
+
         if found_removed_affiliation and affiliated_institution.ordering is not None:
             affiliated_institution.ordering -= 1
             conn.add(affiliated_institution)
@@ -362,7 +346,7 @@ async def reorder_member_affiliations(
     user_id: UUID,
     new_ordering: list[UUID],
     conn: AsyncSession,
-    log: FilteringBoundLogger
+    log: FilteringBoundLogger,
 ) -> None:
     """
     Reorder a member's affiliations to institutions. Ordering of UUIDs
@@ -376,15 +360,20 @@ async def reorder_member_affiliations(
         user_id=user_id, conn=conn, log=log, return_previous=False
     )
 
-    affiliation_dict = {affiliation.institution_id: affiliation for affiliation in affiliations}
+    affiliation_dict = {
+        affiliation.institution_id: affiliation for affiliation in affiliations
+    }
 
     for index, institution_id in enumerate(new_ordering):
         if institution_id not in affiliation_dict:
-            await log.awarning("reorder_affiliations.institution_not_found", institution_id=institution_id)
+            await log.awarning(
+                "reorder_affiliations.institution_not_found",
+                institution_id=institution_id,
+            )
             raise InstitutionNotFound(
                 f"Institution {institution_id} not found in user's affiliations"
             )
-        
+
         affiliation = affiliation_dict[institution_id]
         affiliation.ordering = index + 1
 

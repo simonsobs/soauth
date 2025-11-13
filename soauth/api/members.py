@@ -2,17 +2,15 @@
 Membership management.
 """
 
-
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from soauth.api.dependencies import DatabaseDependency, LoggerDependency
-from soauth.core.members import InstitutionData, InstitutionalMembershipData
-from soauth.toolkit.fastapi import AuthenticatedUserDependency
-
+from soauth.core.members import InstitutionalMembershipData, InstitutionData
+from soauth.core.uuid import UUID
 from soauth.service import membership as membership_service
 from soauth.service import user as user_service
-from soauth.core.uuid import UUID
+from soauth.toolkit.fastapi import AuthenticatedUserDependency
 
 membership_app = APIRouter(tags=["Membership Management"])
 
@@ -25,7 +23,7 @@ membership_app = APIRouter(tags=["Membership Management"])
     responses={
         200: {"description": "Institution created."},
         401: {"description": "Unauthorized."},
-    }
+    },
 )
 async def create_institution(
     institution: InstitutionData,
@@ -48,9 +46,11 @@ async def create_institution(
         publication_text=institution.publication_text,
         role=institution.role,
         conn=conn,
-        log=log
+        log=log,
     )
-    await log.ainfo("institution.created", institution_id=created_institution.institution_id)
+    await log.ainfo(
+        "institution.created", institution_id=created_institution.institution_id
+    )
 
     return created_institution.to_core()
 
@@ -63,7 +63,7 @@ async def create_institution(
     responses={
         200: {"description": "List of institutions."},
         401: {"description": "Unauthorized."},
-    }
+    },
 )
 async def list_institutions(
     user: AuthenticatedUserDependency,
@@ -94,7 +94,7 @@ async def list_institutions(
         200: {"description": "Institution details."},
         401: {"description": "Unauthorized."},
         404: {"description": "Institution not found."},
-    }
+    },
 )
 async def get_institution(
     institution_id: UUID,
@@ -108,18 +108,28 @@ async def get_institution(
     log = log.bind(user_id=user.user_id)
 
     if "admin" not in user.grants and "membership" not in user.grants:
-        await log.awarning("institution.get_unauthorized", institution_id=institution_id)
+        await log.awarning(
+            "institution.get_unauthorized", institution_id=institution_id
+        )
         raise HTTPException(status_code=401, detail="Unauthorized")
 
-    institution = await membership_service.read_by_id(institution_id=institution_id, conn=conn, log=log)
+    institution = await membership_service.read_by_id(
+        institution_id=institution_id, conn=conn, log=log
+    )
     await log.adebug("institution.retrieved", institution_id=institution_id)
 
-    members = await membership_service.get_membership_list_of_institution(institution_id=institution_id, conn=conn, log=log)
-    await log.adebug("institution.members_retrieved", institution_id=institution_id, number_of_members=len(members))
+    members = await membership_service.get_membership_list_of_institution(
+        institution_id=institution_id, conn=conn, log=log
+    )
+    await log.adebug(
+        "institution.members_retrieved",
+        institution_id=institution_id,
+        number_of_members=len(members),
+    )
 
     return {
         "institution": institution.to_core(),
-        "members": [x.to_core() for x in members]
+        "members": [x.to_core() for x in members],
     }
 
 
@@ -133,7 +143,8 @@ async def get_institution(
         401: {"description": "Unauthorized."},
         404: {"description": "Institution or user not found."},
         400: {"description": "User is not a member."},
-    })
+    },
+)
 async def add_member_to_institution(
     institution_id: UUID,
     user_id: UUID,
@@ -144,17 +155,18 @@ async def add_member_to_institution(
     """
     Add a member to an institution.
     """
-    log = log.bind(user_id=user.user_id, institution_id=institution_id, new_member_id=user_id)
+    log = log.bind(
+        user_id=user.user_id, institution_id=institution_id, new_member_id=user_id
+    )
 
     if "admin" not in user.grants and "membership" not in user.grants:
-        await log.awarning("institution.add_member_unauthorized", institution_id=institution_id)
+        await log.awarning(
+            "institution.add_member_unauthorized", institution_id=institution_id
+        )
         raise HTTPException(status_code=401, detail="Unauthorized")
 
     await membership_service.add_member_to_institution(
-        institution_id=institution_id,
-        user_id=user_id,
-        conn=conn,
-        log=log
+        institution_id=institution_id, user_id=user_id, conn=conn, log=log
     )
     await log.ainfo("institution.member_added")
 
@@ -177,7 +189,7 @@ async def remove_member_from_institution():
         200: {"description": "Member details."},
         401: {"description": "Unauthorized."},
         404: {"description": "User not found."},
-    }
+    },
 )
 async def get_member_details(
     user_id: UUID,
@@ -191,7 +203,9 @@ async def get_member_details(
     log = log.bind(user_id=user.user_id, queried_user_id=user_id)
 
     if "admin" not in user.grants and "membership" not in user.grants:
-        await log.awarning("membership.get_details_unauthorized", queried_user_id=user_id)
+        await log.awarning(
+            "membership.get_details_unauthorized", queried_user_id=user_id
+        )
         raise HTTPException(status_code=401, detail="Unauthorized")
 
     user = await user_service.read_by_id(user_id=user_id, conn=conn)
@@ -213,6 +227,7 @@ class PromoteToMemberRequest(BaseModel):
     website: str | None = None
     orcid: str | None = None
 
+
 @membership_app.post(
     "/promote/{user_id}",
     summary="Promote a user to member",
@@ -222,7 +237,7 @@ class PromoteToMemberRequest(BaseModel):
         200: {"description": "User promoted to member."},
         401: {"description": "Unauthorized."},
         404: {"description": "User not found."},
-    }
+    },
 )
 async def promote_user_to_member(
     user_id: UUID,
@@ -250,7 +265,7 @@ async def promote_user_to_member(
         website=details.website,
         orcid=details.orcid,
         conn=conn,
-        log=log
+        log=log,
     )
     await log.ainfo("membership.user_promoted")
 
@@ -267,7 +282,8 @@ async def promote_user_to_member(
         401: {"description": "Unauthorized."},
         404: {"description": "Institution or user not found."},
         400: {"description": "User is not a member."},
-    })
+    },
+)
 async def affiliate_member_to_institution(
     institution_id: UUID,
     user_id: UUID,
@@ -278,17 +294,18 @@ async def affiliate_member_to_institution(
     """
     Affiliate a member to an institution; different from setting their primary membership institution.
     """
-    log = log.bind(user_id=user.user_id, institution_id=institution_id, new_member_id=user_id)
+    log = log.bind(
+        user_id=user.user_id, institution_id=institution_id, new_member_id=user_id
+    )
 
     if "admin" not in user.grants and "membership" not in user.grants:
-        await log.awarning("institution.affiliate_member_unauthorized", institution_id=institution_id)
+        await log.awarning(
+            "institution.affiliate_member_unauthorized", institution_id=institution_id
+        )
         raise HTTPException(status_code=401, detail="Unauthorized")
 
     await membership_service.affiliate_member_with_institution(
-        institution_id=institution_id,
-        user_id=user_id,
-        conn=conn,
-        log=log
+        institution_id=institution_id, user_id=user_id, conn=conn, log=log
     )
     await log.ainfo("institution.member_affiliated")
 

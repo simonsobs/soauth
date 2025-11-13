@@ -6,8 +6,8 @@ from .app import App
 from .auth import RefreshKey
 from .group import Group, GroupMembership
 from .login import LoginRequest
+from .members import Institution, MembershipDetails, UserInstitutionalMembership
 from .user import User
-from .members import MembershipDetails, UserInstitutionalMembership, Institution
 
 ALL_TABLES = (
     App,

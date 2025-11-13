@@ -320,3 +320,75 @@ async def affiliate_member_with_institution(
     await log.ainfo("affiliation.member_added")
 
     return affiliation
+
+
+async def unaffiliate_member_from_institution(
+    institution_id: UUID,
+    user_id: UUID,
+    conn: AsyncSession,
+    log: FilteringBoundLogger
+) -> None:
+    """
+    Remove a user's affiliation with an institution.
+    """
+
+    log = log.bind(institution_id=institution_id, user_id=user_id)
+
+    affiliations = await get_member_affiliations(
+        user_id=user_id, conn=conn, log=log, return_previous=False
+    )
+
+    found_removed_affiliation: bool = False
+
+    for affiliated_institution in affiliations:
+        if affiliated_institution.institution_id == institution_id:
+            affiliated_institution.currently_affiliated = False
+            affiliated_institution.affiliated_until = datetime.now()
+
+            conn.add(affiliated_institution)
+            found_removed_affiliation = True
+
+            continue
+        
+        if found_removed_affiliation and affiliated_institution.ordering is not None:
+            affiliated_institution.ordering -= 1
+            conn.add(affiliated_institution)
+
+    await conn.flush()
+    await log.ainfo("affiliation.member_removed")
+
+
+async def reorder_member_affiliations(
+    user_id: UUID,
+    new_ordering: list[UUID],
+    conn: AsyncSession,
+    log: FilteringBoundLogger
+) -> None:
+    """
+    Reorder a member's affiliations to institutions. Ordering of UUIDs
+    is from most preferred to least preferred, e.g. in a paper
+    UUID[0] would appear first.
+    """
+
+    log = log.bind(user_id=user_id, new_ordering=new_ordering)
+
+    affiliations = await get_member_affiliations(
+        user_id=user_id, conn=conn, log=log, return_previous=False
+    )
+
+    affiliation_dict = {affiliation.institution_id: affiliation for affiliation in affiliations}
+
+    for index, institution_id in enumerate(new_ordering):
+        if institution_id not in affiliation_dict:
+            await log.awarning("reorder_affiliations.institution_not_found", institution_id=institution_id)
+            raise InstitutionNotFound(
+                f"Institution {institution_id} not found in user's affiliations"
+            )
+        
+        affiliation = affiliation_dict[institution_id]
+        affiliation.ordering = index + 1
+
+        conn.add(affiliation)
+
+    await conn.flush()
+    await log.ainfo("affiliations.reordered")

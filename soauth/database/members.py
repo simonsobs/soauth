@@ -39,6 +39,10 @@ class Institution(SQLModel, table=True):
         back_populates="institution"
     )
 
+    affiliates: list["UserInstitutionalAffiliation"] = Relationship(
+        back_populates="institution"
+    )
+
     def to_core(self) -> "InstitutionData":
         from soauth.core.members import InstitutionData
 
@@ -95,8 +99,8 @@ class UserInstitutionalAffiliation(SQLModel, table=True):
         foreign_key="user.user_id", ondelete="CASCADE"
     )
 
-    institution: "Institution" = Relationship(back_populates="members")
-    user: "User" = Relationship(back_populates="institutions")
+    institution: "Institution" = Relationship(back_populates="affiliates")
+    user: "User" = Relationship(back_populates="affiliations")
 
     affiliated_since: datetime = Field(default_factory=datetime.now)
     affiliated_until: datetime | None = None

@@ -53,11 +53,11 @@
 </section>
 <section class="section"></section>
 <section class="section">
-  <div class="nes-container with-title">
+  <div class="nes-container with-title"
     <p class="title">Institution Information</p>
     {% if other_user.institutions %}
-    {% for institution in other_user.institutions %}
-    <ul class="nes-list is-disc">
+    {% for institution in other_user.institutions | reverse %}
+    <ul class="nes-list is-disc" {% if not institution.institutional_current_member %}style="filter: opacity(0.5);"{% endif %}>
       <li><span class="nes-text is-primary">Institution ID</span> {{institution.institution_id}}</li>
       <li><span class="nes-text is-primary">Institution Name</span> {{institution.institution_name}}</li>
       <li><span class="nes-text is-primary">Member since</span> {{institution.institutional_member_since}}</li>
@@ -69,6 +69,28 @@
     {% endfor %}
     {% else %}
     No institutional memberships.
+    {% endif %}
+    {% if "admin" in scopes or "membership" in scopes %}
+    <section class="buttonholder" style="display:flex;">
+      <button type="button" class="nes-btn is-success" style="margin-left:auto;margin-right:0;"
+        onclick="document.getElementById('change-membership-dialog').showModal();">
+        {% if other_user.institutions %}Change{% else %}Add{% endif %} Membership
+      </button>
+      <dialog class="nes-dialog is-rounded" id="change-membership-dialog">
+        <form method="POST" action="{{base_url}}/users/{{other_user.user_id}}/membership_change">
+          <h3 class="title">{% if other_user.institutions %}Change{% else %}Add{% endif %} Membership</h3>
+          <p>Change the primary institution for <span class="nes-text is-error">{{other_user.user_name}}</span>.</p>
+          <div class="nes-field is-inline">
+            <label for="institution-id">New institution ID:</label>
+            <input type="text" id="institution-id" name="institution_id" class="nes-input is-success" placeholder="..."
+              style="margin-bottom:1em" required />
+          </div>
+          <button type="button" class="nes-btn"
+            onclick="document.getElementById('change-membership-dialog').close();">Cancel</button>
+          <input class="nes-btn is-error" type="submit" value="Confirm" />
+        </form>
+      </dialog>
+    </section> 
     {% endif %}
   </div>
 </section>

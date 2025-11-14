@@ -174,6 +174,45 @@ async def add_member_to_institution(
 
 
 @membership_app.post(
+    "/{institution_id}/swap_member/{user_id}",
+    summary="Swap a member's membership institution",
+    description="Swap a member's membership institution to another institution, only available to either "
+    "admins or users with the membership grant.",
+    responses={
+        200: {"description": "User's primary institution swapped."},
+        401: {"description": "Unauthorized."},
+        404: {"description": "Institution or user not found."},
+    },
+)
+async def swap_member_primary_institution(
+    institution_id: UUID,
+    user_id: UUID,
+    user: AuthenticatedUserDependency,
+    conn: DatabaseDependency,
+    log: LoggerDependency,
+) -> None:
+    """
+    Swap a member's primary institution.
+    """
+    log = log.bind(
+        user_id=user.user_id, institution_id=institution_id, swapped_member_id=user_id
+    )
+
+    if "admin" not in user.grants and "membership" not in user.grants:
+        await log.awarning(
+            "institution.swap_member_unauthorized", institution_id=institution_id
+        )
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    await membership_service.swap_institution_member_status(
+        new_institution_id=institution_id, user_id=user_id, conn=conn, log=log
+    )
+    await log.ainfo("institution.member_swapped")
+
+    return None
+
+
+@membership_app.post(
     "/{institution_id}/remove_member/{user_id}",
 )
 async def remove_member_from_institution():

@@ -159,3 +159,28 @@ def promote_user(
     return RedirectResponse(
         url=f"{request.app.base_url}/users/{user_id}", status_code=303
     )
+
+
+@router.post("/{user_id}/membership_change")
+def change_membership(
+    user_id: UUID,
+    institution_id: Annotated[str, Form()],
+    request: Request,
+    log: LoggerDependency,
+):
+    log = log.bind(user_id=user_id, institution_id=institution_id)
+    log.debug("app.admin.membership_change")
+
+    if "admin" not in request.auth.scopes and "membership" not in request.auth.scopes:
+        raise HTTPException(status_code=403)
+
+    handle_request(
+        url=f"{request.app.institution_detail_url}/{institution_id}/swap_member/{user_id}",
+        request=request,
+        method="post",
+        json={"membership_change": institution_id},
+    )
+
+    return RedirectResponse(
+        url=f"{request.app.base_url}/users/{user_id}", status_code=303
+    )

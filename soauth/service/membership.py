@@ -131,6 +131,46 @@ async def add_member_to_institution(
     log.info("institution.member_added")
 
 
+async def swap_institution_member_status(
+    new_institution_id: UUID,
+    user_id: UUID,
+    conn: AsyncSession,
+    log: FilteringBoundLogger,
+) -> None:
+    """
+    Swap a user's membership to a new institution.
+    """
+
+    log = log.bind(
+        new_institution_id=new_institution_id,
+        user_id=user_id,
+    )
+
+    result = await conn.execute(
+        select(UserInstitutionalMembership)
+        .where(UserInstitutionalMembership.user_id == user_id)
+        .where(UserInstitutionalMembership.current_member.is_(True))
+    )
+
+    current_membership = result.unique().scalar_one_or_none()
+
+    if current_membership:
+        log = log.bind(old_membership_id=current_membership.institution_id)
+        current_membership.current_member = False
+        conn.add(current_membership)
+
+    new_membership = UserInstitutionalMembership(
+        institution_id=new_institution_id,
+        user_id=user_id,
+        current_member=True,
+    )
+
+    conn.add(new_membership)
+    await conn.flush()
+
+    log.info("institution.member_swapped")
+
+
 async def get_membership_list_of_institution(
     institution_id: UUID, conn: AsyncSession, log: FilteringBoundLogger
 ) -> list[UserInstitutionalMembership]:

@@ -34,12 +34,12 @@ class MembershipDetailsData(BaseModel):
 class InstitutionalMembershipData(BaseModel):
     user_id: UUID
     institution_id: UUID
+
     user_name: str
+    institution_name: str
 
     first_name: str
     last_name: str
-
-    membership_details: MembershipDetailsData
 
     institutional_member_since: datetime
     institutional_member_until: datetime | None = None
@@ -52,6 +52,7 @@ class InstitutionalAffiliationData(BaseModel):
     institution_id: UUID
 
     user_name: str
+    institution_name: str
 
     first_name: str
     last_name: str
@@ -61,6 +62,7 @@ class InstitutionalAffiliationData(BaseModel):
     publication_text: str
 
     affiliated_since: datetime
+    affiliated_until: datetime | None = None
 
     currently_affiliated: bool
     ordering: int | None = None

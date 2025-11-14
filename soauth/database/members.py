@@ -69,8 +69,12 @@ class UserInstitutionalMembership(SQLModel, table=True):
         primary_key=True, foreign_key="user.user_id", ondelete="CASCADE"
     )
 
-    institution: "Institution" = Relationship(back_populates="members")
-    user: "User" = Relationship(back_populates="institutions")
+    institution: "Institution" = Relationship(
+        back_populates="members", sa_relationship_kwargs=dict(lazy="joined")
+    )
+    user: "User" = Relationship(
+        back_populates="institutions", sa_relationship_kwargs=dict(lazy="joined")
+    )
 
     member_since: datetime = Field(default_factory=datetime.now)
     member_until: datetime | None = None
@@ -82,9 +86,9 @@ class UserInstitutionalMembership(SQLModel, table=True):
             user_id=self.user_id,
             institution_id=self.institution_id,
             user_name=self.user.user_name,
+            institution_name=self.institution.institution_name,
             first_name=self.user.membership.first_name,
             last_name=self.user.membership.last_name,
-            membership_details=self.user.membership.to_core(),  # Do not need to guard against None because must be membership to have an institutional membership
             institutional_member_since=self.member_since,
             institutional_member_until=self.member_until,
             institutional_current_member=self.current_member,
@@ -101,8 +105,12 @@ class UserInstitutionalAffiliation(SQLModel, table=True):
     )
     user_id: Optional[UUID] = Field(foreign_key="user.user_id", ondelete="CASCADE")
 
-    institution: "Institution" = Relationship(back_populates="affiliates")
-    user: "User" = Relationship(back_populates="affiliations")
+    institution: "Institution" = Relationship(
+        back_populates="affiliates", sa_relationship_kwargs=dict(lazy="joined")
+    )
+    user: "User" = Relationship(
+        back_populates="affiliations", sa_relationship_kwargs=dict(lazy="joined")
+    )
 
     affiliated_since: datetime = Field(default_factory=datetime.now)
     affiliated_until: datetime | None = None
@@ -114,14 +122,15 @@ class UserInstitutionalAffiliation(SQLModel, table=True):
         return InstitutionalAffiliationData(
             user_id=self.user_id,
             institution_id=self.institution_id,
+            institution_name=self.institution.institution_name,
             user_name=self.user.user_name,
             first_name=self.user.membership.first_name,
             last_name=self.user.membership.last_name,
-            institution_name=self.institution.institution_name,
             unit_name=self.institution.unit_name,
             publication_text=self.institution.publication_text,
             affiliated_since=self.affiliated_since,
             currently_affiliated=self.currently_affiliated,
+            affiliated_until=self.affiliated_until,
             ordering=self.ordering,
         )
 

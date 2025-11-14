@@ -54,10 +54,10 @@ class User(SQLModel, table=True):
     )
 
     institutions: list["UserInstitutionalMembership"] = Relationship(
-        back_populates="user"
+        back_populates="user", sa_relationship_kwargs=dict(lazy="joined")
     )
     affiliations: list["UserInstitutionalAffiliation"] = Relationship(
-        back_populates="user"
+        back_populates="user", sa_relationship_kwargs=dict(lazy="joined")
     )
     membership: Optional["MembershipDetails"] = Relationship(
         back_populates="user", sa_relationship_kwargs=dict(lazy="joined")
@@ -150,4 +150,10 @@ class User(SQLModel, table=True):
             else None,
             profile_image=self.gh_profile_image_url,
             membership=self.membership.to_core() if self.membership else None,
+            institutions=[im.to_core() for im in self.institutions]
+            if self.institutions
+            else None,
+            affiliations=[ia.to_core() for ia in self.affiliations]
+            if self.affiliations
+            else None,
         )

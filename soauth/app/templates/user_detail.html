@@ -51,6 +51,49 @@
     </ul>
   </div>
 </section>
+<section class="section"></section>
+<section class="section">
+  <div class="nes-container with-title">
+    <p class="title">Institution Information</p>
+    {% if other_user.institutions %}
+    {% for institution in other_user.institutions %}
+    <ul class="nes-list is-disc">
+      <li><span class="nes-text is-primary">Institution ID</span> {{institution.institution_id}}</li>
+      <li><span class="nes-text is-primary">Institution Name</span> {{institution.institution_name}}</li>
+      <li><span class="nes-text is-primary">Member since</span> {{institution.institutional_member_since}}</li>
+      <li><span class="nes-text is-primary">Current member</span> {{institution.institutional_current_member}}</li>
+      {% if institution.institutional_member_until %}
+      <li><span class="nes-text is-primary">Member until</span> {{institution.institutional_member_until}}</li>
+      {% endif %}
+    </ul>
+    {% endfor %}
+    {% else %}
+    No institutional memberships.
+    {% endif %}
+  </div>
+</section>
+<section class="section">
+  <div class="nes-container with-title">
+    <p class="title">Affiliation Information</p>
+    {% if other_user.affiliations %}
+    {% for affiliation in other_user.affiliations %}
+    <ul class="nes-list is-disc">
+      <li><span class="nes-text is-primary">Institution ID</span> {{affiliation.institution_id}}</li>
+      <li><span class="nes-text is-primary">Institution Name</span> {{affiliation.institution_name}}</li>
+      <li><span class="nes-text is-primary">Unit Name</span> {{affiliation.unit_name}}</li>
+      <li><span class="nes-text is-primary">Order</span> {{affiliation.ordering}}</li>
+      <li><span class="nes-text is-primary">Afiliated since</span> {{affiliation.affiliated_since}}</li>
+      <li><span class="nes-text is-primary">Currently affiliated</span> {{affiliation.currently_affiliated}}</li>
+      {% if affiliation.affiliated_until %}
+      <li><span class="nes-text is-primary">Affiliated until</span> {{affiliation.affiliated_until}}</li>
+      {% endif %}
+    </ul>
+    {% endfor %}
+    {% else %}
+    No institutional affiliations.
+    {% endif %}
+  </div>
+</section>
 {% endif %}
 <section class="section">
   <div class="nes-container with-title">

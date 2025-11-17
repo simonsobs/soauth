@@ -150,10 +150,15 @@ class User(SQLModel, table=True):
             else None,
             profile_image=self.gh_profile_image_url,
             membership=self.membership.to_core() if self.membership else None,
-            institutions=[im.to_core() for im in self.institutions]
+            institutions=sorted(
+                [im.to_core() for im in self.institutions],
+                key=lambda x: x.institutional_current_member,
+            )
             if self.institutions
             else None,
-            affiliations=[ia.to_core() for ia in self.affiliations]
+            affiliations=sorted(
+                [ia.to_core() for ia in self.affiliations], key=lambda x: x.ordering
+            )
             if self.affiliations
             else None,
         )

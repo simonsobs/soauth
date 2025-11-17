@@ -184,3 +184,57 @@ def change_membership(
     return RedirectResponse(
         url=f"{request.app.base_url}/users/{user_id}", status_code=303
     )
+
+
+@router.post("/{user_id}/affiliation_add")
+def add_affiliation(
+    user_id: UUID,
+    institution_id: Annotated[str, Form()],
+    request: Request,
+    log: LoggerDependency,
+):
+    log = log.bind(user_id=user_id, institution_id=institution_id)
+    log.debug("app.admin.affiliation_add")
+
+    if "admin" not in request.auth.scopes and "membership" not in request.auth.scopes:
+        raise HTTPException(status_code=403)
+
+    handle_request(
+        url=f"{request.app.institution_detail_url}/{institution_id}/affiliate_member/{user_id}",
+        request=request,
+        method="post",
+    )
+
+    return RedirectResponse(
+        url=f"{request.app.base_url}/users/{user_id}", status_code=303
+    )
+
+
+@router.post("/{user_id}/affiliation_reorder")
+def reorder_affiliations(
+    user_id: UUID,
+    ordered_ids: Annotated[str, Form()],
+    request: Request,
+    log: LoggerDependency,
+):
+    log = log.bind(user_id=user_id, ordered_ids=ordered_ids)
+    log.debug("app.admin.affiliation_reorder")
+
+    if "admin" not in request.auth.scopes and "membership" not in request.auth.scopes:
+        raise HTTPException(status_code=403)
+
+    # Parse the list of ordered IDs to an actual list
+    ordered_ids = (
+        ordered_ids.replace("[", "").replace("]", "").replace('"', "").split(",")
+    )
+
+    handle_request(
+        url=f"{request.app.institution_detail_url}/reorder_affiliations/{user_id}",
+        request=request,
+        method="post",
+        json={"ordered_institution_ids": ordered_ids},
+    )
+
+    return RedirectResponse(
+        url=f"{request.app.base_url}/users/{user_id}", status_code=303
+    )

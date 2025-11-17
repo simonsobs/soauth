@@ -38,7 +38,8 @@
   <div class="nes-container with-title">
     <p class="title">Membership Information</p>
     <ul class="nes-list is-disc">
-      <li><span class="nes-text is-primary">Membership Details ID</span> {{other_user.membership.membership_details_id}}</li>
+      <li><span class="nes-text is-primary">Membership Details ID</span> {{other_user.membership.membership_details_id}}
+      </li>
       <li><span class="nes-text is-primary">Status</span> {{other_user.membership.status}}</li>
       <li><span class="nes-text is-primary">Member since</span> {{other_user.membership.member_since}}</li>
       <li><span class="nes-text is-primary">Member until</span> {{other_user.membership.member_until}}</li>
@@ -53,11 +54,14 @@
 </section>
 <section class="section"></section>
 <section class="section">
-  <div class="nes-container with-title"
+  <div class="nes-container with-title">
     <p class="title">Institution Information</p>
+    <p>This is the primary institution that a member is affiliated with; users may only have one primary institution.
+    </p>
     {% if other_user.institutions %}
     {% for institution in other_user.institutions | reverse %}
-    <ul class="nes-list is-disc" {% if not institution.institutional_current_member %}style="filter: opacity(0.5);"{% endif %}>
+    <ul class="nes-list is-disc" {% if not institution.institutional_current_member %}style="filter: opacity(0.5);" {%
+      endif %}>
       <li><span class="nes-text is-primary">Institution ID</span> {{institution.institution_id}}</li>
       <li><span class="nes-text is-primary">Institution Name</span> {{institution.institution_name}}</li>
       <li><span class="nes-text is-primary">Member since</span> {{institution.institutional_member_since}}</li>
@@ -90,13 +94,15 @@
           <input class="nes-btn is-error" type="submit" value="Confirm" />
         </form>
       </dialog>
-    </section> 
+    </section>
     {% endif %}
   </div>
 </section>
 <section class="section">
   <div class="nes-container with-title">
     <p class="title">Affiliation Information</p>
+    <p>This section lists all institutional affiliations for the user; users may have multiple affiliations, and they
+      appear in order for papers.</p>
     {% if other_user.affiliations %}
     {% for affiliation in other_user.affiliations %}
     <ul class="nes-list is-disc">
@@ -111,8 +117,73 @@
       {% endif %}
     </ul>
     {% endfor %}
+    <p><span class="nes-text is-error">Your affiliation will appear as:</span></p>
+    <p>{{other_user.membership.first_name}} {{other_user.membership.last_name}}<br>
+      {% for affiliation in other_user.affiliations %}
+      {% if affiliation.ordering %}
+      {{ affiliation.ordering }}. {{affiliation.publication_text}}<br>
+      {% endif %}
+      {% endfor %}</p>
     {% else %}
     No institutional affiliations.
+    {% endif %}
+    {% if "admin" in scopes or "membership" in scopes %}
+    <section class="buttonholder" style="display:flex;">
+      <button type="button" class="nes-btn is-success" style="margin-left:auto;margin-right:0;"
+        onclick="document.getElementById('add-affiliation-dialog').showModal();">
+        Add Affiliation
+      </button>
+      <dialog class="nes-dialog is-rounded" id="add-affiliation-dialog">
+        <form method="POST" action="{{base_url}}/users/{{other_user.user_id}}/affiliation_add">
+          <h3 class="title">Add Affiliation</h3>
+          <p>Add an affiliation to an institution for <span class="nes-text is-error">{{other_user.user_name}}</span>.
+          </p>
+          <div class="nes-field is-inline">
+            <label for="institution-id">Institution ID:</label>
+            <input type="text" id="institution-id" name="institution_id" class="nes-input is-success" placeholder="..."
+              style="margin-bottom:1em" required />
+          </div>
+          <button type="button" class="nes-btn"
+            onclick="document.getElementById('add-affiliation-dialog').close();">Cancel</button>
+          <input class="nes-btn is-error" type="submit" value="Confirm" />
+        </form>
+      </dialog>
+      <button type="button" class="nes-btn is-success" style="margin-left: 1em; margin-right:0;"
+        onclick="document.getElementById('reorder-affiliation-dialog').showModal();">
+        Reorder
+      </button>
+      <dialog class="nes-dialog is-rounded" id="reorder-affiliation-dialog">
+        <form method="POST" action="/users/{{other_user.user_id}}/affiliation_reorder">
+          <h3 class="title">Reorder Affiliations</h3>
+
+          <p>
+            Reorder affiliations for
+            <span class="nes-text is-error">{{other_user.user_name}}</span>.
+          </p>
+
+          {% if other_user.affiliations %}
+          <div id="sortable-affiliations">
+            {% for aff in other_user.affiliations %}
+            <div class="nes-container is-rounded affiliation-item"
+              style="margin-bottom:1em;cursor:move;background-color:lightgray" draggable="true"
+              data-id="{{ aff.institution_id }}">
+              <p>{{ aff.institution_name }}</p>
+              <p>{{ aff.unit_name }}</p>
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %}
+
+          <input type="hidden" name="ordered_ids" id="ordered_ids">
+
+          <button type="submit" class="nes-btn is-primary">Save</button>
+          <button type="button" class="nes-btn"
+            onclick="document.getElementById('reorder-affiliation-dialog').close();">
+            Cancel
+          </button>
+        </form>
+      </dialog>
+    </section>
     {% endif %}
   </div>
 </section>
@@ -227,27 +298,27 @@
       <section class="buttonholder">
         <button type="button" class="nes-btn is-success"
           onclick="document.getElementById('promote-user-dialog').showModal();">
-          Promote to Member          
+          Promote to Member
         </button>
         <dialog class="nes-dialog is-rounded" id="promote-user-dialog">
           <form method="POST" action="{{base_url}}/users/{{other_user.user_id}}/promote">
             <h3 class="title">Promote</h3>
             <p>This form promotes users to members, conferring membership for them. It does not
-            automatically provide access to downstream services.</p>
+              automatically provide access to downstream services.</p>
             <div class="nes-field is-inline">
               <label for="first-name-field">First name:</label>
-              <input type="text" id="first-name-field" name="first_name" class="nes-input is-success" value="{{other_user.full_name.split(' ')[0]}}"
-                style="margin-bottom:1em" required />
+              <input type="text" id="first-name-field" name="first_name" class="nes-input is-success"
+                value="{{other_user.full_name.split(' ')[0]}}" style="margin-bottom:1em" required />
             </div>
             <div class="nes-field is-inline">
               <label for="last-name-field">Last name:</label>
-              <input type="text" id="last-name-field" name="last_name" class="nes-input is-success" value="{{other_user.full_name.split(' ')[-1]}}"
-                style="margin-bottom:1em" required />
+              <input type="text" id="last-name-field" name="last_name" class="nes-input is-success"
+                value="{{other_user.full_name.split(' ')[-1]}}" style="margin-bottom:1em" required />
             </div>
             <div class="nes-field is-inline">
               <label for="email-field">Email:</label>
-              <input type="email" id="email-field" name="email" class="nes-input is-success" value="{{other_user.email}}"
-                style="margin-bottom:1em" required />
+              <input type="email" id="email-field" name="email" class="nes-input is-success"
+                value="{{other_user.email}}" style="margin-bottom:1em" required />
             </div>
             <div class="nes-field is-inline">
               <label for="status-field">Status:</label>
@@ -256,13 +327,13 @@
             </div>
             <div class="nes-field is-inline">
               <label for="website-field">Website:</label>
-              <input type="url" id="website-field" name="website" class="nes-input is-success" placeholder="https://simonsobservatory.org"
-                style="margin-bottom:1em" />
+              <input type="url" id="website-field" name="website" class="nes-input is-success"
+                placeholder="https://simonsobservatory.org" style="margin-bottom:1em" />
             </div>
             <div class="nes-field is-inline">
               <label for="orcid-field">ORCID:</label>
-              <input type="text" id="orcid-field" name="orcid" class="nes-input is-success" placeholder="0000-0000-0000-0000"
-                style="margin-bottom:1em" />
+              <input type="text" id="orcid-field" name="orcid" class="nes-input is-success"
+                placeholder="0000-0000-0000-0000" style="margin-bottom:1em" />
             </div>
             <div class="nes-field is-inline">
               <label for="confluence-field">Confluence:</label>
@@ -280,4 +351,57 @@
   </div>
 </section>
 {% endif %}
+{% endblock %}
+{% block extrafooter %}
+<script>
+  const container = document.getElementById('sortable-affiliations');
+  const hidden = document.getElementById('ordered_ids');
+
+  let dragged = null;
+
+  container.addEventListener('dragstart', (e) => {
+    if (!e.target.classList.contains('affiliation-item')) return;
+    dragged = e.target;
+    e.target.classList.add('dragging');
+  });
+
+  container.addEventListener('dragend', (e) => {
+    if (!e.target.classList.contains('affiliation-item')) return;
+    e.target.classList.remove('dragging');
+    updateOrder();
+  });
+
+  container.addEventListener('dragover', (e) => {
+    e.preventDefault();
+
+    const children = [...container.querySelectorAll('.affiliation-item:not(.dragging)')];
+    const afterElement = children.find(child => {
+      const rect = child.getBoundingClientRect();
+      return e.clientY < rect.top + rect.height / 2;
+    });
+
+    children.forEach(c => c.classList.remove('drop-target'));
+
+    if (afterElement) {
+      afterElement.classList.add('drop-target');
+      container.insertBefore(dragged, afterElement);
+    } else {
+      container.appendChild(dragged);
+    }
+  });
+
+  container.addEventListener('dragleave', (e) => {
+    if (!e.target.classList.contains('affiliation-item')) return;
+    e.target.classList.remove('drop-target');
+  });
+
+  function updateOrder() {
+    const ids = [...container.children].map(x => x.dataset.id);
+    hidden.value = JSON.stringify(ids);
+    console.log(hidden.value);
+  }
+
+  // Initialize the hidden input on load
+  updateOrder();
+</script>
 {% endblock %}

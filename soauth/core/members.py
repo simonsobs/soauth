@@ -57,7 +57,6 @@ class InstitutionalAffiliationData(BaseModel):
     first_name: str
     last_name: str
 
-    instituion_name: str
     unit_name: str
     publication_text: str
 

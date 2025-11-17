@@ -165,10 +165,19 @@ async def add_member_to_institution(
         )
         raise HTTPException(status_code=401, detail="Unauthorized")
 
-    await membership_service.add_member_to_institution(
-        institution_id=institution_id, user_id=user_id, conn=conn, log=log
-    )
-    await log.ainfo("institution.member_added")
+    try:
+        await membership_service.add_member_to_institution(
+            institution_id=institution_id, user_id=user_id, conn=conn, log=log
+        )
+        await log.ainfo("institution.member_added")
+    except membership_service.UserIsNotMember:
+        await log.awarning("add_member.user_not_member")
+        raise HTTPException(status_code=400, detail="User is not a member")
+    except ValueError:
+        await log.awarning("add_member.user_already_member")
+        raise HTTPException(
+            status_code=400, detail="User is already a member of an institution"
+        )
 
     return None
 
@@ -343,9 +352,15 @@ async def affiliate_member_to_institution(
         )
         raise HTTPException(status_code=401, detail="Unauthorized")
 
-    await membership_service.affiliate_member_with_institution(
-        institution_id=institution_id, user_id=user_id, conn=conn, log=log
-    )
+    try:
+        await membership_service.affiliate_member_with_institution(
+            institution_id=institution_id, user_id=user_id, conn=conn, log=log
+        )
+    except ValueError:
+        raise HTTPException(
+            status_code=400, detail="User is already affiliated with this institution"
+        )
+
     await log.ainfo("institution.member_affiliated")
 
     return None

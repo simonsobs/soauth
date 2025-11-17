@@ -119,6 +119,10 @@ async def add_member_to_institution(
         await log.ainfo("add_member.user_not_member")
         raise UserIsNotMember(f"User {user.user_id} is not a member")
 
+    if any(x.current for x in user.institutions):
+        await log.awarning("add_member.user_already_member")
+        raise ValueError(f"User {user_id} is already a member of an institution")
+
     membership = UserInstitutionalMembership(
         institution=institution,
         user=user,
@@ -297,7 +301,9 @@ async def get_member_affiliations(
     result = await conn.execute(stmt)
     affiliations = result.unique().scalars().all()
 
-    await log.ainfo("get_affiliations.complete", number_of_affiliations=len(result))
+    await log.ainfo(
+        "get_affiliations.complete", number_of_affiliations=len(affiliations)
+    )
 
     return affiliations
 

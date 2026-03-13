@@ -246,6 +246,80 @@ class MockSOAuthCookieBackend(AuthenticationBackend):
         return credentials, user
 
 
+class SingleBearerSOAuthCookieBackend(AuthenticationBackend):
+    """
+    A simple authentication middleware backend. Always returns an SOUser
+    with the provided credentials. This can raise two main
+    exceptions:
+
+    soauth.core.tokens.KeyDecodeError
+        If there was a problem decoding the access token. This likely
+        means that it is incompatible with the keys or otherwise needs
+        to be _entirely replaced_ including a new refresh token. You
+        should redirect users to the login URL.
+
+    AuthenticationExpiredError
+        If the access token key is expired. You will need to use the
+        POST endpoint to refresh the key and attempt to re-authenticate.
+
+    To handle these exceptions, we provide synchronous functions defined
+    in the FastAPI file (`key_decode_handler` and `key_expired_handler`). You
+    can use the `on_auth_error` function to handle all these simultaneously.
+    """
+
+    credentials: list[str]
+    user_name: str
+    user_id: UUID
+    full_name: str
+    email: str
+    groups: set[str]
+
+    def __init__(
+        self,
+        credentials: list[str],
+        bearer_token: str,
+        user_name: str = "bearer_user",
+        user_id: UUID = UUID("00000000-0000-0000-0000-000000000001"),
+        full_name: str = "Bearer User",
+        email: str = "test@test.com",
+        groups: set[str] = {"bearer_user"},
+    ):
+        self.credentials = credentials
+        self.bearer_token = bearer_token
+        self.user_name = user_name
+        self.user_id = user_id
+        self.full_name = full_name
+        self.email = email
+        self.groups = groups
+
+    async def authenticate(self, conn: Request):
+        log = get_logger()
+
+        if "Authorization" in conn.headers:
+            contents = conn.headers["Authorization"].split(" ")
+            if contents[0] != "Bearer":
+                log.debug("tk.starlette.bearerauth.bearer_not_found")
+                raise AuthenticationDecodeError("Bearer token invalid")
+            log.debug("tk.starlette.bearerauth.bearer")
+            access_token = contents[1]
+
+            if access_token != self.bearer_token:
+                raise AuthenticationDecodeError("Bearer token is incorrect")
+
+        user = SOUser(
+            is_authenticated=True,
+            display_name=self.user_name,
+            user_id=self.user_id,
+            full_name=self.full_name,
+            email=self.email,
+            groups=self.groups,
+        )
+
+        credentials = AuthCredentials(self.credentials)
+
+        return credentials, user
+
+
 def key_expired_handler(request: Request, exc: KeyExpiredError) -> RedirectResponse:
     """
     Handles the KeyExpiredError exception that occurs when the authentication

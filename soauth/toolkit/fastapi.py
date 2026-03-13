@@ -46,6 +46,7 @@ from soauth.core.uuid import UUID
 
 from .starlette import (
     MockSOAuthCookieBackend,
+    SingleBearerSOAuthCookieBackend,
     SOAuthCookieBackend,
     SOUser,
     handle_redirect,
@@ -339,6 +340,39 @@ def mock_global_setup(
         AuthenticationMiddleware,
         backend=MockSOAuthCookieBackend(
             credentials=grants,
+        ),
+    )
+
+    return app
+
+
+def bearer_global_setup(
+    app: FastAPI,
+    grants: list[str],
+    token: str
+) -> FastAPI:
+    """
+    Transform the app such that it is ready for authentication (bearer-only).
+    Always returns a user 'bearer_user', with the given grants. Only works
+    with middleware, the dependencies will not work.
+
+    Parameters
+    ----------
+    app: FastAPI
+        The FastAPI app to hook into.
+    grants: list[str]
+        The list of grants to give the user. This is used to mock the
+        internal authentication process; any 'user' identifying themselves
+        with your bearer token will have these grants.
+    token: str
+        The bearer token to use. Recommended to be a long string.
+    """
+
+    app.add_middleware(
+        AuthenticationMiddleware,
+        backend=SingleBearerSOAuthCookieBackend(
+            credentials=grants,
+            bearer_token=token
         ),
     )
 

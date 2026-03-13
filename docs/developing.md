@@ -145,3 +145,32 @@ which returns:
   }
 }
 ```
+
+Simple, Bearer-Only
+-------------------
+
+SOAuth also comes with an additional starlette and FastAPI middleware that
+integrates with the entire system, but has a fixed `Bearer` token that is
+required. This is intended for development versions of applications that
+need to live on the open internet. Passing HTTP requests with the header:
+```
+"Authorization": "Bearer XXXYYYYYXXYYYYXXX"
+```
+will allow you to authenticate against the application. This can be set up
+in your FastAPI application as follows:
+```python
+from soauth.toolkit.fastapi import bearer_global_setup
+from fastapi import FastAPI
+from secrets import token_bytes
+from base64 import b64encode
+
+BEARER_TOKEN = b64encode(token_bytes(32)).decode()
+print(f"Please add {{'Authorization': 'Bearer {BEARER_TOKEN}'}} to your requests")
+
+app = bearer_global_setup(
+    FastAPI(),
+    grants=["bearer", "only", "grants"],
+    token=BEARER_TOKEN
+)
+```
+

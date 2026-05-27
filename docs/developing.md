@@ -52,10 +52,10 @@ and `fix` layer of this; before checking in code:
 ruff format
 ruff check --fix
 ```
-To run the SOAuth development server, you will need to have 
-[Testcontainers Desktop](https://testcontainers.com/desktop/) installed. This allows
-for the test postgres database to be brought up and down. To run the development
-server, you will need to have a set of GitHub credentials set as environment 
+To run the SOAuth development server, you will need the Python
+`testcontainers[postgres]` dependency installed. This allows for the test postgres
+database to be brought up and down. To run the development server, you will need
+to have a set of GitHub credentials set as environment
 variables or otherwise passed through to the `pydantic_settings` model.
 ```
 soauth run dev
@@ -173,4 +173,3 @@ app = bearer_global_setup(
     token=BEARER_TOKEN
 )
 ```
-

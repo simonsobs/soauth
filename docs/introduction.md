@@ -55,10 +55,10 @@ middleware or other functionality to decode it. As part of the [app setup proces
 you will have been given a 'public' key (note that this is not really for public
 consumption)!
 
-The public key can be used to decrypt the contents of the `access_token`, which is
-a [JSON Web Token](https://en.wikipedia.org/wiki/JSON_Web_Token). We use asymmetric encryption,
-meaning that if your public key can decode the contents of the token, you can be sure
-that the place that emitted it was the SOAuth server.
+The `access_token` is a [JSON Web Token](https://en.wikipedia.org/wiki/JSON_Web_Token)
+that is signed by the SOAuth server using an Ed25519 private key. Your application's
+public key is used to verify that signature, which allows you to trust that the token
+was emitted by the SOAuth server.
 
 Contained in the `access_token` is the `user`, which is the `UserData` model, containing:
 
@@ -66,12 +66,14 @@ Contained in the `access_token` is the `user`, which is the `UserData` model, co
 - `user_name`, a string uniquely describing a user across _all_ SOAuth apps, which is also
   their GitHub username.
 - `full_name`, an optional string containing their 'real' name, like `John Smith`.
+- `profile_image`, an optional string containing a URL to the user's profile image.
 - `email`, an optional string containing the user's email, like `user@email.net`.
 - `grants`, a set of strings providing information on what a user should be allowed to do.
   This can be things like `admin`, or `appmanager`, or `dataaccess`.
-- `groups`, (currently unused), a list of groups that the user is a part of.
+- `group_names`, a list of group names that the user is a part of.
+- `group_ids`, a list of group IDs (as strings) corresponding to those groups.
 
-Because of the public-key encryption model, you can always be sure that the contents of
+Because of this public-key signature model, you can always be sure that the contents of
 this blob are valid and were correctly emitted by the server. As such, if a user presents
 a valid `access_token` and it says their username is `jborrow`, you can believe them!
 
@@ -120,4 +122,3 @@ These state cookies work alongside the secure authentication system:
 [^1]: Note the use here of `referrerpolicy="no-referrer-when-downgrade"`; if this is not used
       the full path of your client is not sent to the authentication server, and the eventual
       redirect won't work.
-

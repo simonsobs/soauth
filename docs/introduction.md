@@ -89,7 +89,7 @@ In practice:
 
 - A user makes a request to a page on your site, such as `myapp.org/private`. The server
   tries to decode their access token, and finds that it is expired!
-- In the background, your server then makes a request to `soauth.org/exchange/{app_id}` with the
+- In the background, your server then makes a request to `soauth.org/exchange` with the
   user's refresh token.
 - The authentication server responds with a new `access_token` _and_ a new `refresh_token`.
 - Your server can then set these as new cookies, and send your user on their way.

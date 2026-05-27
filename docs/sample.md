@@ -86,7 +86,7 @@ grant, there will be a 403 error raised. This can be handled by adding an except
 handler to the application:
 ```python
 def redirect_to_login(request: Request, exc):
-    if user.is_authenticated:
+    if request.user.is_authenticated:
         return HTMLResponse(
             "<p>You are not able to access this due to a lack of privileges</p>",
         )
@@ -96,7 +96,7 @@ def redirect_to_login(request: Request, exc):
 app.add_exception_handler(403, redirect_to_login)
 ```
 This handler makes sure that a user is presented with a message telling them
-they don't have priviliges. If they aren't logged in (`not user.is_authenticated`),
+they don't have privileges. If they aren't logged in (`not request.user.is_authenticated`),
 they are redirected to the login page.
 
 You do not need to check whether `user` is available on `request`, or `is_authenticated`
@@ -152,7 +152,7 @@ async def prop(request: Request):
   )
 
 def redirect_to_login(request: Request, exc):
-    if user.is_authenticated:
+    if request.user.is_authenticated:
         return HTMLResponse(
             "<p>You are not able to access this due to a lack of privileges</p>",
         )

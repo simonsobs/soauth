@@ -112,7 +112,7 @@ account in the SOAuth server you are trying to use. You will need to know:
   we will assume this is `https://myapp.org`. This is also known as the `app_base_url`.
   This domain can be local to your own machine (e.g. `http://localhost:8000`) for
   development purposes.
-- Your callbac url, which is where the user will be redirected after completing
+- Your callback url, which is where the user will be redirected after completing
   the SOAuth part of the exchange. If you use the default handlers above, this
   will be `https://myapp.org/callback`. 
 - The authentication server's url, for example `https://soauth.org`. This is known as

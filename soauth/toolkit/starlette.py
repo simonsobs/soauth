@@ -305,6 +305,11 @@ class SingleBearerSOAuthCookieBackend(AuthenticationBackend):
 
             if access_token != self.bearer_token:
                 raise AuthenticationDecodeError("Bearer token is incorrect")
+        else:
+            log.debug("tk.starlette.bearerauth.no_header")
+            return AuthCredentials([]), SOUser(
+                is_authenticated=False, display_name=None
+            )
 
         user = SOUser(
             is_authenticated=True,
